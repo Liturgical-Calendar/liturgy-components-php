@@ -61,7 +61,7 @@ class CalendarSelect
             [ 'litcal_metadata' => self::$calendarIndex ] = $metadataJSON;
             [ 'diocesan_calendars' => self::$diocesanCalendars, 'national_calendars' => self::$nationalCalendars ] = self::$calendarIndex;
         }
-        self::buildAllOptions();
+        $this->buildAllOptions();
     }
 
     public static function isValidLocale($locale)
@@ -190,7 +190,7 @@ class CalendarSelect
             $this->addNationOption($nationalCalendar);
             $optgroupLabel = \Locale::getDisplayRegion("-" . $nationalCalendar['country_iso'], $this->locale);
             $optgroupOpenTag = "<optgroup label=\"{$optgroupLabel}\">";
-            $optgroupContents = implode('', self::$dioceseOptions[$nationalCalendar['calendar_id']]);
+            $optgroupContents = implode('', $this->dioceseOptions[$nationalCalendar['calendar_id']]);
             $optgroupCloseTag = "</optgroup>";
             array_push($this->dioceseOptionsGrouped, "{$optgroupOpenTag}{$optgroupContents}{$optgroupCloseTag}");
         }
