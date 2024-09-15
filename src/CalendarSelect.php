@@ -1,6 +1,6 @@
 <?php
 
-namespace LiturgicalCalendadr\Components;
+namespace LiturgicalCalendar\Components;
 
 class CalendarSelect
 {
