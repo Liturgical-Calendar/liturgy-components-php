@@ -15,14 +15,12 @@ class CalendarSelect
     private string $locale                       = 'en';
 
     /**
-     * Initializes the calendar select with metadata from the given URL.
-     *
-     * This should be called once, at the beginning of your script, to initialize the calendar select.
+     * Instantiates the calendar select with metadata from the Liturgical Calendar API.
      *
      * @param array $options An associative array that can have the following keys:
      *                        - 'url': The URL of the liturgical calendar metadata API endpoint.
      *                                 Defaults to https://litcal.johnromanodorazio.com/api/dev/calendars.
-     *                         - 'locale': The locale to use for the calendar select. Defaults to 'en'.
+     *                        - 'locale': The locale to use for the calendar select. Defaults to 'en'.
      *                                     This is the locale that will be used to translate and order the names of the countries.
      *                                     This should be a valid PHP locale string, such as 'en' or 'es' or 'en_US' or 'es_ES'.
      *
