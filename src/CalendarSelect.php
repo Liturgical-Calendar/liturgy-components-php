@@ -32,7 +32,7 @@ class CalendarSelect
     ])
     {
         if (isset($options['locale'])) {
-            $options['locale'] = Locale::canonicalize($options['locale']);
+            $options['locale'] = \Locale::canonicalize($options['locale']);
             if (!self::isValidLocale($options['locale'])) {
                 throw new \Exception("Invalid locale: {$options['locale']}");
             }
