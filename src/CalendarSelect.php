@@ -13,6 +13,7 @@ class CalendarSelect
     private array $dioceseOptions                = [];
     private array $dioceseOptionsGrouped         = [];
     private string $locale                       = 'en';
+    private ?string $metadataUrl                 = null;
 
     /**
      * Instantiates the calendar select with metadata from the Liturgical Calendar API.
@@ -40,24 +41,24 @@ class CalendarSelect
 
         $this->locale = $options['locale'] ?? 'en';
 
-        $metadataURL = $options['url'] ?? self::METADATA_URL;
-        if ($metadataURL !== self::METADATA_URL || self::$calendarIndex === null) {
-            $metadataRaw = file_get_contents($metadataURL);
+        $this->metadataUrl = $options['url'] ?? self::METADATA_URL;
+        if ($this->metadataUrl !== self::METADATA_URL || self::$calendarIndex === null) {
+            $metadataRaw = file_get_contents($this->metadataUrl);
             if ($metadataRaw === false) {
-                throw new \Exception("Error fetching metadata from {$metadataURL}");
+                throw new \Exception("Error fetching metadata from {$this->metadataUrl}");
             }
             $metadataJSON = json_decode($metadataRaw, true);
             if (JSON_ERROR_NONE !== json_last_error()) {
-                throw new \Exception("Error decoding metadata from {$metadataURL}: " . json_last_error_msg());
+                throw new \Exception("Error decoding metadata from {$this->metadataUrl}: " . json_last_error_msg());
             }
             if (array_key_exists('litcal_metadata', $metadataJSON) === false) {
-                throw new \Exception("Missing 'litcal_metadata' in metadata from {$metadataURL}");
+                throw new \Exception("Missing 'litcal_metadata' in metadata from {$this->metadataUrl}");
             }
             if (array_key_exists('diocesan_calendars', $metadataJSON['litcal_metadata']) === false) {
-                throw new \Exception("Missing 'diocesan_calendars' in metadata from {$metadataURL}");
+                throw new \Exception("Missing 'diocesan_calendars' in metadata from {$this->metadataUrl}");
             }
             if (array_key_exists('national_calendars', $metadataJSON['litcal_metadata']) === false) {
-                throw new \Exception("Missing 'national_calendars' in metadata from {$metadataURL}");
+                throw new \Exception("Missing 'national_calendars' in metadata from {$this->metadataUrl}");
             }
             [ 'litcal_metadata' => self::$calendarIndex ] = $metadataJSON;
             [ 'diocesan_calendars' => self::$diocesanCalendars, 'national_calendars' => self::$nationalCalendars ] = self::$calendarIndex;
@@ -235,7 +236,7 @@ class CalendarSelect
      *
      * @return string The HTML for the select element.
      */
-    public function getSelect($options)
+    public function getSelect($options = [])
     {
         $defaultOptions = [
             "class"   => "calendarSelect",
@@ -248,5 +249,15 @@ class CalendarSelect
         $optionsHtml = $this->getOptions($options['options']);
         return ($options['label'] ? "<label for=\"{$options['id']}\">{$options['labelStr']}</label>" : '')
             . "<select id=\"{$options['id']}\" class=\"{$options['class']}\">{$optionsHtml}</select>";
+    }
+
+    public function getMetadataUrl()
+    {
+        return $this->metadataUrl;
+    }
+
+    public function getLocale()
+    {
+        return $this->locale;
     }
 }
