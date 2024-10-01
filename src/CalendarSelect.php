@@ -70,7 +70,7 @@ class CalendarSelect
     {
         $latin = ['la', 'la_VA'];
         $AllAvailableLocales = array_filter(\ResourceBundle::getLocales(''), fn ($value) => strpos($value, 'POSIX') === false);
-        return in_array($locale, $latin) || in_array($locale, $AllAvailableLocales) || in_array(strtolower($locale), $AllAvailableLocales);
+        return in_array($locale, $latin) || in_array($locale, $AllAvailableLocales);
     }
 
 
@@ -107,15 +107,14 @@ class CalendarSelect
      *
      * @param array $nationalCalendar The national calendar for which we will add a select options.
      *                                This should be an associative array with the following keys:
-     *                                - 'calendar_id': The ID for the calendar (corresponding to the English uppercase name of the country).
-     *                                - 'country_iso': The ISO 3166-1 alpha-2 code for the country.
+     *                                - 'calendar_id': The ID for the calendar (ISO 3166-1 alpha-2 code for the country).
      * @param bool $selected Whether or not the option should be selected by default.
      */
     private function addNationOption($nationalCalendar, $selected = false)
     {
         $selectedStr = $selected ? ' selected' : '';
         $optionOpenTag = "<option data-calendartype=\"nationalcalendar\" value=\"{$nationalCalendar['calendar_id']}\"{$selectedStr}>";
-        $optionContents = \Locale::getDisplayRegion('-' . $nationalCalendar['country_iso'], $this->locale);
+        $optionContents = \Locale::getDisplayRegion('-' . $nationalCalendar['calendar_id'], $this->locale);
         $optionCloseTag = "</option>";
         $optionHtml = "{$optionOpenTag}{$optionContents}{$optionCloseTag}";
         array_push($this->nationOptions, $optionHtml);
@@ -150,8 +149,7 @@ class CalendarSelect
      *                                  - 'diocese': The name of the diocese.
      * @param array $national_calendars An array of associative arrays, each representing a national calendar.
      *                                  Each associative array should have the following keys:
-     *                                  - 'calendar_id': The ID for the calendar (corresponding to the English uppercase name of the country).
-     *                                  - 'country_iso': The ISO 3166-1 alpha-2 code for the country.
+     *                                  - 'calendar_id': The ID for the calendar (ISO 3166-1 alpha-2 code for the country).
      */
     private function buildAllOptions()
     {
@@ -166,15 +164,15 @@ class CalendarSelect
             $this->addDioceseOption($diocesanCalendar);
         }
         usort(self::$nationalCalendars, fn($a, $b) => $col->compare(
-            \Locale::getDisplayRegion("-" . $a['country_iso'], $this->locale),
-            \Locale::getDisplayRegion("-" . $b['country_iso'], $this->locale)
+            \Locale::getDisplayRegion("-" . $a['calendar_id'], $this->locale),
+            \Locale::getDisplayRegion("-" . $b['calendar_id'], $this->locale)
         ));
         foreach (self::$nationalCalendars as $nationalCalendar) {
             if (!$this->hasNationalCalendarWithDioceses($nationalCalendar['calendar_id'])) {
                 // This is the first time we call CalendarSelect::addNationOption().
                 // This will ensure that the VATICAN (or any other nation without any diocese) will be added as the first option(s).
                 // We also ensure that the VATICAN is always the default selected option
-                if ('VATICAN' === $nationalCalendar['calendar_id']) {
+                if ('VA' === $nationalCalendar['calendar_id']) {
                     $this->addNationOption($nationalCalendar, true);
                 } else {
                     $this->addNationOption($nationalCalendar);
@@ -185,12 +183,12 @@ class CalendarSelect
         // now we can add the options for the nations in the #calendarNationsWithDiocese list
         // that is to say, nations that have dioceses
         usort($this->nationalCalendarsWithDioceses, fn($a, $b) => $col->compare(
-            \Locale::getDisplayRegion('-' . $a['country_iso'], $this->locale),
-            \Locale::getDisplayRegion('-' . $b['country_iso'], $this->locale)
+            \Locale::getDisplayRegion('-' . $a['calendar_id'], $this->locale),
+            \Locale::getDisplayRegion('-' . $b['calendar_id'], $this->locale)
         ));
         foreach ($this->nationalCalendarsWithDioceses as $nationalCalendar) {
             $this->addNationOption($nationalCalendar);
-            $optgroupLabel = \Locale::getDisplayRegion("-" . $nationalCalendar['country_iso'], $this->locale);
+            $optgroupLabel = \Locale::getDisplayRegion("-" . $nationalCalendar['calendar_id'], $this->locale);
             $optgroupOpenTag = "<optgroup label=\"{$optgroupLabel}\">";
             $optgroupContents = implode('', $this->dioceseOptions[$nationalCalendar['calendar_id']]);
             $optgroupCloseTag = "</optgroup>";
@@ -259,5 +257,12 @@ class CalendarSelect
     public function getLocale()
     {
         return $this->locale;
+    }
+
+    public static function postInstall(): void
+    {
+        printf("\t\033[4m\033[1;44mCatholic Liturgical Calendar components\033[0m\n");
+        printf("\t\033[0;33mAd Majorem Dei Gloriam\033[0m\n");
+        printf("\t\033[0;36mOremus pro Pontifice nostro Francisco Dominus\n\tconservet eum et vivificet eum et beatum faciat eum in terra\n\tet non tradat eum in animam inimicorum ejus\033[0m\n");
     }
 }
