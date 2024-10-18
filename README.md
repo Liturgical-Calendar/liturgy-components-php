@@ -3,7 +3,7 @@ A collection of reusable frontend components, that work with the Liturgical Cale
 (currently hosted at https://litcal.johnromanodorazio.com/api/dev/).
 
 ## Installing the package
-Installing the package in your project is as simple as `composer install liturgical-calendar/components`.
+Installing the package in your project is as simple as `composer install liturgical-calendar/components --no-dev`.
 
 Include in your project with `include_once 'vendor/autoload.php';` (adjust the path to vendor/autoload.php accordingly).
 
@@ -19,12 +19,12 @@ with the following keys:
 
 To produce the `<select>` element, call the `->getSelect()` method on the `CalendarSelect` instance.
 You may optionally pass in an array of options that can have the following keys:
-  - `class`: The class or classes to apply to the select element.
-  - `id`:    The id to apply to the select element.
+  - `class`: The class or classes to apply to the select element, default `calendarSelect`.
+  - `id`:    The id to apply to the select element, default `calendarSelect`.
   - `options`: The type of select options to return.  Valid values are
-               `'nations'`, `'diocesesGrouped'`, or `'all'`.
-  - `label`: A boolean indicating whether to include a label element or not.
-  - `labelStr`: The string to use for the label element.
+               `'nations'`, `'diocesesGrouped'`, or `'all'`, default `all`.
+  - `label`: A boolean indicating whether to include a label element or not, default `false`.
+  - `labelStr`: The string to use for the label element, default `"Select a calendar"`.
 
 Example:
 ```php
@@ -43,3 +43,14 @@ echo $CalendarSelect->getSelect([
                         'labelStr' => _("Select calendar")
                     ]);
 ```
+
+## Tests
+The package includes a few unit tests to ensure that the component is working as expected.
+In order to run the tests, install the package with the dev dependencies:
+`composer install liturgical-calendar/components`.
+
+Then run the `composer test` script, which calls the included PHPUnit package to run the tests in the `tests` folder.
+
+To run a single test class or a single method within a class, use the `composer test-filter` script
+followed by the desired `Class` or `Class::method`, e.g.
+`composer test-filter CalendarSelectTest::testIsValidLocale`.

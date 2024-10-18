@@ -5,9 +5,9 @@ namespace LiturgicalCalendar\Components;
 class CalendarSelect
 {
     private const METADATA_URL = 'https://litcal.johnromanodorazio.com/api/dev/calendars';
+    private static ?array $calendarIndex         = null;
     private static array $nationalCalendars      = [];
     private static array $diocesanCalendars      = [];
-    private static ?array $calendarIndex         = null;
     private array $nationalCalendarsWithDioceses = [];
     private array $nationOptions                 = [];
     private array $dioceseOptions                = [];
@@ -42,6 +42,7 @@ class CalendarSelect
         $this->locale = $options['locale'] ?? 'en';
 
         $this->metadataUrl = $options['url'] ?? self::METADATA_URL;
+        // If we haven't cached the metadata yet, or the request has changed, fetch it from the API
         if ($this->metadataUrl !== self::METADATA_URL || self::$calendarIndex === null) {
             $metadataRaw = file_get_contents($this->metadataUrl);
             if ($metadataRaw === false) {
@@ -66,6 +67,17 @@ class CalendarSelect
         $this->buildAllOptions();
     }
 
+    /**
+     * Returns true if the given locale is valid, and false otherwise.
+     *
+     * A locale is valid if it is either 'la' or 'la_VA' (for Latin) or
+     * if it is a valid PHP locale string according to the {@link https://www.php.net/manual/en/class.locale.php Locale class}.
+     * Note that in order for a locale to be considered valid, it must be installed in the current server environment.
+     *
+     * @param string $locale The locale to check.
+     *
+     * @return bool
+     */
     public static function isValidLocale($locale)
     {
         $latin = ['la', 'la_VA'];
@@ -204,7 +216,7 @@ class CalendarSelect
      *
      * @return string The HTML for the select options.
      */
-    public function getOptions($key)
+    public function getOptions(string $key): string
     {
         if ($key === 'nations') {
             return implode('', $this->nationOptions);
@@ -234,31 +246,52 @@ class CalendarSelect
      *
      * @return string The HTML for the select element.
      */
-    public function getSelect($options = [])
+    public function getSelect(array $options = []): string
     {
         $defaultOptions = [
-            "class"   => "calendarSelect",
-            "id"      => "calendarSelect",
-            "options" => 'all',
-            "label"   => false,
-            "labelStr" => 'Select a calendar'
+            'class'    => 'calendarSelect',
+            'id'       => 'calendarSelect',
+            'options'  => 'all',
+            'label'    => false,
+            'labelStr' => 'Select a calendar'
         ];
+        foreach ($options as $key => $value) {
+            if (in_array($key, ['class', 'id', 'options', 'labelStr'])) {
+                $options[$key] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+            } elseif ($key === 'label') {
+                $options[$key] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+            }
+        }
         $options = array_merge($defaultOptions, $options);
         $optionsHtml = $this->getOptions($options['options']);
         return ($options['label'] ? "<label for=\"{$options['id']}\">{$options['labelStr']}</label>" : '')
             . "<select id=\"{$options['id']}\" class=\"{$options['class']}\">{$optionsHtml}</select>";
     }
 
+    /**
+     * Retrieves the metadata URL used by the calendar select instance.
+     *
+     * @return string The metadata URL.
+     */
     public function getMetadataUrl()
     {
         return $this->metadataUrl;
     }
 
+    /**
+     * Returns the locale used by the calendar select instance.
+     *
+     * @return string The locale, a valid PHP locale string such as 'en' or 'es' or 'en_US' or 'es_ES'.
+     */
     public function getLocale()
     {
         return $this->locale;
     }
 
+    /**
+     * This function is called after the package has been installed.
+     * It will print some text to the console.
+     */
     public static function postInstall(): void
     {
         printf("\t\033[4m\033[1;44mCatholic Liturgical Calendar components\033[0m\n");

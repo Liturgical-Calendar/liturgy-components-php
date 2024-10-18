@@ -43,7 +43,7 @@ class CalendarSelectTest extends TestCase
     {
         $options = [
             'class' => 'form-select',
-            'id' => 'mySelect'
+            'id'    => 'mySelect'
         ];
         $calendarSelect = new CalendarSelect();
         $selectHtml = $calendarSelect->getSelect($options);

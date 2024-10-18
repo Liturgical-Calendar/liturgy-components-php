@@ -28,6 +28,7 @@
         "post-update-cmd": [
             "LiturgicalCalendar\\Components\\CalendarSelect::postInstall"
         ],
-        "test": "phpunit tests"
+        "test": "phpunit tests",
+        "test-filter": "phpunit tests --filter"
     }
 }
