@@ -152,7 +152,7 @@ class ApiOptions
             $baseLocale
         ];
         $setLocale = setlocale(LC_ALL, $localeArray);
-        bindtextdomain("litcal", dirname(__FILE__) . "/ApiOptions/i18n");
+        bindtextdomain("litcal", basename(dirname(__FILE__)) . "/ApiOptions/i18n");
         textdomain("litcal");
     }
 
