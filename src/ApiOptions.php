@@ -39,6 +39,9 @@ class ApiOptions
     public YearType $yearTypeInput;
     public Locale $localeInput;
     public AcceptHeader $acceptHeaderInput;
+    public string $currentSetLocale = '';
+    public string $expectedTextDomainPath = '';
+    public string $currentTextDomainPath = '';
 
     /**
      * Constructor for ApiOptions class.
@@ -151,8 +154,15 @@ class ApiOptions
             $baseLocale . '.UTF-8',
             $baseLocale
         ];
-        $setLocale = setlocale(LC_ALL, $localeArray);
-        bindtextdomain("litcal", basename(dirname(__FILE__)) . "/ApiOptions/i18n");
+        $this->currentSetLocale = setlocale(LC_ALL, $localeArray);
+        //tried to fix ApiOptionsTest by putting the environment variable here, but didn't change anything...
+        //translations are working on the frontend but not in the tests
+        //putenv("LC_ALL=" . $this->currentSetLocale);
+        $this->expectedTextDomainPath = __DIR__ . "/ApiOptions/i18n";
+        $this->currentTextDomainPath = bindtextdomain("litcal", $this->expectedTextDomainPath);
+        if ($this->currentTextDomainPath !== $this->expectedTextDomainPath) {
+            die("Failed to bind text domain, expected path: {$this->expectedTextDomainPath}, current path: {$this->currentTextDomainPath}");
+        }
         textdomain("litcal");
     }
 
