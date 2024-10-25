@@ -106,6 +106,7 @@ class Locale extends ApiOptions\Input
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
+
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>locale{$labelAfter}</label>";
         $html .= "<select{$id}{$name}{$inputClass}{$data}{$disabled}>{$localesHtml}</select>";

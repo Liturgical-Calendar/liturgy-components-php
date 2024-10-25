@@ -77,6 +77,7 @@ final class EternalHighPriest extends Input
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
         $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
+
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>eternal_high_priest{$labelAfter}</label>";
         $html .= $input;

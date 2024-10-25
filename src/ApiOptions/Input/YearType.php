@@ -69,12 +69,11 @@ final class YearType extends Input
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
-        $input = <<<ELEMENT
-<select{$id}{$name}{$inputClass}{$data}{$disabled}>
-    <option value="LITURGICAL">LITURGICAL</option>
-    <option value="CIVIL">CIVIL</option>
-</select>
-ELEMENT;
+        $optionsArray = [ 'LITURGICAL', 'CIVIL' ];
+        $options = array_map(fn (string $option) => "<option value=\"{$option}\"" . ($this->selectedValue === $option ? ' selected' : '') . ">{$option}</option>", $optionsArray);
+        $optionsHtml = implode('', $options);
+        $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
+
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>year_type{$labelAfter}</label>";
         $html .= $input;
