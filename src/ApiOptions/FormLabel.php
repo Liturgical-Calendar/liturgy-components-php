@@ -11,6 +11,17 @@ class FormLabel
     private string $class   = '';
     private string $id      = '';
 
+    /**
+     * @param string|array|null $options
+     *
+     * $options can be a string or an array.
+     * If $options is a string, it will be used as the value of the 'as' property.
+     * If $options is an array, the following keys can be used to set the associated properties:
+     * - 'as': The HTML element to use to wrap the label text.
+     * - 'text': The text to display within the label.
+     * - 'class': The class to apply to the label element.
+     * - 'id': The id to apply to the label element.
+     */
     public function __construct(string|array|null $options = null)
     {
         if (is_string($options)) {
@@ -36,6 +47,17 @@ class FormLabel
         }
     }
 
+    /**
+     * Sets the HTML element to use for the form label.
+     *
+     * The element must be one of the following: 'label', 'legend', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', or 'h6'. If the element is not one of these, an exception is thrown.
+     *
+     * @param string $element The HTML element to use for the form label.
+     *
+     * @return FormLabel The FormLabel instance.
+     *
+     * @throws \Exception If the element is not one of the valid elements.
+     */
     public function as(string $element)
     {
         $element = htmlspecialchars($element, ENT_QUOTES, 'UTF-8');
@@ -46,6 +68,13 @@ class FormLabel
         return $this;
     }
 
+    /**
+     * Sets the class attribute of the form label element.
+     *
+     * @param string $class The value of the class attribute.
+     *
+     * @return $this
+     */
     public function class(string $class)
     {
         $class = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
@@ -53,6 +82,13 @@ class FormLabel
         return $this;
     }
 
+    /**
+     * Sets the id attribute of the form label element.
+     *
+     * @param string $id The value of the id attribute of the form label element.
+     *
+     * @return $this
+     */
     public function id(string $id)
     {
         $id = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
@@ -60,9 +96,19 @@ class FormLabel
         return $this;
     }
 
+    /**
+     * Sets the text content of the form label element.
+     *
+     * This method removes any `<?php` code blocks and any `<script>` tags from the provided text string.
+     *
+     * @param string $text The text content of the form label element.
+     *
+     * @return $this
+     */
     public function text(string $text)
     {
-        $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        $text = preg_replace('/<\?php.*?\?>/s', '', $text);
+        $text = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
         $this->text = $text;
         return $this;
     }
