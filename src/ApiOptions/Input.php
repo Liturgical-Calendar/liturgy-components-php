@@ -9,6 +9,7 @@ abstract class Input
     protected static ?string $globalLabelClass   = null;
     protected static ?string $globalInputClass   = null;
     protected string $id            = '';
+    protected string $name          = '';
     protected ?string $wrapper      = null;
     protected ?string $wrapperClass = null;
     protected ?string $inputClass   = null;
@@ -74,8 +75,13 @@ abstract class Input
      */
     public function id(string $id): Input
     {
-        $id = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
-        $this->id = " id=\"{$id}\"";
+        $this->id = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
+        return $this;
+    }
+
+    public function name(string $name): Input
+    {
+        $this->name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
         return $this;
     }
 

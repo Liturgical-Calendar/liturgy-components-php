@@ -11,6 +11,11 @@ final class EternalHighPriest extends Input
     ];
 
 
+    public function __construct()
+    {
+        $this->name('eternal_high_priest');
+    }
+
     /**
      * Generates and returns an HTML string for a select element.
      *
@@ -60,15 +65,18 @@ final class EternalHighPriest extends Input
         $data = $this->getData();
         $true = dgettext('litcompphp', 'true');
         $false = dgettext('litcompphp', 'false');
+        $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
+        $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
+        $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
         $input = <<<ELEMENT
-<select{$this->id}{$inputClass}{$data}{$disabled}>
+<select{$id}{$name}{$inputClass}{$data}{$disabled}>
     <option value="">--</option>
     <option value="true">{$true}</option>
     <option value="false">{$false}</option>
 </select>
 ELEMENT;
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}>eternal_high_priest</label>";
+        $html .= "<label{$labelClass}{$for}>eternal_high_priest</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;

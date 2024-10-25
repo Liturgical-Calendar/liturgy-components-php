@@ -13,6 +13,10 @@ final class Epiphany extends Input
         'param' => 'epiphany'
     ];
 
+    public function __construct()
+    {
+        $this->name('epiphany');
+    }
 
     /**
      * Generates and returns an HTML string for a select element.
@@ -80,15 +84,18 @@ final class Epiphany extends Input
             $Jan6 = $formatter->format($date);
         }
         $SundayJan2Jan8 = dgettext('litcompphp', 'Sunday between January 2nd and 8th');
+        $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
+        $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
+        $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
         $input = <<<ELEMENT
-<select{$this->id}{$inputClass}{$data}{$disabled}>
+<select{$id}{$name}{$inputClass}{$data}{$disabled}>
     <option value="">--</option>
     <option value="JAN6">{$Jan6}</option>
     <option value="SUNDAY_JAN2_JAN8">{$SundayJan2Jan8}</option>
 </select>
 ELEMENT;
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}>epiphany</label>";
+        $html .= "<label{$labelClass}{$for}>epiphany</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;

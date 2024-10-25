@@ -13,6 +13,11 @@ final class CorpusChristi extends Input
         'param' => 'corpus_christi'
     ];
 
+    public function __construct()
+    {
+        $this->name('corpus_christi');
+    }
+
 
     /**
      * Generates and returns an HTML string for the Corpus Christi select element.
@@ -75,15 +80,18 @@ final class CorpusChristi extends Input
         $Thursday = $formatter->format($nextThursday);
         $nextSunday = $today->modify('next Sunday');
         $Sunday = $formatter->format($nextSunday);
+        $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
+        $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
+        $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
         $input = <<<ELEMENT
-<select{$this->id}{$inputClass}{$data}{$disabled}>
+<select{$id}{$name}{$inputClass}{$data}{$disabled}>
     <option value="">--</option>
     <option value="THURSDAY">{$Thursday}</option>
     <option value="SUNDAY">{$Sunday}</option>
 </select>
 ELEMENT;
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}>corpus_christi</label>";
+        $html .= "<label{$labelClass}{$for}>corpus_christi</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;

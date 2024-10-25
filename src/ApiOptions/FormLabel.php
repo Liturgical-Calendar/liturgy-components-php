@@ -10,6 +10,7 @@ class FormLabel
     private string $text    = '';
     private string $class   = '';
     private string $id      = '';
+    private string $for     = '';
 
     /**
      * @param string|array|null $options
@@ -44,6 +45,10 @@ class FormLabel
             if (array_key_exists('id', $options)) {
                 $this->id($options['id'] ?? '');
             }
+
+            if (array_key_exists('for', $options)) {
+                $this->for($options['for'] ?? '');
+            }
         }
     }
 
@@ -58,7 +63,7 @@ class FormLabel
      *
      * @throws \Exception If the element is not one of the valid elements.
      */
-    public function as(string $element)
+    public function as(string $element): self
     {
         $element = htmlspecialchars($element, ENT_QUOTES, 'UTF-8');
         if (false === in_array($element, ['label', 'legend', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])) {
@@ -75,7 +80,7 @@ class FormLabel
      *
      * @return $this
      */
-    public function class(string $class)
+    public function class(string $class): self
     {
         $class = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
         $this->class = " class=\"{$class}\"";
@@ -89,7 +94,7 @@ class FormLabel
      *
      * @return $this
      */
-    public function id(string $id)
+    public function id(string $id): self
     {
         $id = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
         $this->id = " id=\"{$id}\"";
@@ -105,11 +110,18 @@ class FormLabel
      *
      * @return $this
      */
-    public function text(string $text)
+    public function text(string $text): self
     {
         $text = preg_replace('/<\?php.*?\?>/s', '', $text);
         $text = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
         $this->text = $text;
+        return $this;
+    }
+
+    public function for(string $for): self
+    {
+        $for = htmlspecialchars($for, ENT_QUOTES, 'UTF-8');
+        $this->for = " for=\"{$for}\"";
         return $this;
     }
 
@@ -131,6 +143,6 @@ class FormLabel
         if (false === is_a($callingClass, ApiOptions::class, false)) {
             throw new \Exception("This method can only be called by an ApiOptions class instance");
         }
-        return "<{$this->as}{$this->class}{$this->id}>{$this->text}</{$this->as}>";
+        return "<{$this->as}{$this->class}{$this->id}{$this->for}>{$this->text}</{$this->as}>";
     }
 }

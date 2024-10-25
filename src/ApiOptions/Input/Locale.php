@@ -57,6 +57,8 @@ class Locale extends ApiOptions\Input
             }, []);
             asort(self::$apiLocalesDisplay[ApiOptions::$locale]);
         }
+
+        $this->name('locale');
     }
 
     /**
@@ -120,9 +122,12 @@ class Locale extends ApiOptions\Input
         $data = $this->getData();
         $localesOptions = array_map(fn(string $k, string $v) => "<option value=\"{$k}\"" . ($k === 'la' ? ' selected' : '') . ">{$k} ({$v})</option>", array_keys(self::$apiLocalesDisplay[ApiOptions::$locale]), array_values(self::$apiLocalesDisplay[ApiOptions::$locale]));
         $localesHtml = implode("\n", $localesOptions);
+        $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
+        $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
+        $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}>locale{$labelAfter}</label>";
-        $html .= "<select{$this->id}{$inputClass}{$data}{$disabled}>{$localesHtml}</select>";
+        $html .= "<label{$labelClass}{$for}>locale{$labelAfter}</label>";
+        $html .= "<select{$id}{$name}{$inputClass}{$data}{$disabled}>{$localesHtml}</select>";
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
     }

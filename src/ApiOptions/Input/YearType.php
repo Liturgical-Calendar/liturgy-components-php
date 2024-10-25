@@ -10,6 +10,10 @@ final class YearType extends Input
         'param' => 'year_type'
     ];
 
+    public function __construct()
+    {
+        $this->name('year_type');
+    }
 
     /**
      * Generates and returns an HTML string for the year type select element.
@@ -60,14 +64,17 @@ final class YearType extends Input
         $disabled = $this->disabled ? ' disabled' : '';
 
         $data = $this->getData();
+        $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
+        $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
+        $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
         $input = <<<ELEMENT
-<select{$this->id}{$inputClass}{$data}{$disabled}>
+<select{$id}{$name}{$inputClass}{$data}{$disabled}>
     <option value="LITURGICAL">LITURGICAL</option>
     <option value="CIVIL">CIVIL</option>
 </select>
 ELEMENT;
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}>year_type</label>";
+        $html .= "<label{$labelClass}{$for}>year_type</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;

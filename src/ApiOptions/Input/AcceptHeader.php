@@ -14,6 +14,11 @@ final class AcceptHeader extends Input
     private bool $hidden               = false;
     private ?string $labelAfter        = null;
 
+    public function __construct()
+    {
+        $this->name('return_type');
+    }
+
     /**
      * @param bool $as_return_type_param Set to true to include the accept header as a query parameter,
      *     or false to not include it.  The default is true.
@@ -127,9 +132,12 @@ OPTIONS;
         $labelText = $this->as_return_type_param ? 'return_type' : 'accept header';
 
         $data = $this->getData();
-        $input = "<select{$this->id}{$inputClass}{$data}{$disabled}>$inputContents</select>";
+        $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
+        $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
+        $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
+        $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$inputContents</select>";
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}>{$labelText}{$labelAfter}</label>";
+        $html .= "<label{$labelClass}{$for}>{$labelText}{$labelAfter}</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
