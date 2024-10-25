@@ -11,8 +11,8 @@ final class AcceptHeader extends Input
     ];
 
     private bool $as_return_type_param = false;
-
-    private ?string $labelAfter = null;
+    private bool $hidden               = false;
+    private ?string $labelAfter        = null;
 
     /**
      * @param bool $as_return_type_param Set to true to include the accept header as a query parameter,
@@ -24,6 +24,27 @@ final class AcceptHeader extends Input
     {
         $this->as_return_type_param = $as_return_type_param;
         return $this;
+    }
+
+    /**
+     * Sets the hidden property to true.
+     *
+     * @return self The instance of the class, for chaining.
+     */
+    public function hide(): self
+    {
+        $this->hidden = true;
+        return $this;
+    }
+
+    /**
+     * Checks if the accept header input field is hidden.
+     *
+     * @return bool true if the accept header input field is hidden, false otherwise.
+     */
+    public function isHidden(): bool
+    {
+        return $this->hidden;
     }
 
     /**

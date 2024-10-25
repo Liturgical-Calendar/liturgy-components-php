@@ -201,7 +201,7 @@ class ApiOptions
     private function getAllPathsOptions(): string
     {
         return $this->yearTypeInput->get()
-            . $this->acceptHeaderInput->get();
+            . ($this->acceptHeaderInput->isHidden() ? '' : $this->acceptHeaderInput->get());
     }
 
     /**
