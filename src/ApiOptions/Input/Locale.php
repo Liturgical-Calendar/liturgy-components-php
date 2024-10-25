@@ -59,6 +59,7 @@ class Locale extends ApiOptions\Input
         }
 
         $this->name('locale');
+        $this->id('locale');
     }
 
     /**

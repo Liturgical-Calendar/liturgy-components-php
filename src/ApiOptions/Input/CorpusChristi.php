@@ -16,6 +16,7 @@ final class CorpusChristi extends Input
     public function __construct()
     {
         $this->name('corpus_christi');
+        $this->id('corpus_christi');
     }
 
 

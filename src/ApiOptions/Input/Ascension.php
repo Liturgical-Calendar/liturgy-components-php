@@ -16,6 +16,7 @@ final class Ascension extends Input
     public function __construct()
     {
         $this->name('ascension');
+        $this->id('ascension');
     }
 
     /**

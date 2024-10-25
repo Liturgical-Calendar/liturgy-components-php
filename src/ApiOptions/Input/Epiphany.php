@@ -16,6 +16,7 @@ final class Epiphany extends Input
     public function __construct()
     {
         $this->name('epiphany');
+        $this->id('epiphany');
     }
 
     /**

@@ -14,6 +14,7 @@ final class EternalHighPriest extends Input
     public function __construct()
     {
         $this->name('eternal_high_priest');
+        $this->id('eternal_high_priest');
     }
 
     /**

@@ -13,6 +13,7 @@ final class YearType extends Input
     public function __construct()
     {
         $this->name('year_type');
+        $this->id('year_type');
     }
 
     /**

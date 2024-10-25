@@ -17,6 +17,7 @@ final class AcceptHeader extends Input
     public function __construct()
     {
         $this->name('return_type');
+        $this->id('return_type');
     }
 
     /**
