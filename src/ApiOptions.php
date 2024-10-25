@@ -168,11 +168,11 @@ class ApiOptions
         //translations are working on the frontend but not in the tests
         //putenv("LC_ALL=" . $this->currentSetLocale);
         $this->expectedTextDomainPath = __DIR__ . "/ApiOptions/i18n";
-        $this->currentTextDomainPath = bindtextdomain("litcal", $this->expectedTextDomainPath);
+        $this->currentTextDomainPath = bindtextdomain("litcompphp", $this->expectedTextDomainPath);
         if ($this->currentTextDomainPath !== $this->expectedTextDomainPath) {
             die("Failed to bind text domain, expected path: {$this->expectedTextDomainPath}, current path: {$this->currentTextDomainPath}");
         }
-        textdomain("litcal");
+        textdomain("litcompphp");
     }
 
     /**
