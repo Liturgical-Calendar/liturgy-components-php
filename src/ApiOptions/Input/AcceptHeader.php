@@ -91,7 +91,7 @@ final class AcceptHeader extends Input
         $returnTypeParamContents = <<<OPTIONS
 <option value="JSON">JSON</option>
 <option value="XML">XML</option>
-<option value="YAML">YAML</option>
+<option value="YML">YML</option>
 <option value="ICS">ICS</option>
 OPTIONS;
         $acceptHeaderContents = <<<OPTIONS
