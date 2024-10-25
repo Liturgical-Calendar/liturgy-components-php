@@ -45,6 +45,7 @@ final class YearType extends Input
             : (self::$globalLabelClass !== null
                 ? ' class="' . self::$globalLabelClass . '"'
                 : '');
+        $labelAfter = $this->labelAfter !== null ? ' ' . $this->labelAfter : '';
 
         $inputClass = $this->inputClass !== null
             ? " class=\"{$this->inputClass}\""
@@ -75,7 +76,7 @@ final class YearType extends Input
 </select>
 ELEMENT;
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}{$for}>year_type</label>";
+        $html .= "<label{$labelClass}{$for}>year_type{$labelAfter}</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;

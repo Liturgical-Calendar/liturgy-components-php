@@ -48,6 +48,7 @@ final class CorpusChristi extends Input
             : (self::$globalLabelClass !== null
                 ? ' class="' . self::$globalLabelClass . '"'
                 : '');
+        $labelAfter = $this->labelAfter !== null ? ' ' . $this->labelAfter : '';
 
         $inputClass = $this->inputClass !== null
             ? " class=\"{$this->inputClass}\""
@@ -92,7 +93,7 @@ final class CorpusChristi extends Input
 </select>
 ELEMENT;
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}{$for}>corpus_christi</label>";
+        $html .= "<label{$labelClass}{$for}>corpus_christi{$labelAfter}</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;

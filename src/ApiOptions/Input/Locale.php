@@ -13,8 +13,6 @@ class Locale extends ApiOptions\Input
     private static array $apiLocales        = [];
     private static array $apiLocalesDisplay = [];
 
-    private ?string $labelAfter = null;
-
     /**
      * Fetches the list of locales from the Liturgical Calendar API and stores
      * them in the self::$apiLocales static property.
@@ -60,24 +58,6 @@ class Locale extends ApiOptions\Input
 
         $this->name('locale');
         $this->id('locale');
-    }
-
-    /**
-     * Appends a string to the label after the label text.
-     *
-     * Note that this method will strip any PHP tags and any script tags from the
-     * input string to prevent any potential security issues.
-     *
-     * @param string $text The string to append to the label after the label text.
-     *
-     * @return self The instance of the class, for chaining.
-     */
-    public function labelAfter(string $text): self
-    {
-        $text = preg_replace('/<\?php.*?\?>/s', '', $text);
-        $text = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
-        $this->labelAfter = $text;
-        return $this;
     }
 
     /**

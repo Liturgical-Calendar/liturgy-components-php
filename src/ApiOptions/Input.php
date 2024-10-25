@@ -14,6 +14,7 @@ abstract class Input
     protected ?string $wrapperClass = null;
     protected ?string $inputClass   = null;
     protected ?string $labelClass   = null;
+    protected ?string $labelAfter   = null;
     protected array $data           = [];
     protected bool $disabled        = false;
 
@@ -114,6 +115,24 @@ abstract class Input
     {
         $labelClass = htmlspecialchars($labelClass, ENT_QUOTES, 'UTF-8');
         $this->labelClass = $labelClass;
+        return $this;
+    }
+
+    /**
+     * Appends a string to the label after the label text.
+     *
+     * Note that this method will strip any PHP tags and any script tags from the
+     * input string to prevent any potential security issues.
+     *
+     * @param string $text The string to append to the label after the label text.
+     *
+     * @return $this The instance of the class, for chaining.
+     */
+    public function labelAfter(string $text): Input
+    {
+        $text = preg_replace('/<\?php.*?\?>/s', '', $text);
+        $text = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
+        $this->labelAfter = $text;
         return $this;
     }
 

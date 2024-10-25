@@ -48,6 +48,7 @@ final class Epiphany extends Input
             : (self::$globalLabelClass !== null
                 ? ' class="' . self::$globalLabelClass . '"'
                 : '');
+        $labelAfter = $this->labelAfter !== null ? ' ' . $this->labelAfter : '';
 
         $inputClass = $this->inputClass !== null
             ? " class=\"{$this->inputClass}\""
@@ -96,7 +97,7 @@ final class Epiphany extends Input
 </select>
 ELEMENT;
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}{$for}>epiphany</label>";
+        $html .= "<label{$labelClass}{$for}>epiphany{$labelAfter}</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;

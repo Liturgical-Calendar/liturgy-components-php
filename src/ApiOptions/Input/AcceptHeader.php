@@ -12,7 +12,6 @@ final class AcceptHeader extends Input
 
     private bool $as_return_type_param = false;
     private bool $hidden               = false;
-    private ?string $labelAfter        = null;
 
     public function __construct()
     {
@@ -51,24 +50,6 @@ final class AcceptHeader extends Input
     public function isHidden(): bool
     {
         return $this->hidden;
-    }
-
-    /**
-     * Appends a string to the label after the label text.
-     *
-     * Note that this method will strip any PHP tags and any script tags from the
-     * input string to prevent any potential security issues.
-     *
-     * @param string $text The string to append to the label after the label text.
-     *
-     * @return self The instance of the class, for chaining.
-     */
-    public function labelAfter(string $text): self
-    {
-        $text = preg_replace('/<\?php.*?\?>/s', '', $text);
-        $text = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
-        $this->labelAfter = $text;
-        return $this;
     }
 
     /**

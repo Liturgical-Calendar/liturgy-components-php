@@ -44,6 +44,7 @@ final class EternalHighPriest extends Input
             : (self::$globalLabelClass !== null
                 ? ' class="' . self::$globalLabelClass . '"'
                 : '');
+        $labelAfter = $this->labelAfter !== null ? ' ' . $this->labelAfter : '';
 
         $inputClass = $this->inputClass !== null
             ? " class=\"{$this->inputClass}\""
@@ -77,7 +78,7 @@ final class EternalHighPriest extends Input
 </select>
 ELEMENT;
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}{$for}>eternal_high_priest</label>";
+        $html .= "<label{$labelClass}{$for}>eternal_high_priest{$labelAfter}</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
