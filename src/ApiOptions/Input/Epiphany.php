@@ -86,16 +86,18 @@ final class Epiphany extends Input
             $Jan6 = $formatter->format($date);
         }
         $SundayJan2Jan8 = dgettext('litcompphp', 'Sunday between January 2nd and 8th');
+        $optionsArray = [
+            "" => "--",
+            "JAN6" => $Jan6,
+            "SUNDAY_JAN2_JAN8" => $SundayJan2Jan8
+        ];
+        $options = array_map(fn (string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $v ? ' selected' : '') . ">{$v}</option>", array_keys($optionsArray), array_values($optionsArray));
+        $optionsHtml = implode('', $options);
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
-        $input = <<<ELEMENT
-<select{$id}{$name}{$inputClass}{$data}{$disabled}>
-    <option value="">--</option>
-    <option value="JAN6">{$Jan6}</option>
-    <option value="SUNDAY_JAN2_JAN8">{$SundayJan2Jan8}</option>
-</select>
-ELEMENT;
+        $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
+
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>epiphany{$labelAfter}</label>";
         $html .= $input;

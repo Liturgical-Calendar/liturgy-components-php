@@ -12,6 +12,13 @@ final class AcceptHeader extends Input
 
     private bool $as_return_type_param = false;
     private bool $hidden               = false;
+    private const RETURN_TYPE_PARAM_VALS = ['JSON', 'XML', 'YML', 'ICS'];
+    private const ACCEPT_HEADER_VALS     = [
+        'application/json',
+        'application/xml',
+        'application/yaml',
+        'text/calendar'
+    ];
 
     public function __construct()
     {
@@ -98,19 +105,15 @@ final class AcceptHeader extends Input
 
         $disabled = $this->disabled ? ' disabled' : '';
 
-        $returnTypeParamContents = <<<OPTIONS
-<option value="JSON">JSON</option>
-<option value="XML">XML</option>
-<option value="YML">YML</option>
-<option value="ICS">ICS</option>
-OPTIONS;
-        $acceptHeaderContents = <<<OPTIONS
-<option value="application/json">application/json</option>
-<option value="application/xml">application/xml</option>
-<option value="application/yaml">application/yaml</option>
-<option value="text/calendar">text/calendar</option>
-OPTIONS;
-        $inputContents = $this->as_return_type_param ? $returnTypeParamContents : $acceptHeaderContents;
+        $returnTypeParamContents = array_map(
+            fn ($val) => "<option value=\"$val\"" . ($this->selectedValue === $val ? ' selected' : '') . ">$val</option>",
+            self::RETURN_TYPE_PARAM_VALS
+        );
+        $acceptHeaderContents = array_map(
+            fn ($val) => "<option value=\"$val\"" . ($this->selectedValue === $val ? ' selected' : '') . ">$val</option>",
+            self::ACCEPT_HEADER_VALS
+        );
+        $inputContents = $this->as_return_type_param ? implode('', $returnTypeParamContents) : implode('', $acceptHeaderContents);
         $labelText = $this->as_return_type_param ? 'return_type' : 'accept header';
 
         $data = $this->getData();
@@ -118,6 +121,7 @@ OPTIONS;
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
         $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$inputContents</select>";
+
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>{$labelText}{$labelAfter}</label>";
         $html .= $input;

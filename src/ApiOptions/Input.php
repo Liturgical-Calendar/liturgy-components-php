@@ -17,6 +17,7 @@ abstract class Input
     protected ?string $labelAfter   = null;
     protected array $data           = [];
     protected bool $disabled        = false;
+    protected string $selectedValue = '';
 
     /**
      * Sets a global wrapper element for all input elements created by this class.
@@ -187,9 +188,24 @@ abstract class Input
         return $this;
     }
 
+    /**
+     * Marks the input element as disabled.
+     *
+     * This method sets the `disabled` property of the input element to true,
+     * resulting in the rendered HTML input element having the `disabled` attribute.
+     * A disabled input element is not interactive and cannot be submitted.
+     *
+     * @return Input Returns the current instance to allow method chaining.
+     */
     public function disabled(): Input
     {
         $this->disabled = true;
+        return $this;
+    }
+
+    public function selectedValue(string $value): Input
+    {
+        $this->selectedValue = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
         return $this;
     }
 

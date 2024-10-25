@@ -67,16 +67,16 @@ final class EternalHighPriest extends Input
         $data = $this->getData();
         $true = dgettext('litcompphp', 'true');
         $false = dgettext('litcompphp', 'false');
+        $optionsArray = [
+            'true'  => $true,
+            'false' => $false
+        ];
+        $options = array_map(fn (string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $v ? ' selected' : '') . ">{$v}</option>", array_keys($optionsArray), array_values($optionsArray));
+        $optionsHtml = implode('', $options);
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
-        $input = <<<ELEMENT
-<select{$id}{$name}{$inputClass}{$data}{$disabled}>
-    <option value="">--</option>
-    <option value="true">{$true}</option>
-    <option value="false">{$false}</option>
-</select>
-ELEMENT;
+        $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>eternal_high_priest{$labelAfter}</label>";
         $html .= $input;

@@ -82,16 +82,18 @@ final class Ascension extends Input
         $Thursday = $formatter->format($nextThursday);
         $nextSunday = $today->modify('next Sunday');
         $Sunday = $formatter->format($nextSunday);
+        $optionsArray = [
+            "" => "--",
+            'THURSDAY' => $Thursday,
+            'SUNDAY' => $Sunday
+        ];
+        $options = array_map(fn(string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $v ? ' selected' : '') . ">{$v}</option>", array_keys($optionsArray), array_values($optionsArray));
+        $optionsHtml = implode('', $options);
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
-        $input = <<<ELEMENT
-<select{$id}{$name}{$inputClass}{$data}{$disabled}>
-    <option value="">--</option>
-    <option value="THURSDAY">{$Thursday}</option>
-    <option value="SUNDAY">{$Sunday}</option>
-</select>
-ELEMENT;
+        $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
+
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>ascension{$labelAfter}</label>";
         $html .= $input;

@@ -101,8 +101,8 @@ class Locale extends ApiOptions\Input
         $disabled = $this->disabled ? ' disabled' : '';
 
         $data = $this->getData();
-        $localesOptions = array_map(fn(string $k, string $v) => "<option value=\"{$k}\"" . ($k === 'la' ? ' selected' : '') . ">{$k} ({$v})</option>", array_keys(self::$apiLocalesDisplay[ApiOptions::$locale]), array_values(self::$apiLocalesDisplay[ApiOptions::$locale]));
-        $localesHtml = implode("\n", $localesOptions);
+        $localesOptions = array_map(fn(string $k, string $v) => "<option value=\"{$k}\"" . ($k === $this->selectedValue ? ' selected' : '') . ">{$k} ({$v})</option>", array_keys(self::$apiLocalesDisplay[ApiOptions::$locale]), array_values(self::$apiLocalesDisplay[ApiOptions::$locale]));
+        $localesHtml = implode('', $localesOptions);
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
