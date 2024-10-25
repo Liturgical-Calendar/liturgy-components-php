@@ -10,8 +10,10 @@ class Locale extends ApiOptions\Input
         'param' => 'locale'
     ];
 
-    private static array $apiLocales = [];
+    private static array $apiLocales        = [];
     private static array $apiLocalesDisplay = [];
+
+    private ?string $labelAfter = null;
 
     /**
      * Fetches the list of locales from the Liturgical Calendar API and stores
@@ -57,6 +59,23 @@ class Locale extends ApiOptions\Input
         }
     }
 
+    /**
+     * Appends a string to the label after the label text.
+     *
+     * Note that this method will strip any PHP tags and any script tags from the
+     * input string to prevent any potential security issues.
+     *
+     * @param string $text The string to append to the label after the label text.
+     *
+     * @return self The instance of the class, for chaining.
+     */
+    public function labelAfter(string $text): self
+    {
+        $text = preg_replace('/<\?php.*?\?>/s', '', $text);
+        $text = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
+        $this->labelAfter = $text;
+        return $this;
+    }
 
     /**
      * Generates and returns an HTML string for a locale select input.
@@ -78,6 +97,7 @@ class Locale extends ApiOptions\Input
             : (self::$globalLabelClass !== null
                 ? ' class="' . self::$globalLabelClass . '"'
                 : '');
+        $labelAfter = $this->labelAfter !== null ? ' ' . $this->labelAfter : '';
 
         $inputClass = $this->inputClass !== null
             ? " class=\"{$this->inputClass}\""
@@ -97,10 +117,10 @@ class Locale extends ApiOptions\Input
                 : null);
 
         $data = $this->getData();
-        $localesOptions = array_map(fn(string $k, string $v) => "<option value=\"{$k}\"" . ($k === 'la' ? ' selected' : '') . ">{$v}</option>", array_keys(self::$apiLocalesDisplay[ApiOptions::$locale]), array_values(self::$apiLocalesDisplay[ApiOptions::$locale]));
+        $localesOptions = array_map(fn(string $k, string $v) => "<option value=\"{$k}\"" . ($k === 'la' ? ' selected' : '') . ">{$k} ({$v})</option>", array_keys(self::$apiLocalesDisplay[ApiOptions::$locale]), array_values(self::$apiLocalesDisplay[ApiOptions::$locale]));
         $localesHtml = implode("\n", $localesOptions);
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}>locale</label>";
+        $html .= "<label{$labelClass}>locale{$labelAfter}</label>";
         $html .= "<select{$this->id}{$inputClass}{$data}>{$localesHtml}</select>";
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;

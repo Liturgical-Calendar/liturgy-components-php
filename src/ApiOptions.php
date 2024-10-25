@@ -26,12 +26,11 @@ use LiturgicalCalendar\Components\ApiOptions\PathType;
  */
 class ApiOptions
 {
-    public ?Submit $submit        = null;
+    public static ?string $locale = null;
     public ?FormLabel $formLabel  = null;
     public ?Wrapper $wrapper      = null;
-    public ?string $class         = null;
-    public ?string $id            = null;
-    public static ?string $locale = null;
+    public ?Submit $submit        = null;
+    public ?string $after         = null;
     public Epiphany $epiphanyInput;
     public Ascension $ascensionInput;
     public CorpusChristi $corpusChristiInput;
@@ -39,21 +38,24 @@ class ApiOptions
     public YearType $yearTypeInput;
     public Locale $localeInput;
     public AcceptHeader $acceptHeaderInput;
-    public string $currentSetLocale = '';
+    public string $currentSetLocale       = '';
     public string $expectedTextDomainPath = '';
-    public string $currentTextDomainPath = '';
+    public string $currentTextDomainPath  = '';
 
     /**
      * Constructor for ApiOptions class.
      *
      * Initializes the class properties based on the provided options array.
-     * If the 'class', 'id', 'formLabel', or 'locale' keys are present in the options array,
+     * If the 'formLabel', 'locale', 'wrapper', or 'submit' keys are present in the options array,
      * sets the corresponding property values accordingly.
      * If the 'formLabel' key is present, instantiates a new FormLabel object with the provided value.
      * If the 'locale' key is present, canonicalizes the locale value and stores it in the static $locale property.
      *
      * If the 'submit' or 'wrapper' keys are present in the options array,
      * checks the boolean value associated with them and instantiates a new Submit or Wrapper object accordingly.
+     * The 'wrapper' key can be set to 'div' or 'form' to specify whether the wrapper should be a div or form element.
+     * It can also be set to an associative array with the 'class' key to set the class attribute of the wrapper element,
+     * the 'id' key to set the id attribute of the wrapper element, and the 'as' key to set the html tag of the wrapper element.
      *
      * Prepares localization using the prepareL10n method.
      * Initializes various input objects such as Epiphany, Ascension, CorpusChristi, EternalHighPriest, YearType, Locale, and AcceptHeader.
@@ -84,6 +86,13 @@ class ApiOptions
                     case 'submit':
                         if ($value === true) {
                             $this->$key = new Submit();
+                        }
+                        break;
+                    case 'after':
+                        if (is_string($value)) {
+                            $value = preg_replace('/<\?php.*?\?>/s', '', $value);
+                            $value = preg_replace('/<script.*?>.*?<\/script>/s', '', $value);
+                            $this->$key = $value;
                         }
                         break;
                 }
@@ -196,6 +205,19 @@ class ApiOptions
     }
 
     /**
+     * Replaces any <?php ?> or <script> blocks from the given HTML,
+     * and sets the $after property to the cleaned up HTML.
+     *
+     * @param string $html The HTML to set the $after property to.
+     */
+    public function after(string $html): void
+    {
+        $html = preg_replace('/<\?php.*?\?>/s', '', $html);
+        $html = preg_replace('/<script.*?>.*?<\/script>/s', '', $html);
+        $this->after = $html;
+    }
+
+    /**
      * Generates and returns an HTML string for the options form.
      *
      * The form includes a form label, the options related to the base /calendar path,
@@ -232,6 +254,9 @@ class ApiOptions
             $html .= $this->submit->get($this);
         }
 
+        if ($this->after !== null) {
+            $html .= $this->after;
+        }
         if ($this->wrapper !== null) {
             return $this->wrapper->get($html, $this);
         }

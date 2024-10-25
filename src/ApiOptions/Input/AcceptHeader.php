@@ -10,6 +10,25 @@ final class AcceptHeader extends Input
         'param' => 'accept'
     ];
 
+    private ?string $labelAfter = null;
+
+    /**
+     * Appends a string to the label after the label text.
+     *
+     * Note that this method will strip any PHP tags and any script tags from the
+     * input string to prevent any potential security issues.
+     *
+     * @param string $text The string to append to the label after the label text.
+     *
+     * @return self The instance of the class, for chaining.
+     */
+    public function labelAfter(string $text): self
+    {
+        $text = preg_replace('/<\?php.*?\?>/s', '', $text);
+        $text = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
+        $this->labelAfter = $text;
+        return $this;
+    }
 
     /**
      * Generates and returns an HTML string for an accept header input element.
@@ -36,6 +55,7 @@ final class AcceptHeader extends Input
             : (self::$globalLabelClass !== null
                 ? ' class="' . self::$globalLabelClass . '"'
                 : '');
+        $labelAfter = $this->labelAfter !== null ? ' ' . $this->labelAfter : '';
 
         $inputClass = $this->inputClass !== null
             ? " class=\"{$this->inputClass}\""
@@ -64,7 +84,7 @@ final class AcceptHeader extends Input
 </select>
 ELEMENT;
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}>accept header</label>";
+        $html .= "<label{$labelClass}>accept header{$labelAfter}</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
