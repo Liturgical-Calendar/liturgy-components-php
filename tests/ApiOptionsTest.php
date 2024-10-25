@@ -140,7 +140,7 @@ class ApiOptionsTest extends TestCase
                         $labels[] = $option->textContent;
                     }
                     $localeOptionsValues = ["fr", "id", "it", "la", "nl", "pt", "sk", "es", "de", "hu", "vi"];
-                    $localeOptionsLabels = ["francese", "indonesiano", "italiano", "latino", "olandese", "portoghese", "slovacco", "spagnolo", "tedesco", "ungherese", "vietnamita"];
+                    $localeOptionsLabels = ["fr (francese)", "id (indonesiano)", "it (italiano)", "la (latino)", "nl (olandese)", "pt (portoghese)", "sk (slovacco)", "es (spagnolo)", "de (tedesco)", "hu (ungherese)", "vi (vietnamita)"];
                     $this->assertContainsAll($localeOptionsValues, $values);
                     $this->assertContainsAll($localeOptionsLabels, $labels);
                     $this->assertEquals('locale', $precedingSibling->textContent);
