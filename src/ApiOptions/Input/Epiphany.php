@@ -78,7 +78,7 @@ final class Epiphany extends Input
             $formatter->setPattern($patternWithoutYear);
             $Jan6 = $formatter->format($date);
         }
-        $SundayJan2Jan8 = _("Sunday between January 2nd and 8th");
+        $SundayJan2Jan8 = dgettext('litcompphp', 'Sunday between January 2nd and 8th');
         $input = <<<ELEMENT
 <select{$this->id}{$inputClass}{$data}>
     <option value="">--</option>

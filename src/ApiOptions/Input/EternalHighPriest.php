@@ -57,8 +57,8 @@ final class EternalHighPriest extends Input
                 : null);
 
         $data = $this->getData();
-        $true = _('true');
-        $false = _('false');
+        $true = dgettext('litcompphp', 'true');
+        $false = dgettext('litcompphp', 'false');
         $input = <<<ELEMENT
 <select{$this->id}{$inputClass}{$data}>
     <option value="">--</option>
