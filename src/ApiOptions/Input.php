@@ -24,8 +24,8 @@ abstract class Input
      */
     public static function setGlobalWrapper(string $wrapper)
     {
-        if (false === in_array($wrapper, ['div'])) {
-            throw new \Exception("Invalid wrapper: {$wrapper}, valid values are: div");
+        if (false === in_array($wrapper, ['div', 'td'])) {
+            throw new \Exception("Invalid wrapper: {$wrapper}, valid values are: div, td");
         }
         static::$globalWrapper = $wrapper;
     }
@@ -123,8 +123,8 @@ abstract class Input
     public function wrapper(string $wrapper): Input
     {
         $wrapper = htmlspecialchars($wrapper, ENT_QUOTES, 'UTF-8');
-        if (false === in_array($wrapper, ['div'])) {
-            throw new \Exception("Invalid wrapper: {$wrapper}, valid values are: div");
+        if (false === in_array($wrapper, ['div', 'td'])) {
+            throw new \Exception("Invalid wrapper: {$wrapper}, valid values are: div, td");
         }
         $this->wrapper = $wrapper;
         return $this;
