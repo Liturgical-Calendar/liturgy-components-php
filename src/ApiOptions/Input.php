@@ -140,7 +140,7 @@ abstract class Input
     public function wrapperClass(string $wrapperClass): Input
     {
         $wrapperClass = htmlspecialchars($wrapperClass, ENT_QUOTES, 'UTF-8');
-        $this->$wrapperClass = $wrapperClass;
+        $this->wrapperClass = $wrapperClass;
         return $this;
     }
 
