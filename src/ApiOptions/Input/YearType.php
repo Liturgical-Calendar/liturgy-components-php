@@ -57,10 +57,11 @@ final class YearType extends Input
             : (self::$globalWrapper !== null
                 ? self::$globalWrapper
                 : null);
+        $disabled = $this->disabled ? ' disabled' : '';
 
         $data = $this->getData();
         $input = <<<ELEMENT
-<select{$this->id}{$inputClass}{$data}>
+<select{$this->id}{$inputClass}{$data}{$disabled}>
     <option value="LITURGICAL">LITURGICAL</option>
     <option value="CIVIL">CIVIL</option>
 </select>

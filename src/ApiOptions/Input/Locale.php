@@ -115,13 +115,14 @@ class Locale extends ApiOptions\Input
             : (self::$globalWrapper !== null
                 ? self::$globalWrapper
                 : null);
+        $disabled = $this->disabled ? ' disabled' : '';
 
         $data = $this->getData();
         $localesOptions = array_map(fn(string $k, string $v) => "<option value=\"{$k}\"" . ($k === 'la' ? ' selected' : '') . ">{$k} ({$v})</option>", array_keys(self::$apiLocalesDisplay[ApiOptions::$locale]), array_values(self::$apiLocalesDisplay[ApiOptions::$locale]));
         $localesHtml = implode("\n", $localesOptions);
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}>locale{$labelAfter}</label>";
-        $html .= "<select{$this->id}{$inputClass}{$data}>{$localesHtml}</select>";
+        $html .= "<select{$this->id}{$inputClass}{$data}{$disabled}>{$localesHtml}</select>";
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
     }

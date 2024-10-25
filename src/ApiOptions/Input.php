@@ -8,12 +8,13 @@ abstract class Input
     protected static ?string $globalWrapperClass = null;
     protected static ?string $globalLabelClass   = null;
     protected static ?string $globalInputClass   = null;
-    protected string $id = '';
+    protected string $id            = '';
     protected ?string $wrapper      = null;
     protected ?string $wrapperClass = null;
     protected ?string $inputClass   = null;
     protected ?string $labelClass   = null;
     protected array $data           = [];
+    protected bool $disabled        = false;
 
     /**
      * Sets a global wrapper element for all input elements created by this class.
@@ -158,6 +159,12 @@ abstract class Input
     public function data(array $data): Input
     {
         $this->data = $data;
+        return $this;
+    }
+
+    public function disabled(): Input
+    {
+        $this->disabled = true;
         return $this;
     }
 

@@ -55,12 +55,13 @@ final class EternalHighPriest extends Input
             : (self::$globalWrapper !== null
                 ? self::$globalWrapper
                 : null);
+        $disabled = $this->disabled ? ' disabled' : '';
 
         $data = $this->getData();
         $true = dgettext('litcompphp', 'true');
         $false = dgettext('litcompphp', 'false');
         $input = <<<ELEMENT
-<select{$this->id}{$inputClass}{$data}>
+<select{$this->id}{$inputClass}{$data}{$disabled}>
     <option value="">--</option>
     <option value="true">{$true}</option>
     <option value="false">{$false}</option>

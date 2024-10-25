@@ -109,6 +109,8 @@ final class AcceptHeader extends Input
                 ? self::$globalWrapper
                 : null);
 
+        $disabled = $this->disabled ? ' disabled' : '';
+
         $returnTypeParamContents = <<<OPTIONS
 <option value="JSON">JSON</option>
 <option value="XML">XML</option>
@@ -125,7 +127,7 @@ OPTIONS;
         $labelText = $this->as_return_type_param ? 'return_type' : 'accept header';
 
         $data = $this->getData();
-        $input = "<select{$this->id}{$inputClass}{$data}>$inputContents</select>";
+        $input = "<select{$this->id}{$inputClass}{$data}{$disabled}>$inputContents</select>";
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}>{$labelText}{$labelAfter}</label>";
         $html .= $input;

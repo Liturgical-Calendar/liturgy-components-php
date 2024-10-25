@@ -60,6 +60,7 @@ final class Epiphany extends Input
             : (self::$globalWrapper !== null
                 ? self::$globalWrapper
                 : null);
+        $disabled = $this->disabled ? ' disabled' : '';
 
         $data = $this->getData();
         $Jan6 = '';
@@ -80,7 +81,7 @@ final class Epiphany extends Input
         }
         $SundayJan2Jan8 = dgettext('litcompphp', 'Sunday between January 2nd and 8th');
         $input = <<<ELEMENT
-<select{$this->id}{$inputClass}{$data}>
+<select{$this->id}{$inputClass}{$data}{$disabled}>
     <option value="">--</option>
     <option value="JAN6">{$Jan6}</option>
     <option value="SUNDAY_JAN2_JAN8">{$SundayJan2Jan8}</option>

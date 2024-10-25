@@ -59,6 +59,7 @@ final class CorpusChristi extends Input
             : (self::$globalWrapper !== null
                 ? self::$globalWrapper
                 : null);
+        $disabled = $this->disabled ? ' disabled' : '';
 
         $data = $this->getData();
         $today = new DateTime();
@@ -75,7 +76,7 @@ final class CorpusChristi extends Input
         $nextSunday = $today->modify('next Sunday');
         $Sunday = $formatter->format($nextSunday);
         $input = <<<ELEMENT
-<select{$this->id}{$inputClass}{$data}>
+<select{$this->id}{$inputClass}{$data}{$disabled}>
     <option value="">--</option>
     <option value="THURSDAY">{$Thursday}</option>
     <option value="SUNDAY">{$Sunday}</option>
