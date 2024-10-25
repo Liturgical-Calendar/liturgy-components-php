@@ -10,7 +10,21 @@ final class AcceptHeader extends Input
         'param' => 'accept'
     ];
 
+    private bool $as_return_type_param = false;
+
     private ?string $labelAfter = null;
+
+    /**
+     * @param bool $as_return_type_param Set to true to include the accept header as a query parameter,
+     *     or false to not include it.  The default is true.
+     *
+     * @return self The instance of the class, for chaining.
+     */
+    public function asReturnTypeParam(bool $as_return_type_param = true): self
+    {
+        $this->as_return_type_param = $as_return_type_param;
+        return $this;
+    }
 
     /**
      * Appends a string to the label after the label text.
@@ -74,17 +88,25 @@ final class AcceptHeader extends Input
                 ? self::$globalWrapper
                 : null);
 
+        $returnTypeParamContents = <<<OPTIONS
+<option value="JSON">JSON</option>
+<option value="XML">XML</option>
+<option value="YAML">YAML</option>
+<option value="ICS">ICS</option>
+OPTIONS;
+        $acceptHeaderContents = <<<OPTIONS
+<option value="application/json">application/json</option>
+<option value="application/xml">application/xml</option>
+<option value="application/yaml">application/yaml</option>
+<option value="text/calendar">text/calendar</option>
+OPTIONS;
+        $inputContents = $this->as_return_type_param ? $returnTypeParamContents : $acceptHeaderContents;
+        $labelText = $this->as_return_type_param ? 'return_type' : 'accept header';
+
         $data = $this->getData();
-        $input = <<<ELEMENT
-<select{$this->id}{$inputClass}{$data}>
-    <option value="application/json">application/json</option>
-    <option value="application/xml">application/xml</option>
-    <option value="application/yaml">application/yaml</option>
-    <option value="text/calendar">text/calendar</option>
-</select>
-ELEMENT;
+        $input = "<select{$this->id}{$inputClass}{$data}>$inputContents</select>";
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
-        $html .= "<label{$labelClass}>accept header{$labelAfter}</label>";
+        $html .= "<label{$labelClass}>{$labelText}{$labelAfter}</label>";
         $html .= $input;
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
