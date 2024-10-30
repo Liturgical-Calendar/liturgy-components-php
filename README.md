@@ -215,8 +215,8 @@ use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
 $options = [
     "locale"    => "it-IT",
-    "wrapper"   => true, //we can simply set a boolean, then set the 'as' html element after using the ->as() method
-    "formLabel" => true  //we can simply set a boolean, then set the 'as' html element after using the ->as() method
+    "wrapper"   => true, //we can simply set a boolean, then set the 'as' html element afterwards by using the ->as() method
+    "formLabel" => true  //we can simply set a boolean, then set the 'as' html element aftereards by using the ->as() method
 ];
 $apiOptions = new ApiOptions($options);
 $apiOptions->wrapper->as('div')->class('calendarOptions')->id('calendarOptions'); //we could also have set 'as', 'class' and 'id' directly in the $options
