@@ -3,9 +3,9 @@ A collection of reusable frontend components, that work with the Liturgical Cale
 (currently hosted at https://litcal.johnromanodorazio.com/api/dev/).
 
 ## Installing the package
-Installing the package in your project is as simple as `composer install liturgical-calendar/components --no-dev`.
+Installing the package in your project is as simple as `composer require liturgical-calendar/components --no-dev`.
 
-Include in your project with `include_once 'vendor/autoload.php';` (adjust the path to vendor/autoload.php accordingly).
+Include in your project's PHP script with `include_once 'vendor/autoload.php';` (adjust the path to vendor/autoload.php accordingly).
 
 Note that this package requires PHP >= 8.1, seeing it makes use of Enums (which were introduced in PHP 8.1).
 
