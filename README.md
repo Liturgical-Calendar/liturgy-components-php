@@ -3,7 +3,7 @@ A collection of reusable frontend components, that work with the Liturgical Cale
 (currently hosted at https://litcal.johnromanodorazio.com/api/dev/).
 
 ## Installing the package
-Installing the package in your project is as simple as `composer require liturgical-calendar/components --no-dev`.
+Installing the package in your project is as simple as `composer require liturgical-calendar/components`. To install without dev dependencies, after we have `composer require`ed the package: `composer install --no-dev`.
 
 Include in your project's PHP script with `include_once 'vendor/autoload.php';` (adjust the path to vendor/autoload.php accordingly).
 
@@ -296,7 +296,10 @@ Output:
 ## Tests
 The package includes a few unit tests to ensure that the component is working as expected.
 In order to run the tests, install the package with the dev dependencies:
-`composer install liturgical-calendar/components`.
+```php
+composer require liturgical-calendar/components
+composer install
+```
 
 Then run the `composer test` script, which calls the included PHPUnit package to run the tests in the `tests` folder.
 
