@@ -1,3 +1,4 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/liturgical-calendar/liturgy-components-php/badge)](https://www.codefactor.io/repository/github/liturgical-calendar/liturgy-components-php)
 # Liturgical Calendar Components for PHP
 A collection of reusable frontend components, that work with the Liturgical Calendar API
 (currently hosted at https://litcal.johnromanodorazio.com/api/dev/).
