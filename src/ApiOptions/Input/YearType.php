@@ -63,20 +63,25 @@ final class YearType extends Input
             : (self::$globalWrapper !== null
                 ? self::$globalWrapper
                 : null);
+
         $disabled = $this->disabled ? ' disabled' : '';
+
+        $optionsArray = [ 'LITURGICAL', 'CIVIL' ];
+        $options = array_map(
+            fn (string $option) => "<option value=\"{$option}\"" . ($this->selectedValue === $option ? ' selected' : '') . ">{$option}</option>",
+            $optionsArray
+        );
+        $optionsHtml = implode('', $options);
+
 
         $data = $this->getData();
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
-        $optionsArray = [ 'LITURGICAL', 'CIVIL' ];
-        $options = array_map(fn (string $option) => "<option value=\"{$option}\"" . ($this->selectedValue === $option ? ' selected' : '') . ">{$option}</option>", $optionsArray);
-        $optionsHtml = implode('', $options);
-        $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
 
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>year_type{$labelAfter}</label>";
-        $html .= $input;
+        $html .= "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
     }

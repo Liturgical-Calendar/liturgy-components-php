@@ -66,9 +66,9 @@ final class CorpusChristi extends Input
             : (self::$globalWrapper !== null
                 ? self::$globalWrapper
                 : null);
+
         $disabled = $this->disabled ? ' disabled' : '';
 
-        $data = $this->getData();
         $today = new DateTime();
         $nextThursday = $today->modify('next Thursday');
         $formatter = new IntlDateFormatter(
@@ -82,21 +82,27 @@ final class CorpusChristi extends Input
         $Thursday = $formatter->format($nextThursday);
         $nextSunday = $today->modify('next Sunday');
         $Sunday = $formatter->format($nextSunday);
+
         $optionsArray = [
             "" => "--",
             'THURSDAY' => $Thursday,
             'SUNDAY' => $Sunday
         ];
-        $options = array_map(fn(string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $v ? ' selected' : '') . ">{$v}</option>", array_keys($optionsArray), array_values($optionsArray));
+        $options = array_map(
+            fn(string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $k ? ' selected' : '') . ">{$v}</option>",
+            array_keys($optionsArray),
+            array_values($optionsArray)
+        );
         $optionsHtml = implode('', $options);
+
+        $data = $this->getData();
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
-        $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
 
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>corpus_christi{$labelAfter}</label>";
-        $html .= $input;
+        $html .= "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
     }

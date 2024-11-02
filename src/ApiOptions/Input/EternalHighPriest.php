@@ -62,25 +62,31 @@ final class EternalHighPriest extends Input
             : (self::$globalWrapper !== null
                 ? self::$globalWrapper
                 : null);
+
         $disabled = $this->disabled ? ' disabled' : '';
 
-        $data = $this->getData();
         $true = dgettext('litcompphp', 'true');
         $false = dgettext('litcompphp', 'false');
+
         $optionsArray = [
             'true'  => $true,
             'false' => $false
         ];
-        $options = array_map(fn (string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $v ? ' selected' : '') . ">{$v}</option>", array_keys($optionsArray), array_values($optionsArray));
+        $options = array_map(
+            fn (string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $k ? ' selected' : '') . ">{$v}</option>",
+            array_keys($optionsArray),
+            array_values($optionsArray)
+        );
         $optionsHtml = implode('', $options);
+
+        $data = $this->getData();
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
-        $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
 
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>eternal_high_priest{$labelAfter}</label>";
-        $html .= $input;
+        $html .= "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
     }

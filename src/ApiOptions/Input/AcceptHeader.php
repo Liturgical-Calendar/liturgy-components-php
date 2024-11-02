@@ -105,26 +105,25 @@ final class AcceptHeader extends Input
 
         $disabled = $this->disabled ? ' disabled' : '';
 
-        $returnTypeParamContents = array_map(
+        $returnTypeParamOptions = array_map(
             fn ($val) => "<option value=\"$val\"" . ($this->selectedValue === $val ? ' selected' : '') . ">$val</option>",
             self::RETURN_TYPE_PARAM_VALS
         );
-        $acceptHeaderContents = array_map(
+        $acceptHeaderOptions = array_map(
             fn ($val) => "<option value=\"$val\"" . ($this->selectedValue === $val ? ' selected' : '') . ">$val</option>",
             self::ACCEPT_HEADER_VALS
         );
-        $inputContents = $this->as_return_type_param ? implode('', $returnTypeParamContents) : implode('', $acceptHeaderContents);
-        $labelText = $this->as_return_type_param ? 'return_type' : 'accept header';
+        $optionsHtml = $this->as_return_type_param ? implode('', $returnTypeParamOptions) : implode('', $acceptHeaderOptions);
 
         $data = $this->getData();
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
-        $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$inputContents</select>";
+        $labelText = $this->as_return_type_param ? 'return_type' : 'accept header';
 
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>{$labelText}{$labelAfter}</label>";
-        $html .= $input;
+        $html .= "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
     }

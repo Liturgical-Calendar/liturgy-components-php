@@ -66,9 +66,9 @@ final class Epiphany extends Input
             : (self::$globalWrapper !== null
                 ? self::$globalWrapper
                 : null);
+
         $disabled = $this->disabled ? ' disabled' : '';
 
-        $data = $this->getData();
         $Jan6 = '';
         $date = new DateTime('2024-01-06');
         /** @disregard P1014 because ApiOptions::$baseLocale is a magic variable retrieved with a magic getter */
@@ -86,21 +86,27 @@ final class Epiphany extends Input
             $Jan6 = $formatter->format($date);
         }
         $SundayJan2Jan8 = dgettext('litcompphp', 'Sunday between January 2nd and 8th');
+
         $optionsArray = [
             "" => "--",
             "JAN6" => $Jan6,
             "SUNDAY_JAN2_JAN8" => $SundayJan2Jan8
         ];
-        $options = array_map(fn (string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $v ? ' selected' : '') . ">{$v}</option>", array_keys($optionsArray), array_values($optionsArray));
+        $options = array_map(
+            fn (string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $k ? ' selected' : '') . ">{$v}</option>",
+            array_keys($optionsArray),
+            array_values($optionsArray)
+        );
         $optionsHtml = implode('', $options);
+
+        $data = $this->getData();
         $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
-        $input = "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
 
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>epiphany{$labelAfter}</label>";
-        $html .= $input;
+        $html .= "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
     }
