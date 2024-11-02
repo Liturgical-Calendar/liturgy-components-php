@@ -17,26 +17,29 @@ class ApiOptionsTest extends TestCase
     {
         $apiOptions = new ApiOptions();
         $form = $apiOptions->getForm(PathType::BASE_PATH);
-        $this->assertStringContainsString('<label>epiphany</label>', $form);
-        $this->assertStringContainsString('<label>ascension</label>', $form);
-        $this->assertStringContainsString('<label>corpus_christi</label>', $form);
-        $this->assertStringContainsString('<label>eternal_high_priest</label>', $form);
-        $this->assertStringContainsString('<label>locale</label>', $form);
-        $this->assertStringContainsString('<select data-param="epiphany">', $form);
-        $this->assertStringContainsString('<select data-param="ascension">', $form);
-        $this->assertStringContainsString('<select data-param="corpus_christi">', $form);
-        $this->assertStringContainsString('<select data-param="eternal_high_priest">', $form);
-        $this->assertStringContainsString('<select data-param="locale">', $form);
+        //$dom = new \DOMDocument();
+        //$dom->loadHTML($form);
+
+        $this->assertStringContainsString('<label for="epiphany">epiphany</label>', $form);
+        $this->assertStringContainsString('<label for="ascension">ascension</label>', $form);
+        $this->assertStringContainsString('<label for="corpus_christi">corpus_christi</label>', $form);
+        $this->assertStringContainsString('<label for="eternal_high_priest">eternal_high_priest</label>', $form);
+        $this->assertStringContainsString('<label for="locale">locale</label>', $form);
+        $this->assertStringContainsString('<select id="epiphany" name="epiphany" data-param="epiphany">', $form);
+        $this->assertStringContainsString('<select id="ascension" name="ascension" data-param="ascension">', $form);
+        $this->assertStringContainsString('<select id="corpus_christi" name="corpus_christi" data-param="corpus_christi">', $form);
+        $this->assertStringContainsString('<select id="eternal_high_priest" name="eternal_high_priest" data-param="eternal_high_priest">', $form);
+        $this->assertStringContainsString('<select id="locale" name="locale" data-param="locale">', $form);
     }
 
     public function testGetFormAllPaths(): void
     {
         $apiOptions = new ApiOptions();
         $form = $apiOptions->getForm(PathType::ALL_PATHS);
-        $this->assertStringContainsString('<label>year_type</label>', $form);
-        $this->assertStringContainsString('<label>accept header</label>', $form);
-        $this->assertStringContainsString('<select data-param="year_type">', $form);
-        $this->assertStringContainsString('<select data-param="accept">', $form);
+        $this->assertStringContainsString('<label for="year_type">year_type</label>', $form);
+        $this->assertStringContainsString('<label for="return_type">accept header</label>', $form);
+        $this->assertStringContainsString('<select id="year_type" name="year_type" data-param="year_type">', $form);
+        $this->assertStringContainsString('<select id="return_type" name="return_type" data-param="accept">', $form);
     }
 
     public function testGetFormBasePathWithCustomOptions(): void
@@ -119,13 +122,13 @@ class ApiOptionsTest extends TestCase
                     $this->assertEquals('corpus_christi', $precedingSibling->textContent);
                     break;
                 case 'eternal_high_priest':
-                    $this->assertCount(3, $options);
+                    $this->assertCount(2, $options);
                     foreach ($options as $option) {
                         /** @var DOMElement $option */
                         $values[] = $option->getAttribute('value');
                         $texts[] = $option->textContent;
                     }
-                    $this->assertEquals(['', 'true', 'false'], $values);
+                    $this->assertEquals(['true', 'false'], $values);
                     //TODO: for some reason this assertion fails, the English strings are not translated
                     //$this->assertEquals(['--', 'vero', 'falso'], $texts);
                     $this->assertEquals('eternal_high_priest', $precedingSibling->textContent);
