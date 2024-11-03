@@ -35,7 +35,7 @@ final class CorpusChristi extends Input
      *
      * The select element contains options for the Corpus Christi date.
      * The select element has two options: Thursday and Sunday.
-     * The locale used for formatting the dates is the one set with {@see ApiOptions::$locale}.
+     * The locale used for formatting the dates is the one set in {@see ApiOptions::getLocale()}.
      *
      * @return string The HTML string for the Corpus Christi select element.
      */
@@ -72,7 +72,7 @@ final class CorpusChristi extends Input
         $today = new DateTime();
         $nextThursday = $today->modify('next Thursday');
         $formatter = new IntlDateFormatter(
-            ApiOptions::$locale,
+            ApiOptions::getLocale(),
             IntlDateFormatter::LONG,    // Use LONG format, which typically shows full month and day
             IntlDateFormatter::NONE,    // No time formatting
             null,

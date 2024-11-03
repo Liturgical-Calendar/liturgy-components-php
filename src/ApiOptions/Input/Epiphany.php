@@ -7,6 +7,18 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
 use DateTime;
 use IntlDateFormatter;
 
+/**
+ * Represents the input element for selecting the Epiphany date in the Liturgical Calendar API options form.
+ * This class extends the Input class and provides specific configurations for the Epiphany select element.
+ *
+ * The select element contains options for the Epiphany date, which include:
+ * - January 6th
+ * - Sunday between January 2nd and 8th
+ *
+ * @see Input
+ * @see ApiOptions
+ * @package LiturgicalCalendar\Components\ApiOptions\Input
+ */
 final class Epiphany extends Input
 {
     public array $data           = [
@@ -71,12 +83,12 @@ final class Epiphany extends Input
 
         $Jan6 = '';
         $date = new DateTime('2024-01-06');
-        /** @disregard P1014 because ApiOptions::$baseLocale is a magic variable retrieved with a magic getter */
+        /** @disregard P1014 because ApiOptions::baseLocale() is a magic method retrieved with a magic getter */
         if (ApiOptions::baseLocale() === 'en') {
             $Jan6 = $date->format('F jS');
         } else {
             $formatter = new IntlDateFormatter(
-                ApiOptions::$locale,
+                ApiOptions::getLocale(),
                 IntlDateFormatter::LONG,    // Use LONG format, which typically shows full month and day
                 IntlDateFormatter::NONE     // No time formatting
             );

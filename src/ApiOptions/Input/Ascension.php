@@ -72,7 +72,7 @@ final class Ascension extends Input
         $today = new DateTime();
         $nextThursday = $today->modify('next Thursday');
         $formatter = new IntlDateFormatter(
-            ApiOptions::$locale,
+            ApiOptions::getLocale(),
             IntlDateFormatter::LONG,    // Use LONG format, which typically shows full month and day
             IntlDateFormatter::NONE,    // No time formatting
             null,

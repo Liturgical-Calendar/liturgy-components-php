@@ -15,22 +15,39 @@ use LiturgicalCalendar\Components\ApiOptions\Submit;
 use LiturgicalCalendar\Components\ApiOptions\PathType;
 
 /**
- * Class ApiOptions
- * A class that can be used to generate an options form for the Liturgical Calendar API.
+ * Generate an options form for the Liturgical Calendar API.
  *
  * The class contains methods to generate the form, form label, form wrapper, and form submit elements.
  * The form elements can be fully customized using the methods provided by the class.
  *
+ * @method __construct(?array $options = null) Initializes the ApiOptions object with default or provided settings:
+ *                                             - $options: An array of options, including 'locale', 'formLabel', 'wrapper', 'submit', and 'after'.
+ *
+ *                                             The following properties are initialized on the object instance:
+ *                                             - formLabel: A FormLabel object if the 'formLabel' key is present in the options array.
+ *                                             - wrapper: A Wrapper object if the 'wrapper' key is present in the options array.
+ *                                             - submit: A Submit object if the 'submit' key is present in the options array.
+ *                                             - epiphanyInput: An Input object.
+ *                                             - ascensionInput: An Input object.
+ *                                             - corpusChristiInput: An Input object.
+ *                                             - eternalHighPriestInput: An Input object.
+ *                                             - yearTypeInput: An Input object.
+ *                                             - localeInput: An Input object.
+ *                                             - acceptHeaderInput: An Input object.
+ * @method after(string $after) Sets the HTML to add after the form.
+ * @method getForm(?PathType $pathType = null) Returns the HTML for the form.
+ * @method static getLocale() Returns the locale used by the API options component.
+ *
  * @package LiturgicalCalendar\Components
- * @author John Romanodorazio
+ * @author John Romano D'Orazio
  */
 class ApiOptions
 {
-    public static ?string $locale = null;
-    public ?FormLabel $formLabel  = null;
-    public ?Wrapper $wrapper      = null;
-    public ?Submit $submit        = null;
-    public ?string $after         = null;
+    private ?string $after         = null;
+    private static ?string $locale = null;
+    public ?FormLabel $formLabel   = null;
+    public ?Wrapper $wrapper       = null;
+    public ?Submit $submit         = null;
     public Epiphany $epiphanyInput;
     public Ascension $ascensionInput;
     public CorpusChristi $corpusChristiInput;
@@ -60,7 +77,7 @@ class ApiOptions
      * Prepares localization using the prepareL10n method.
      * Initializes various input objects such as Epiphany, Ascension, CorpusChristi, EternalHighPriest, YearType, Locale, and AcceptHeader.
      */
-    public function __construct(array $options = null)
+    public function __construct(?array $options = null)
     {
         if ($options !== null && count($options) > 0) {
             foreach ($options as $key => $value) {
@@ -260,5 +277,15 @@ class ApiOptions
             return $this->wrapper->get($html, $this);
         }
         return $html;
+    }
+
+    /**
+     * Retrieves the locale used by the API options component.
+     *
+     * @return string|null The locale, or null if no locale has been set.
+     */
+    public static function getLocale(): ?string
+    {
+        return self::$locale;
     }
 }

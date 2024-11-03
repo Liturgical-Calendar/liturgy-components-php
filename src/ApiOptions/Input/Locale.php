@@ -48,12 +48,12 @@ class Locale extends ApiOptions\Input
 
             self::$apiLocales = $metadataJson->litcal_metadata->locales;
         }
-        if (false === array_key_exists(ApiOptions::$locale, self::$apiLocalesDisplay)) {
-            self::$apiLocalesDisplay[ApiOptions::$locale] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
-                $carry[$item] = \Locale::getDisplayName($item, ApiOptions::$locale);
+        if (false === array_key_exists(ApiOptions::getLocale(), self::$apiLocalesDisplay)) {
+            self::$apiLocalesDisplay[ApiOptions::getLocale()] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
+                $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
                 return $carry;
             }, []);
-            asort(self::$apiLocalesDisplay[ApiOptions::$locale]);
+            asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
         }
 
         $this->name('locale');
@@ -103,8 +103,8 @@ class Locale extends ApiOptions\Input
 
         $options = array_map(
             fn (string $k, string $v) => "<option value=\"{$k}\"" . ($k === $this->selectedValue ? ' selected' : '') . ">{$k} ({$v})</option>",
-            array_keys(self::$apiLocalesDisplay[ApiOptions::$locale]),
-            array_values(self::$apiLocalesDisplay[ApiOptions::$locale])
+            array_keys(self::$apiLocalesDisplay[ApiOptions::getLocale()]),
+            array_values(self::$apiLocalesDisplay[ApiOptions::getLocale()])
         );
         $optionsHtml = implode('', $options);
 

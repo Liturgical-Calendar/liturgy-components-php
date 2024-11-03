@@ -4,6 +4,35 @@ namespace LiturgicalCalendar\Components;
 
 use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
 
+/**
+ * A class to generate a select element for selecting a Liturgical Calendar.
+ *
+ * This class will generate a select element with options for all the national
+ * calendars, as well as the diocesan calendars for each nation.
+ *
+ * Public Methods:
+ * - __construct(): Initializes the CalendarSelect object with default settings.
+ * - setUrl(string $url): Sets the URL of the liturgical calendar metadata API endpoint.
+ * - selectedOption(string $option): Sets the selected option.
+ * - locale(string $locale): Sets the locale for the calendar select.
+ * - class(string $class): Sets the class for the calendar select.
+ * - id(string $id): Sets the ID for the select element.
+ * - name(string $name): Sets the name for the select element.
+ * - setOptions(OptionsType $type): Sets the type of option elements for the select element.
+ * - nationFilter(string $nation): Sets the nation to filter the diocese options to.
+ * - label(bool $show): Configures whether to show the label.
+ * - labelText(string $text): Sets the text for the label.
+ * - allowNull(bool $allow): Allows or disallows null selection.
+ * - disabled(bool $disabled): Sets whether the select element is disabled.
+ * - @static isValidLocale(string $locale): Checks if the given locale is valid.
+ * - getSelect(): Returns the HTML for the select element.
+ * - getMetadataUrl(): Returns the URL of the liturgical calendar metadata API endpoint.
+ * - getLocale(): Returns the locale used by the calendar select instance.
+ * - @static isValidDioceseForNation(string $diocese, string $nation): Checks if the given diocese is valid for the given nation.
+ *
+ * @package LiturgicalCalendar\Components
+ * @author John Romano D'Orazio
+ */
 class CalendarSelect
 {
     private const METADATA_URL = 'https://litcal.johnromanodorazio.com/api/dev/calendars';
@@ -298,11 +327,13 @@ class CalendarSelect
      * if it is a valid PHP locale string according to the {@link https://www.php.net/manual/en/class.locale.php Locale class}.
      * Note that in order for a locale to be considered valid, it must be installed in the current server environment.
      *
+     * This method is declared as public simply to allow PHP Unit testing.
+     *
      * @param string $locale The locale to check.
      *
      * @return bool
      */
-    private static function isValidLocale($locale)
+    public static function isValidLocale($locale)
     {
         $latin = ['la', 'la_VA'];
         $AllAvailableLocales = array_filter(\ResourceBundle::getLocales(''), fn ($value) => strpos($value, 'POSIX') === false);
@@ -479,7 +510,7 @@ class CalendarSelect
      *
      * @return string The HTML for the select options.
      */
-    public function getOptions(): string
+    private function getOptions(): string
     {
         $this->buildAllOptions();
         switch ($this->optionsType) {
