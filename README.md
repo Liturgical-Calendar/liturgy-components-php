@@ -292,7 +292,7 @@ echo $apiOptions->getForm();
 > ```
 
 > [!NOTE]
-> Other than setting the `as` html element as a string value in the `formLabel` option, or enabling the `fornLabel` with a boolean value, we can also set `formLabel` to an associative array with the desired options.
+> Other than setting the `as` html element as a string value in the `formLabel` option, or enabling the `formLabel` with a boolean value, we can also set `formLabel` to an associative array with the desired options.
 > The following three examples are equivalent:
 > ```php
 > // EXAMPLE 1
@@ -313,7 +313,7 @@ echo $apiOptions->getForm();
 >     'formLabel'   => true
 > ];
 > $apiOptions = new ApiOptions($options);
-> $apiOptions->wrapper->as('h5')->text('Liturgical Calendar API Request Options');
+> $apiOptions->formLabel->as('h5')->text('Liturgical Calendar API Request Options');
 > ```
 
 Output:
