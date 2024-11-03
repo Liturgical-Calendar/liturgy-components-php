@@ -2,47 +2,326 @@
 
 namespace LiturgicalCalendar\Components;
 
+use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
+
 class CalendarSelect
 {
     private const METADATA_URL = 'https://litcal.johnromanodorazio.com/api/dev/calendars';
-    private static ?array $calendarIndex         = null;
-    private static array $nationalCalendars      = [];
-    private static array $diocesanCalendars      = [];
-    private array $nationalCalendarsWithDioceses = [];
-    private array $nationOptions                 = [];
-    private array $dioceseOptions                = [];
-    private array $dioceseOptionsGrouped         = [];
-    private string $locale                       = 'en';
-    private ?string $metadataUrl                 = null;
+    private static ?array $calendarIndex           = null;
+    private static array $nationalCalendars        = [];
+    private static array $nationalCalendarsKeys    = [];
+    private static array $diocesanCalendars        = [];
+    private array $nationalCalendarsWithDioceses   = [];
+    private array $nationOptions                   = [];
+    private array $dioceseOptions                  = [];
+    private array $dioceseOptionsGrouped           = [];
+    private string $locale                         = 'en';
+    private ?string $metadataUrl                   = null;
+    private ?string $nationFilterForDioceseOptions = null;
+    private ?string $selectedOption                = null;
+    private string $class                          = 'calendarSelect';
+    private string $id                             = 'calendarSelect';
+    private string $name                           = 'calendarSelect';
+    private bool $label                            = false;
+    private string $labelStr                       = 'Select a calendar';
+    private bool $allowNull                        = false;
+    private bool $disabled                         = false;
+    private OptionsType $optionsType               = OptionsType::ALL;
 
     /**
-     * Instantiates the calendar select with metadata from the Liturgical Calendar API.
+     * Creates a new instance of the CalendarSelect class.
      *
-     * @param array $options An associative array that can have the following keys:
-     *                        - 'url': The URL of the liturgical calendar metadata API endpoint.
-     *                                 Defaults to https://litcal.johnromanodorazio.com/api/dev/calendars.
-     *                        - 'locale': The locale to use for the calendar select. Defaults to 'en'.
-     *                                     This is the locale that will be used to translate and order the names of the countries.
-     *                                     This should be a valid PHP locale string, such as 'en' or 'es' or 'en_US' or 'es_ES'.
+     * The options array can contain the following keys:
+     * - locale: string, the locale to use, defaults to 'en'
+     * - url: string, the URL of the liturgical calendar metadata API endpoint,
+     *        defaults to https://litcal.johnromanodorazio.com/api/dev/calendars
+     * - class: string, the class to apply to the select element, defaults to 'calendarSelect'
+     * - id: string, the id to apply to the select element, defaults to 'calendarSelect'
+     * - name: string, the name to apply to the select element, defaults to 'calendarSelect'
+     * - nationFilter: string, the nation to filter the diocese options to, defaults to false
+     * - setOptions: OptionsType, the type of options to set, defaults to OptionsType::ALL
+     * - selectedOption: string, the selected option, defaults to false
+     * - label: boolean, whether to include a label element, defaults to false
+     * - labelStr: string, the string to use for the label element, defaults to 'Select a calendar'
+     * - allowNull: boolean, whether to allow the null value in the select element, defaults to false
      *
-     * @throws \Exception If there is an error fetching or decoding the metadata from the Liturgical Calendar API.
+     * @param array $options The options for the instance.
      */
-    public function __construct($options = [
-        'url'    => self::METADATA_URL,
-        'locale' => 'en'
-    ])
+    public function __construct($options = ['url' => self::METADATA_URL])
     {
         if (isset($options['locale'])) {
-            $options['locale'] = \Locale::canonicalize($options['locale']);
-            if (!self::isValidLocale($options['locale'])) {
-                throw new \Exception("Invalid locale: {$options['locale']}");
-            }
+            $this->locale($options['locale']);
         }
 
-        $this->locale = $options['locale'] ?? 'en';
+        if (isset($options['url'])) {
+            $this->setUrl($options['url']);
+        } else {
+            $this->setUrl(self::METADATA_URL);
+        }
 
-        $this->metadataUrl = $options['url'] ?? self::METADATA_URL;
-        // If we haven't cached the metadata yet, or the request has changed, fetch it from the API
+        if (isset($options['class'])) {
+            $this->class = htmlspecialchars($options['class'], ENT_QUOTES, 'UTF-8');
+        }
+
+        if (isset($options['id'])) {
+            $this->id = htmlspecialchars($options['id'], ENT_QUOTES, 'UTF-8');
+        }
+
+        if (isset($options['name'])) {
+            $this->name = htmlspecialchars($options['name'], ENT_QUOTES, 'UTF-8');
+        }
+
+        if (isset($options['nationFilter'])) {
+            if (false === in_array($options['nationFilter'], self::$nationalCalendarsKeys, true)) {
+                throw new \Exception("Invalid nation: {$options['nationFilter']}, valid values are: " . implode(', ', self::$nationalCalendarsKeys));
+            }
+            $this->nationFilterForDioceseOptions = $options['nationFilter'];
+        }
+
+        if (isset($options['setOptions'])) {
+            $this->setOptions($options['optionsType']);
+        }
+
+        if (isset($options['selectedOption'])) {
+            $this->selectedOption = htmlspecialchars($options['selectedOption'], ENT_QUOTES, 'UTF-8');
+        }
+
+        if (isset($options['label'])) {
+            $this->label = filter_var($options['label'], FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if (isset($options['labelStr'])) {
+            $this->labelStr = htmlspecialchars($options['labelStr'], ENT_QUOTES, 'UTF-8');
+        }
+
+        if (isset($options['allowNull'])) {
+            $this->allowNull = filter_var($options['allowNull'], FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if (isset($options['disabled'])) {
+            $this->disabled = filter_var($options['disabled'], FILTER_VALIDATE_BOOLEAN);
+        }
+    }
+
+    /**
+     * Sets the URL for the metadata API endpoint.
+     *
+     * This method updates the metadata URL and fetches the metadata
+     * using the updated URL.
+     *
+     * @param string $url The URL of the metadata API endpoint.
+     *
+     * @return self
+     */
+    public function setUrl($url): self
+    {
+        $this->metadataUrl = $url;
+        $this->fetchMetadata();
+        return $this;
+    }
+
+    /**
+     * Sets the selected option of the select element.
+     *
+     * @param string $value The value of the selected option.
+     *
+     * @return self
+     */
+    public function selectedOption($value): self
+    {
+        $this->selectedOption = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+        return $this;
+    }
+
+    /**
+     * Sets the locale to use when generating the select element.
+     *
+     * The locale is used to translate the names of the calendars.
+     * The locale should be a valid locale string as defined by the ICU
+     * standards. The locale should be a string in the format of "language_REGION",
+     * where language is the language code and REGION is the region code.
+     * For example, "en_US" for English in the United States, "fr_FR" for French in France,
+     * or "it_IT" for Italian in Italy.
+     *
+     * @param string $locale the locale to use when generating the select element
+     *
+     * @throws \Exception if the locale is invalid
+     *
+     * @return self
+     */
+    public function locale($locale): self
+    {
+        $locale = \Locale::canonicalize($locale);
+        if (!self::isValidLocale($locale)) {
+            throw new \Exception("Invalid locale: {$locale}");
+        }
+        $this->locale = $locale;
+        return $this;
+    }
+
+    /**
+     * Sets the class attribute of the select element.
+     *
+     * @param string $className the class attribute of the select element
+     *
+     * @return self
+     */
+    public function class(string $className): self
+    {
+        $this->class = htmlspecialchars($className, ENT_QUOTES, 'UTF-8');
+        return $this;
+    }
+
+    /**
+     * Sets the id attribute of the select element.
+     *
+     * @param string $id the id attribute of the select element
+     * @return self
+     */
+    public function id(string $id): self
+    {
+        $this->id = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
+        return $this;
+    }
+
+    /**
+     * Sets the name attribute of the select element.
+     *
+     * @param string $name the name attribute of the select element
+     * @return $this
+     */
+    public function name(string $name): self
+    {
+        $this->name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+        return $this;
+    }
+
+    /**
+     * Sets the type of options to return.
+     *
+     * @param OptionsType $optionsType
+     *
+     * @return $this
+     *
+     * @throws \Exception If the options type is not valid.
+     * @throws \Exception If the options type is OptionsType::DIOCESES_FOR_NATION and nationFilter has not been set.
+     */
+    public function setOptions(OptionsType $optionsType): self
+    {
+        if (false === in_array($optionsType, OptionsType::cases(), true)) {
+            throw new \Exception("Invalid options type: {$optionsType}, valid values are: " . implode(', ', OptionsType::cases()));
+        }
+        if (
+            OptionsType::DIOCESES_FOR_NATION === $optionsType
+            && (null === $this->nationFilterForDioceseOptions || empty($this->nationFilterForDioceseOptions))
+        ) {
+            throw new \Exception('When using the "DIOCESES_FOR_NATION" option, "setOptions" requires "nationFilter" to be set');
+        }
+        $this->optionsType = $optionsType;
+        return $this;
+    }
+
+    /**
+     * Sets the nation to filter the diocese options by.
+     *
+     * When the options type is OptionsType::DIOCESES_FOR_NATION, this method must be called to set the nation to filter the diocese options by.
+     * If the nation is not a valid nation, an exception will be thrown.
+     *
+     * @param string $nation The nation to filter the diocese options by.
+     *
+     * @return $this
+     *
+     * @throws \Exception If the nation is not a valid nation.
+     */
+    public function nationFilter(string $nation): self
+    {
+        if (false === in_array($nation, self::$nationalCalendarsKeys, true)) {
+            throw new \Exception("Invalid nation: {$nation}, valid values are: " . implode(', ', self::$nationalCalendarsKeys));
+        }
+        $this->nationFilterForDioceseOptions = $nation;
+        return $this;
+    }
+
+    /**
+     * Sets whether a label element will be included for the select element.
+     *
+     * @param bool $label Whether to include a label element for the select element.
+     *
+     * @return $this
+     */
+    public function label(bool $label): self
+    {
+        $this->label = $label;
+        return $this;
+    }
+
+    /**
+     * Sets the text of the label element for the select element.
+     *
+     * If the label element is not enabled, this value is ignored.
+     *
+     * @param string $text The text of the label element
+     *
+     * @return $this
+     */
+    public function labelText(string $text): self
+    {
+        $this->labelStr = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        return $this;
+    }
+
+    /**
+     * If set to true, the select element will include an empty option as the first option.
+     *
+     * This can be useful when you want to allow the user to select no option.
+     *
+     * @param bool $allowNull Whether to include an empty option as the first option.
+     *
+     * @return static
+     */
+    public function allowNull(bool $allowNull): self
+    {
+        $this->allowNull = $allowNull;
+        return $this;
+    }
+
+    public function disabled(bool $disabled): self
+    {
+        $this->disabled = $disabled;
+        return $this;
+    }
+
+    /**
+     * Returns true if the given locale is valid, and false otherwise.
+     *
+     * A locale is valid if it is either 'la' or 'la_VA' (for Latin) or
+     * if it is a valid PHP locale string according to the {@link https://www.php.net/manual/en/class.locale.php Locale class}.
+     * Note that in order for a locale to be considered valid, it must be installed in the current server environment.
+     *
+     * @param string $locale The locale to check.
+     *
+     * @return bool
+     */
+    private static function isValidLocale($locale)
+    {
+        $latin = ['la', 'la_VA'];
+        $AllAvailableLocales = array_filter(\ResourceBundle::getLocales(''), fn ($value) => strpos($value, 'POSIX') === false);
+        return in_array($locale, $latin) || in_array($locale, $AllAvailableLocales);
+    }
+
+    /**
+     * Fetches the metadata from the API if it has not been fetched yet.
+     *
+     * If the request url has changed since the last time it was fetched, it will be refetched.
+     *
+     * If the metadata is invalid, an exception is thrown.
+     *
+     * @throws \Exception If there is an error fetching or decoding the metadata,
+     *                     or if the metadata is invalid.
+     */
+    private function fetchMetadata(): void
+    {
+        // If we haven't cached the metadata yet, or the request url has changed, fetch it from the API
         if ($this->metadataUrl !== self::METADATA_URL || self::$calendarIndex === null) {
             $metadataRaw = file_get_contents($this->metadataUrl);
             if ($metadataRaw === false) {
@@ -62,27 +341,12 @@ class CalendarSelect
                 throw new \Exception("Missing 'national_calendars' in metadata from {$this->metadataUrl}");
             }
             [ 'litcal_metadata' => self::$calendarIndex ] = $metadataJSON;
-            [ 'diocesan_calendars' => self::$diocesanCalendars, 'national_calendars' => self::$nationalCalendars ] = self::$calendarIndex;
+            [
+                'diocesan_calendars' => self::$diocesanCalendars,
+                'national_calendars' => self::$nationalCalendars,
+                'national_calendars_keys' => self::$nationalCalendarsKeys
+            ] = self::$calendarIndex;
         }
-        $this->buildAllOptions();
-    }
-
-    /**
-     * Returns true if the given locale is valid, and false otherwise.
-     *
-     * A locale is valid if it is either 'la' or 'la_VA' (for Latin) or
-     * if it is a valid PHP locale string according to the {@link https://www.php.net/manual/en/class.locale.php Locale class}.
-     * Note that in order for a locale to be considered valid, it must be installed in the current server environment.
-     *
-     * @param string $locale The locale to check.
-     *
-     * @return bool
-     */
-    public static function isValidLocale($locale)
-    {
-        $latin = ['la', 'la_VA'];
-        $AllAvailableLocales = array_filter(\ResourceBundle::getLocales(''), fn ($value) => strpos($value, 'POSIX') === false);
-        return in_array($locale, $latin) || in_array($locale, $AllAvailableLocales);
     }
 
 
@@ -120,11 +384,13 @@ class CalendarSelect
      * @param array $nationalCalendar The national calendar for which we will add a select options.
      *                                This should be an associative array with the following keys:
      *                                - 'calendar_id': The ID for the calendar (ISO 3166-1 alpha-2 code for the country).
-     * @param bool $selected Whether or not the option should be selected by default.
      */
-    private function addNationOption($nationalCalendar, $selected = false)
+    private function addNationOption($nationalCalendar)
     {
-        $selectedStr = $selected ? ' selected' : '';
+        $selectedStr = '';
+        if ($this->selectedOption === $nationalCalendar['calendar_id']) {
+            $selectedStr = ' selected';
+        }
         $optionOpenTag = "<option data-calendartype=\"nationalcalendar\" value=\"{$nationalCalendar['calendar_id']}\"{$selectedStr}>";
         $optionContents = \Locale::getDisplayRegion('-' . $nationalCalendar['calendar_id'], $this->locale);
         $optionCloseTag = "</option>";
@@ -144,7 +410,11 @@ class CalendarSelect
      */
     private function addDioceseOption($item)
     {
-        $optionOpenTag = "<option data-calendartype=\"diocesancalendar\" value=\"{$item['calendar_id']}\">";
+        $selectedStr = '';
+        if ($this->selectedOption === $item['calendar_id']) {
+            $selectedStr = ' selected';
+        }
+        $optionOpenTag = "<option data-calendartype=\"diocesancalendar\" value=\"{$item['calendar_id']}\"{$selectedStr}>";
         $optionContents = $item['diocese'];
         $optionCloseTag = "</option>";
         $optionHtml = "{$optionOpenTag}{$optionContents}{$optionCloseTag}";
@@ -152,16 +422,16 @@ class CalendarSelect
     }
 
     /**
-     * Builds all options for the calendar select.
+     * Builds all of the options for the calendar select element.
      *
-     * @param array $diocesan_calendars An array of associative arrays, each representing a diocesan calendar.
-     *                                  Each associative array should have the following keys:
-     *                                  - 'calendar_id': The ID for the calendar (corresponding to the uppercase name of the diocese).
-     *                                  - 'nation': The nation that the diocesan calendar belongs to.
-     *                                  - 'diocese': The name of the diocese.
-     * @param array $national_calendars An array of associative arrays, each representing a national calendar.
-     *                                  Each associative array should have the following keys:
-     *                                  - 'calendar_id': The ID for the calendar (ISO 3166-1 alpha-2 code for the country).
+     * This function ensures that "Vatican" is always the first option in the select element when nations are included,
+     * and that it is selected by default when allowNull is false.
+     *
+     * It also groups the diocesan calendars by nation, and ensures that the diocese options
+     * are sorted alphabetically by the name of the nation.
+     *
+     * Finally, it ensures that the options for the nations in the nationalCalendarsWithDioceses
+     * list are sorted alphabetically by the name of the nation.
      */
     private function buildAllOptions()
     {
@@ -182,17 +452,13 @@ class CalendarSelect
         foreach (self::$nationalCalendars as $nationalCalendar) {
             if (!$this->hasNationalCalendarWithDioceses($nationalCalendar['calendar_id'])) {
                 // This is the first time we call CalendarSelect::addNationOption().
-                // This will ensure that the VATICAN (or any other nation without any diocese) will be added as the first option(s).
-                // We also ensure that the VATICAN is always the default selected option
-                if ('VA' === $nationalCalendar['calendar_id']) {
-                    $this->addNationOption($nationalCalendar, true);
-                } else {
-                    $this->addNationOption($nationalCalendar);
-                }
+                // This will ensure that the VATICAN (or any other nation without any diocese) will be added as the first option,
+                // thus ensuring that VATICAN is always the default selected option when allowNull is false.
+                $this->addNationOption($nationalCalendar);
             }
         }
 
-        // now we can add the options for the nations in the #calendarNationsWithDiocese list
+        // now we can add the options for the nations in the nationalCalendarsWithDioceses list
         // that is to say, nations that have dioceses
         usort($this->nationalCalendarsWithDioceses, fn($a, $b) => $col->compare(
             \Locale::getDisplayRegion('-' . $a['calendar_id'], $this->locale),
@@ -211,61 +477,47 @@ class CalendarSelect
     /**
      * Returns the HTML for the given type of select options.
      *
-     * @param string $key The type of select options to return.  Valid values are
-     *                    'nations', 'diocesesGrouped', or 'all'.
-     *
      * @return string The HTML for the select options.
      */
-    public function getOptions(string $key): string
+    public function getOptions(): string
     {
-        if ($key === 'nations') {
-            return implode('', $this->nationOptions);
+        $this->buildAllOptions();
+        switch ($this->optionsType) {
+            case OptionsType::NATIONS:
+                return implode('', $this->nationOptions);
+            case OptionsType::DIOCESES:
+                return implode('', $this->dioceseOptionsGrouped);
+            case OptionsType::DIOCESES_FOR_NATION:
+                if (null === $this->nationFilterForDioceseOptions || empty($this->nationFilterForDioceseOptions)) {
+                    throw new \Exception('No selected nation');
+                }
+                if ('VA' === $this->nationFilterForDioceseOptions) {
+                    $this->disabled = true;
+                    return '';
+                }
+                return implode('', $this->dioceseOptions[$this->nationFilterForDioceseOptions]);
+            case OptionsType::ALL:
+            default:
+                return implode('', $this->nationOptions) . implode('', $this->dioceseOptionsGrouped);
         }
 
-        if ($key === 'diocesesGrouped') {
-            return implode('', $this->dioceseOptionsGrouped);
-        }
-
-        if ($key === 'all') {
-            return implode('', $this->nationOptions) . implode('', $this->dioceseOptionsGrouped);
-        }
-
-        return "<option>$key</option>";
+        return "<option>{$this->optionsType->value}</option>";
     }
 
     /**
      * Returns a complete HTML select element for the given options.
      *
-     * @param array $options An associative array of options.  Valid keys are:
-     *                       - 'class': The class to apply to the select element.
-     *                       - 'id': The id to apply to the select element.
-     *                       - 'options': The type of select options to return.  Valid values are
-     *                                    'nations', 'diocesesGrouped', or 'all'.
-     *                       - 'label': A boolean indicating whether to include a label element or not.
-     *                       - 'labelStr': The string to use for the label element.
-     *
      * @return string The HTML for the select element.
      */
-    public function getSelect(array $options = []): string
+    public function getSelect(): string
     {
-        $defaultOptions = [
-            'class'    => 'calendarSelect',
-            'id'       => 'calendarSelect',
-            'options'  => 'all',
-            'label'    => false,
-            'labelStr' => 'Select a calendar'
-        ];
-        foreach ($options as $key => $value) {
-            if (in_array($key, ['class', 'id', 'options', 'labelStr'])) {
-                $options[$key] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-            } elseif ($key === 'label') {
-                $options[$key] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-            }
+        $optionsHtml = $this->getOptions();
+        $disabled = $this->disabled ? 'disabled' : '';
+        if ($this->allowNull) {
+            $optionsHtml = "<option value=\"\">---</option>{$optionsHtml}";
         }
-        $options = array_merge($defaultOptions, $options);
-        $optionsHtml = $this->getOptions($options['options']);
-        return ($options['label'] ? "<label for=\"{$options['id']}\">{$options['labelStr']}</label>" : '')
-            . "<select id=\"{$options['id']}\" class=\"{$options['class']}\">{$optionsHtml}</select>";
+        return ($this->label ? "<label for=\"{$this->id}\">{$this->labelStr}</label>" : '')
+            . "<select id=\"{$this->id}\" name=\"{$this->name}\" class=\"{$this->class}\"{$disabled}>{$optionsHtml}</select>";
     }
 
     /**
@@ -286,6 +538,19 @@ class CalendarSelect
     public function getLocale()
     {
         return $this->locale;
+    }
+
+    public static function isValidDioceseForNation($diocese, $nation): bool
+    {
+        $nationalCalendarMetadata = array_values(array_filter(self::$nationalCalendars, fn($item) => $item['calendar_id'] === $nation));
+        if (count($nationalCalendarMetadata) === 0) {
+            return false;
+        }
+        $nationalCalendar = $nationalCalendarMetadata[0];
+        if (false === array_key_exists('dioceses', $nationalCalendar)) {
+            return false;
+        }
+        return in_array($diocese, $nationalCalendar['dioceses']);
     }
 
     /**

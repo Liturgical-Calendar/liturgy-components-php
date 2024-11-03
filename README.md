@@ -20,15 +20,23 @@ with the following keys:
   - `locale`: The locale to use for the calendar select. Defaults to 'en'.
                This is the locale that will be used to translate and order the names of the countries.
                This should be a valid PHP locale string, such as 'en' or 'es' or 'en_US' or 'es_ES'.
+  - `class`: The class or classes to apply to the select element, default `calendarSelect`.
+  - `id`:    The id to apply to the select element, default `calendarSelect`.
+  - `name`:  The name to apply to the select element, default `calendarSelect`.
+  - `setOptions`: The type of select options to return. Must be a valid case of the `OptionsType` enum. Valid cases are
+                   `OptionsType::NATIONS`, `OptionsType::DIOCESES`, `OptionsType::DIOCESES_FOR_NATION`, or `OptionsType::ALL`, default `OptionsType::ALL`.
+                   N.B. In the case of `OptionsType::DIOCESES_FOR_NATION`, `nationFilter` must also be set.
+  - `nationFilter`: When `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`, this is the nation for which dioceses will be filtered, default `null`.
+                     This option MUST be set, and MUST NOT be `null` or empty, when `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`,
+                     otherwise an exception will occur.
+  - `selectedOption`: Set one of the options in the select as the default selected option, by value, default `null`.
+  - `label`: A boolean indicating whether to include a label element or not, default `false`.
+  - `labelText`: The text to use for the label element, default `"Select a calendar"`.
+  - `allowNull`: Whether an option with an empty value should be added as the first option of the select, to allow the user to submit a null value, default `false`.
+  - `disabled`: Whether to set the `disabled` attribute on the select element, default `false`.
 
 To produce the <kbd>\<select\></kbd> element, call the `->getSelect()` method on the `CalendarSelect` instance.
 You may optionally pass in an array of options that can have the following keys:
-  - `class`: The class or classes to apply to the select element, default `calendarSelect`.
-  - `id`:    The id to apply to the select element, default `calendarSelect`.
-  - `options`: The type of select options to return.  Valid values are
-               `'nations'`, `'diocesesGrouped'`, or `'all'`, default `all`.
-  - `label`: A boolean indicating whether to include a label element or not, default `false`.
-  - `labelStr`: The string to use for the label element, default `"Select a calendar"`.
 
 Example:
 ```php
@@ -36,17 +44,36 @@ Example:
 include_once 'vendor/autoload.php';
 use LiturgicalCalendar\Components\CalendarSelect;
 
-$options = ['locale' => 'it']; // set the locale to Italian
-$CalendarSelect = new CalendarSelect($options); // use the default API url, but set the locale to Italian
+$options = [
+  'locale'    => 'it', // set the locale to Italian
+  'class'     => 'form-select',
+  'id'        => 'calendarSelect',
+  'label'     => true,
+  'labelText' => _("Select a calendar")
+];
+$CalendarSelect = new CalendarSelect($options);
 
-echo $CalendarSelect->getSelect([
-                        'class'    => 'form-select',
-                        'id'       => 'calendarSelect',
-                        'options'  => 'all',
-                        'label'    => true,
-                        'labelStr' => _("Select calendar")
-                    ]);
+echo $CalendarSelect->getSelect();
 ```
+
+The options can also be set by using the methods of the same name after instantiating the `CalendarSelect` instance,
+rather than passing them into the constructor. These methods allow for chaining.
+N.B. When using the `setOptions()` method with a value of `OptionsType::DIOCESES_FOR_NATION`,
+the `nationFilter()` method MUST be called before calling the `setOptions()` method, otherwise an exception will occur.
+
+Example:
+```php
+<?php
+include_once 'vendor/autoload.php';
+use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
+
+$CalendarSelect = new CalendarSelect();
+$CalendarSelect->locale('it')->class('form-select')->id('diocesan_calendar')->name('diocesan_calendar')->label(true)->labelText('diocese')->nationFilter('NL')->setOptions(OptionsType::DIOCESES_FOR_NATION);
+
+echo $CalendarSelect->getSelect();
+```
+
 
 ### ApiOptions
 Produces a number of html <kbd>\<select\></kbd> elements, with options that correspond to the values of parameters
@@ -293,6 +320,33 @@ Output:
   </div>
   ...
 </div>
+```
+
+### WebCalendar
+
+A WebCalendar is instantiated with a response object from the Liturgical Calendar API. It does not currently take care of making the request,
+the request must first be sent to the API and the response must be transformed into an object, and passed in to the WebCalendar constructor.
+
+```php
+<?php
+require 'vendor/autoload.php';
+
+use LiturgicalCalendar\Components\WebCalendar;
+
+// build your request here
+// $response = curl_exec($ch);
+
+// Get an object from the response
+$LiturgicalCalendar = json_decode($response);
+
+// If we have successfully obtained an object, pass it into the WebCalendar constructor
+if (JSON_ERROR_NONE === json_last_error()) {
+    $webCalendar = new WebCalendar($LiturgicalCalendar);
+    $webCalendar->buildTable();
+} else {
+    echo '<div class="col-12">JSON error: ' . json_last_error_msg() . '</div>';
+}
+
 ```
 
 ## Tests

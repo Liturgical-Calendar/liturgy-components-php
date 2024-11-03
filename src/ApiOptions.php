@@ -172,7 +172,6 @@ class ApiOptions
         if ($this->currentTextDomainPath !== $this->expectedTextDomainPath) {
             die("Failed to bind text domain, expected path: {$this->expectedTextDomainPath}, current path: {$this->currentTextDomainPath}");
         }
-        //textdomain("litcompphp");
     }
 
     /**

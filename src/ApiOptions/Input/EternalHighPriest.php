@@ -69,8 +69,8 @@ final class EternalHighPriest extends Input
         $false = dgettext('litcompphp', 'false');
 
         $optionsArray = [
-            'true'  => $true,
-            'false' => $false
+            'false' => $false,
+            'true'  => $true
         ];
         $options = array_map(
             fn (string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $k ? ' selected' : '') . ">{$v}</option>",
