@@ -28,7 +28,6 @@ with the following keys:
   - `name`:  The name to apply to the select element, default `calendarSelect`.
   - `setOptions`: The type of select options to return. Must be a valid case of the `OptionsType` enum. Valid cases are
                    `OptionsType::NATIONS`, `OptionsType::DIOCESES`, `OptionsType::DIOCESES_FOR_NATION`, or `OptionsType::ALL`, default `OptionsType::ALL`.
-                   N.B. In the case of `OptionsType::DIOCESES_FOR_NATION`, `nationFilter` must also be set.
   - `nationFilter`: When `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`, this is the nation for which dioceses will be filtered, default `null`.
                      This option MUST be set, and MUST NOT be `null` or empty, when `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`,
                      otherwise an exception will occur.
@@ -37,6 +36,9 @@ with the following keys:
   - `labelText`: The text to use for the label element, default `"Select a calendar"`.
   - `allowNull`: Whether an option with an empty value should be added as the first option of the select, to allow the user to submit a null value, default `false`.
   - `disabled`: Whether to set the `disabled` attribute on the select element, default `false`.
+
+> [!CAUTION]
+> When `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`, the `nationFilter` option MUST also be set, otherwise an exception will occur.
 
 To produce the <kbd>\<select\></kbd> element, call the `->getSelect()` method on the `CalendarSelect` instance.
 
@@ -61,8 +63,9 @@ echo $CalendarSelect->getSelect();
 The options can also be set by using the methods of the same name after instantiating the `CalendarSelect` instance,
 rather than passing them into the constructor. These methods allow for chaining.
 
-<b>N.B.</b> When using the `->setOptions()` method with a value of `OptionsType::DIOCESES_FOR_NATION`,
-the `->nationFilter()` method MUST be called before calling the `->setOptions()` method, otherwise an exception will occur.
+> [!CAUTION]
+> When using the `->setOptions()` method with a value of `OptionsType::DIOCESES_FOR_NATION`,
+> the `->nationFilter()` method <b>MUST</b> be called <b>BEFORE</b> calling the `->setOptions()` method, otherwise an exception will occur.
 
 Example:
 ```php
@@ -72,7 +75,7 @@ use LiturgicalCalendar\Components\CalendarSelect;
 use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
 
 $CalendarSelect = new CalendarSelect();
-$CalendarSelect->locale('it')->class('form-select')->id('diocesan_calendar')->name('diocesan_calendar')->label(true)->labelText('diocese')->nationFilter('NL')->setOptions(OptionsType::DIOCESES_FOR_NATION);
+$CalendarSelect->nationFilter('NL')->setOptions(OptionsType::DIOCESES_FOR_NATION)->locale('it')->class('form-select')->id('diocesan_calendar')->name('diocesan_calendar')->label(true)->labelText('diocese');
 
 echo $CalendarSelect->getSelect();
 ```
@@ -169,10 +172,11 @@ from the other <kbd>\<select\></kbd> elements.
 
 #### Set locale for language names and display values
 We can change the `locale` for the `ApiOptions` component, which will affect:
-  * the `locale` select element, so that the language names in the select options are output according to the set locale
+  * the `locale` select element, so that the language names in the select options are displayed according to the given locale
   * the display values of the `eternal_high_priest` select element (since the final value is a boolean, the display values are simply
     text representations of boolean values, and not the actual value that is sent in an API request)
   * the display values of the `epiphany` select element (which are descriptive to make them more comprehensible)
+  * the display values of the `ascension` and `corpus_christ` select elements ("Sunday" and "Thursday" will be displayed according to the given locale)
 
 ```php
 <?php
