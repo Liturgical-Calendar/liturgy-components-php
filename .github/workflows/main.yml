@@ -42,11 +42,11 @@ jobs:
           # The committer's name
           name: github-actions
           # The commit message
-          message: regenerated i18n/litcompphp.pot from source files
+          message: regenerated POTS from source files
           # The branch to push the changes back to, defaults to the current branch
           branch: ${{ github.ref }}
           # The files to add separated by space, defaults to every file
-          files: src/ApiOptions/i18n/litcompphp.pot
+          files: src/ApiOptions/i18n/litcompphp.pot src/WebCalendar/i18n/webcalendar.pot
           # The repository to push the code to, defaults to origin (e.g. this repository)
           repository: origin
           # The token used to push the code, not needed if you push to the same repository
