@@ -36,7 +36,6 @@ with the following keys:
   - `disabled`: Whether to set the `disabled` attribute on the select element, default `false`.
 
 To produce the <kbd>\<select\></kbd> element, call the `->getSelect()` method on the `CalendarSelect` instance.
-You may optionally pass in an array of options that can have the following keys:
 
 Example:
 ```php
