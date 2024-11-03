@@ -12,11 +12,11 @@ Installing the package in your project is as simple as `composer require liturgi
 
 Include in your project's PHP script with `include_once 'vendor/autoload.php';` (adjust the path to vendor/autoload.php accordingly).
 
-Note that this package requires PHP >= 8.1, seeing it makes use of Enums (which were introduced in PHP 8.1).
+Note that this package requires <b>PHP >= 8.1</b>, seeing it makes use of [Enums](https://www.php.net/manual/en/language.types.enumerations.php) (which were introduced in PHP 8.1).
 
 ### CalendarSelect
-Produces an html <kbd>\<select\></kbd> element the options of which are populated with data
-from the Liturgical Calendar API `/calendars` route. Can be instantiated with an array of options
+Produces an html <kbd>\<select\></kbd> element the <kbd>\<option\></kbd>s of which are populated with data
+from the Liturgical Calendar API `/calendars` route. Can be instantiated passing in an array of options
 with the following keys:
   - `url`: The URL of the liturgical calendar metadata API endpoint.
            Defaults to https://litcal.johnromanodorazio.com/api/dev/calendars.
@@ -60,8 +60,9 @@ echo $CalendarSelect->getSelect();
 
 The options can also be set by using the methods of the same name after instantiating the `CalendarSelect` instance,
 rather than passing them into the constructor. These methods allow for chaining.
-N.B. When using the `setOptions()` method with a value of `OptionsType::DIOCESES_FOR_NATION`,
-the `nationFilter()` method MUST be called before calling the `setOptions()` method, otherwise an exception will occur.
+
+<b>N.B.</b> When using the `->setOptions()` method with a value of `OptionsType::DIOCESES_FOR_NATION`,
+the `->nationFilter()` method MUST be called before calling the `->setOptions()` method, otherwise an exception will occur.
 
 Example:
 ```php
@@ -78,7 +79,7 @@ echo $CalendarSelect->getSelect();
 
 
 ### ApiOptions
-Produces a number of html <kbd>\<select\></kbd> elements, with options that correspond to the values of parameters
+Produces a number of html <kbd>\<select\></kbd> elements, with <kbd>\<option\></kbd>s that correspond to the values of parameters
 that can be sent in a request to the Liturgical Calendar API `/calendar` route.
 The only <kbd>\<select\></kbd> element with options that are populated from the Liturgical API `/calendars` route
 is that of the `locale` parameter, with current supported language locales.
