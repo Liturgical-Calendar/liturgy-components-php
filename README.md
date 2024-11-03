@@ -8,8 +8,7 @@ A collection of reusable frontend components, that work with the Liturgical Cale
 (currently hosted at https://litcal.johnromanodorazio.com/api/dev/).
 
 ## Installing the package
-Installing the package in your project is as simple as `composer require liturgical-calendar/components`. To install without dev dependencies, after we have `composer require`ed the package: `composer install --no-dev`.
-
+Installing the package in your project is as simple as `composer require liturgical-calendar/components`.
 Include in your project's PHP script with `include_once 'vendor/autoload.php';` (adjust the path to vendor/autoload.php accordingly).
 
 Note that this package requires <b>PHP >= 8.1</b>, seeing it makes use of [Enums](https://www.php.net/manual/en/language.types.enumerations.php) (which were introduced in PHP 8.1).
@@ -249,23 +248,73 @@ via the `Input::setGlobalInputClass()` method.
 require 'vendor/autoload.php';
 use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
+
 $options = [
     "locale"    => "it-IT",
     "wrapper"   => true, //we can simply set a boolean, then set the 'as' html element afterwards by using the ->as() method
     "formLabel" => true  //we can simply set a boolean, then set the 'as' html element aftereards by using the ->as() method
 ];
+
 $apiOptions = new ApiOptions($options);
-$apiOptions->wrapper->as('div')->class('calendarOptions')->id('calendarOptions'); //we could also have set 'as', 'class' and 'id' directly in the $options
-                                                                                  // array by passing an array [ 'as' => 'div', 'class' => 'calendarOptions',
-                                                                                  // 'id' => 'calendarOptions' ] to the 'wrapper'
-$apiOptions->formLabel->as('h5')->text('Liturgical Calendar API Request Options');//we could also have set 'as' and 'text' directly in the $options
-                                                                                  // array by passing an array [ 'as' => 'h5', 'text' => '...' ]
-                                                                                  // to 'formLabel'
+
+$apiOptions->wrapper->as('div')->class('calendarOptions')->id('calendarOptions');
+$apiOptions->formLabel->as('h5')->text('Liturgical Calendar API Request Options');
+
 Input::setGlobalWrapper('div');
 Input::setGlobalWrapperClass('form-group');
 Input::setGlobalInputClass('form-select');
 echo $apiOptions->getForm();
 ```
+
+> [!NOTE]
+> Other than setting the `as` html element as a string value in the `wrapper` option, or enabling the `wrapper` with a boolean value, we can also set `wrapper` to an associative array with the desired options.
+> The following three examples are equivalent:
+> ```php
+> // EXAMPLE 1
+> $options = [
+>     'wrapper'   => 'div'
+> ];
+> $apiOptions = new ApiOptions($options);
+> $apiOptions->wrapper->class('calendarOptions')->id('calendarOptions');
+>
+> // EXAMPLE 2
+> $options = [
+>     'wrapper'   => [ 'as' => 'div', 'class' => 'calendarOptions', 'id' => 'calendarOptions' ]
+> ];
+> $apiOptions = new ApiOptions($options);
+>
+> // EXAMPLE 3
+> $options = [
+>     'wrapper'   => true
+> ];
+> $apiOptions = new ApiOptions($options);
+> $apiOptions->wrapper->as('div')->class('calendarOptions')->id('calendarOptions');
+> ```
+
+> [!NOTE]
+> Other than setting the `as` html element as a string value in the `formLabel` option, or enabling the `fornLabel` with a boolean value, we can also set `formLabel` to an associative array with the desired options.
+> The following three examples are equivalent:
+> ```php
+> // EXAMPLE 1
+> $options = [
+>     'formLabel'   => 'h5'
+> ];
+> $apiOptions = new ApiOptions($options);
+> $apiOptions->formLabel->text('Liturgical Calendar API Request Options');
+>
+> // EXAMPLE 2
+> $options = [
+>     'formLabel'   => [ 'as' => 'h5', 'text' => 'Liturgical Calendar API Request Options' ]
+> ];
+> $apiOptions = new ApiOptions($options);
+>
+> // EXAMPLE 3
+> $options = [
+>     'formLabel'   => true
+> ];
+> $apiOptions = new ApiOptions($options);
+> $apiOptions->wrapper->as('h5')->text('Liturgical Calendar API Request Options');
+> ```
 
 Output:
 
@@ -306,9 +355,9 @@ require 'vendor/autoload.php';
 use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
 $options = [
-    "locale"    => "it-IT",
-    "wrapper"   => true,
-    "formLabel" => true
+    'locale'    => 'it-IT',
+    'wrapper'   => true,
+    'formLabel' => true
 ];
 $apiOptions = new ApiOptions($options);
 $apiOptions->wrapper->as('div')->class('calendarOptions')->id('calendarOptions');
@@ -353,14 +402,14 @@ if (JSON_ERROR_NONE === json_last_error()) {
 } else {
     echo '<div class="col-12">JSON error: ' . json_last_error_msg() . '</div>';
 }
-
 ```
 
 ## Tests
 The package includes a few unit tests to ensure that the component is working as expected.
-In order to run the tests, install the package with the dev dependencies:
-```php
-composer require liturgical-calendar/components
+In order to run the tests, clone the package repository locally and install the dev dependencies:
+```console
+git clone https://github.com/Liturgical-Calendar/liturgy-components-php.git
+cd liturgy-components-php
 composer install
 ```
 
