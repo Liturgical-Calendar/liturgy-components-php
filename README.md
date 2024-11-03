@@ -1,6 +1,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/liturgical-calendar/liturgy-components-php/badge)](https://www.codefactor.io/repository/github/liturgical-calendar/liturgy-components-php)
 ![php version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FLiturgical-Calendar%2Fliturgy-components-php%2Fmain%2Fcomposer.json&query=require.php&label=php)
-[![Packagist](https://img.shields.io/packagist/v/liturgical-calendar/components.svg?color=4CC61E&style=popout)](https://packagist.org/packages/liturgical-calendar/components)
+[![Packagist](https://img.shields.io/packagist/v/liturgical-calendar/components.svg)](https://packagist.org/packages/liturgical-calendar/components)
+[![Packagist stats](https://img.shields.io/packagist/dt/liturgical-calendar/components.svg)](https://packagist.org/packages/liturgical-calendar/components/stats)
 
 # Liturgical Calendar Components for PHP
 A collection of reusable frontend components, that work with the Liturgical Calendar API
