@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-03 12:07+0100\n"
+"POT-Creation-Date: 2024-11-04 22:39+0000\n"
 "PO-Revision-Date: 2024-11-03 12:54+0000\n"
 "Last-Translator: Weblate Admin <admin@example.com>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
@@ -19,22 +19,22 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.6.1\n"
 
-#: src/WebCalendar.php:253
+#: src/WebCalendar.php:335
 msgid "or"
 msgstr "oppure"
 
-#: src/WebCalendar.php:261
+#: src/WebCalendar.php:376
 msgid "Month"
 msgstr "Mese"
 
-#: src/WebCalendar.php:261
+#: src/WebCalendar.php:380
 msgid "Date"
 msgstr "Data"
 
-#: src/WebCalendar.php:261
+#: src/WebCalendar.php:384
 msgid "Celebration"
 msgstr "Celebrazione"
 
-#: src/WebCalendar.php:261
+#: src/WebCalendar.php:388
 msgid "Liturgical Grade"
 msgstr "Grado liturgico"
