@@ -278,7 +278,7 @@ class CalendarSelect
      *
      * @return $this
      */
-    public function label(bool $label): self
+    public function label(bool $label = true): self
     {
         $this->label = $label;
         return $this;
@@ -308,13 +308,20 @@ class CalendarSelect
      *
      * @return static
      */
-    public function allowNull(bool $allowNull): self
+    public function allowNull(bool $allowNull = true): self
     {
         $this->allowNull = $allowNull;
         return $this;
     }
 
-    public function disabled(bool $disabled): self
+    /**
+     * Sets whether the select element should be disabled.
+     *
+     * @param bool $disabled Whether the select element should be disabled.
+     *
+     * @return static
+     */
+    public function disabled(bool $disabled = true): self
     {
         $this->disabled = $disabled;
         return $this;
@@ -571,6 +578,15 @@ class CalendarSelect
         return $this->locale;
     }
 
+    /**
+     * Returns true if the given diocese is a valid diocese for the given nation,
+     * and false otherwise.
+     *
+     * @param string $diocese The diocese to check.
+     * @param string $nation The nation to check.
+     *
+     * @return bool True if the diocese is valid for the nation, false otherwise.
+     */
     public static function isValidDioceseForNation($diocese, $nation): bool
     {
         $nationalCalendarMetadata = array_values(array_filter(self::$nationalCalendars, fn($item) => $item['calendar_id'] === $nation));
@@ -582,6 +598,11 @@ class CalendarSelect
             return false;
         }
         return in_array($diocese, $nationalCalendar['dioceses']);
+    }
+
+    public static function getMetadata(): ?array
+    {
+        return self::$calendarIndex;
     }
 
     /**
