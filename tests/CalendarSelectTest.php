@@ -35,7 +35,7 @@ class CalendarSelectTest extends TestCase
     {
         $calendarSelect = new CalendarSelect();
         $selectHtml = $calendarSelect->getSelect();
-        $this->assertStringContainsString('<select id="calendarSelect" class="calendarSelect">', $selectHtml);
+        $this->assertStringContainsString('<select id="calendarSelect" name="calendarSelect" class="calendarSelect">', $selectHtml);
         $this->assertStringContainsString('</select>', $selectHtml);
     }
 
@@ -43,11 +43,12 @@ class CalendarSelectTest extends TestCase
     {
         $options = [
             'class' => 'form-select',
-            'id'    => 'mySelect'
+            'id'    => 'mySelect',
+            'name'  => 'mySelect'
         ];
-        $calendarSelect = new CalendarSelect();
-        $selectHtml = $calendarSelect->getSelect($options);
-        $this->assertStringContainsString('<select id="mySelect" class="form-select">', $selectHtml);
+        $calendarSelect = new CalendarSelect($options);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('<select id="mySelect" name="mySelect" class="form-select">', $selectHtml);
         $this->assertStringContainsString('</select>', $selectHtml);
     }
 

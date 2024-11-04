@@ -50,6 +50,10 @@ class ApiOptionsTest extends TestCase
             "wrapper"   => true
         ];
         $apiOptions = new ApiOptions($options);
+        //$expectedTextDomainPath = dirname(__DIR__) . "/src/ApiOptions/i18n";
+        //$currentTextDomainPath = bindtextdomain("litcompphp", $expectedTextDomainPath);
+        //$this->assertEquals($apiOptions->expectedTextDomainPath, $apiOptions->currentTextDomainPath);
+
         $baseLocale = \Locale::getPrimaryLanguage($apiOptions->currentSetLocale);
         $this->assertEquals('it', $baseLocale);
         $this->assertEquals($apiOptions->expectedTextDomainPath, $apiOptions->currentTextDomainPath);
@@ -99,7 +103,8 @@ class ApiOptionsTest extends TestCase
                         $texts[] = $option->textContent;
                     }
                     $this->assertEquals(['', 'JAN6', 'SUNDAY_JAN2_JAN8'], $values);
-                    //TODO: for some reason this assertion fails, the English strings are not translated
+                    //TODO: for some reason this assertion fails, the translated strings are not loaded from the bound textdomain
+                    //      The localized date '6 gennaio' is translated just fine, but the localized 'Domenica tra il 2 e il 8 gennaio' is not
                     //$this->assertEquals(['--', '6 gennaio', "Domenica tra il 2 e l'8 gennaio"], $texts);
                     $this->assertEquals('epiphany', $precedingSibling->textContent);
                     break;
@@ -128,9 +133,9 @@ class ApiOptionsTest extends TestCase
                         $values[] = $option->getAttribute('value');
                         $texts[] = $option->textContent;
                     }
-                    $this->assertEquals(['true', 'false'], $values);
+                    $this->assertEquals(['false', 'true'], $values);
                     //TODO: for some reason this assertion fails, the English strings are not translated
-                    //$this->assertEquals(['--', 'vero', 'falso'], $texts);
+                    //$this->assertEquals(['falso', 'vero'], $texts);
                     $this->assertEquals('eternal_high_priest', $precedingSibling->textContent);
                     break;
                 case 'locale':

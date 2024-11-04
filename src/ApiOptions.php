@@ -181,9 +181,6 @@ class ApiOptions
             $baseLocale
         ];
         $this->currentSetLocale = setlocale(LC_ALL, $localeArray);
-        //tried to fix ApiOptionsTest by putting the environment variable here, but didn't change anything...
-        //translations are working on the frontend but not in the tests
-        //putenv("LC_ALL=" . $this->currentSetLocale);
         $this->expectedTextDomainPath = __DIR__ . "/ApiOptions/i18n";
         $this->currentTextDomainPath = bindtextdomain("litcompphp", $this->expectedTextDomainPath);
         if ($this->currentTextDomainPath !== $this->expectedTextDomainPath) {
