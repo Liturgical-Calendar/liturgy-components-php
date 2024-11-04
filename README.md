@@ -398,7 +398,8 @@ $LiturgicalCalendar = json_decode($response);
 // If we have successfully obtained an object, pass it into the WebCalendar constructor
 if (JSON_ERROR_NONE === json_last_error()) {
     $webCalendar = new WebCalendar($LiturgicalCalendar);
-    $webCalendar->buildTable();
+    $table = $webCalendar->buildTable();
+    echo $table;
 } else {
     echo '<div class="col-12">JSON error: ' . json_last_error_msg() . '</div>';
 }
