@@ -264,7 +264,7 @@ class WebCalendar
         // Seeing that there may be a Memorial on this day, the only way to get this date is by checking the Saturday following Christ the King
         $Saturday34thWeekOrdTime = clone $this->LiturgicalCalendar->litcal->ChristKing->date;
         $Saturday34thWeekOrdTime->modify('next Saturday');
-        if ($litevent->date > $this->LiturgicalCalendar->litcal->CorpusChristi->date && $litevent->date <= $Saturday34thWeekOrdTime) {
+        if ($litevent->date > $this->LiturgicalCalendar->litcal->Pentecost->date && $litevent->date <= $Saturday34thWeekOrdTime) {
             return 'ORDINARY_TIME';
         }
         return 'CHRISTMAS';
