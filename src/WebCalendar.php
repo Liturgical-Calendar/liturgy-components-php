@@ -245,6 +245,31 @@ class WebCalendar
         }
     }
 
+    private function determineSeason(LiturgicalEvent $litevent)
+    {
+        if ($litevent->date >= $this->LiturgicalCalendar->litcal->AshWednesday->date && $litevent->date < $this->LiturgicalCalendar->litcal->Easter->date) {
+            return 'LENT';
+        }
+        if ($litevent->date >= $this->LiturgicalCalendar->litcal->Easter->date && $litevent->date < $this->LiturgicalCalendar->litcal->Pentecost->date) {
+            return 'EASTER';
+        }
+        if ($litevent->date >= $this->LiturgicalCalendar->litcal->Advent1->date && $litevent->date < $this->LiturgicalCalendar->litcal->Christmas->date) {
+            return 'ADVENT';
+        }
+        if ($litevent->date > $this->LiturgicalCalendar->litcal->BaptismLord->date && $litevent->date < $this->LiturgicalCalendar->litcal->AshWednesday->date) {
+            return 'ORDINARY_TIME';
+        }
+        // We won't have Advent1 if we have requested a LITURGICAL year_type (it will be less than BaptismLord not greater)
+        // So to correctly determine ORDINARY_TIME we should check if the date is less than or equal to Saturday of the 34th week of Ordinary Time
+        // Seeing that there may be a Memorial on this day, the only way to get this date is by checking the Saturday following Christ the King
+        $Saturday34thWeekOrdTime = clone $this->LiturgicalCalendar->litcal->ChristKing->date;
+        $Saturday34thWeekOrdTime->modify('next Saturday');
+        if ($litevent->date > $this->LiturgicalCalendar->litcal->CorpusChristi->date && $litevent->date <= $Saturday34thWeekOrdTime) {
+            return 'ORDINARY_TIME';
+        }
+        return 'CHRISTMAS';
+    }
+
     /**
      * Determines the liturgical color for the Liturgical Season, to apply to liturgical events within that season.
      *
@@ -253,15 +278,20 @@ class WebCalendar
      */
     private function getSeasonColor(LiturgicalEvent $litevent)
     {
-        $seasonColor = 'green';
-        if (($litevent->date > $this->LiturgicalCalendar->litcal->Advent1->date  && $litevent->date < $this->LiturgicalCalendar->litcal->Christmas->date) || ($litevent->date > $this->LiturgicalCalendar->litcal->AshWednesday->date && $litevent->date < $this->LiturgicalCalendar->litcal->Easter->date)) {
-            $seasonColor = 'purple';
-        } elseif ($litevent->date > $this->LiturgicalCalendar->litcal->Easter->date && $litevent->date < $this->LiturgicalCalendar->litcal->Pentecost->date) {
-            $seasonColor = 'white';
-        } elseif ($litevent->date > $this->LiturgicalCalendar->litcal->Christmas->date || $litevent->date < $this->LiturgicalCalendar->litcal->BaptismLord->date) {
-            $seasonColor = 'white';
+        $LiturgicalSeason = $litevent->liturgical_season ?? $this->determineSeason($litevent);
+        switch ($LiturgicalSeason) {
+            case 'ADVENT':
+            case 'LENT':
+            case 'EASTER_TRIDUUM':
+                return 'purple';
+            case 'EASTER':
+            case 'CHRISTMAS':
+                return 'white';
+            case 'ORDINARY_TIME':
+                return 'green';
+            default:
+                return 'green';
         }
-        return $seasonColor;
     }
 
     /**
