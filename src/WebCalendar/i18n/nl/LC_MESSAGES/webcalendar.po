@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-03 12:07+0100\n"
+"POT-Creation-Date: 2024-11-05 10:30+0000\n"
 "PO-Revision-Date: 2024-11-03 12:54+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Dutch <https://translate.johnromanodorazio.com/projects/"
@@ -19,22 +19,22 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.6.1\n"
 
-#: src/WebCalendar.php:253
+#: src/WebCalendar.php:365
 msgid "or"
 msgstr "of"
 
-#: src/WebCalendar.php:261
+#: src/WebCalendar.php:406
 msgid "Month"
 msgstr "Maand"
 
-#: src/WebCalendar.php:261
+#: src/WebCalendar.php:410
 msgid "Date"
 msgstr "Datum"
 
-#: src/WebCalendar.php:261
+#: src/WebCalendar.php:414
 msgid "Celebration"
 msgstr "Viering"
 
-#: src/WebCalendar.php:261
+#: src/WebCalendar.php:418
 msgid "Liturgical Grade"
 msgstr "Liturgische Graad"
