@@ -53,6 +53,7 @@ class CalendarSelect
     private string $name                           = 'calendarSelect';
     private bool $label                            = false;
     private string $labelStr                       = 'Select a calendar';
+    private string $labelClass                     = '';
     private bool $allowNull                        = false;
     private bool $disabled                         = false;
     private OptionsType $optionsType               = OptionsType::ALL;
@@ -121,6 +122,10 @@ class CalendarSelect
 
         if (isset($options['labelStr'])) {
             $this->labelStr = htmlspecialchars($options['labelStr'], ENT_QUOTES, 'UTF-8');
+        }
+
+        if (isset($options['labelClass'])) {
+            $this->labelClass = htmlspecialchars($options['labelClass'], ENT_QUOTES, 'UTF-8');
         }
 
         if (isset($options['allowNull'])) {
@@ -296,6 +301,12 @@ class CalendarSelect
     public function labelText(string $text): self
     {
         $this->labelStr = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        return $this;
+    }
+
+    public function labelClass(string $labelClass): self
+    {
+        $this->labelClass = htmlspecialchars($labelClass, ENT_QUOTES, 'UTF-8');
         return $this;
     }
 
@@ -549,13 +560,17 @@ class CalendarSelect
      */
     public function getSelect(): string
     {
-        $optionsHtml = $this->getOptions();
+        $labelClass = !empty($this->labelClass) ? " class=\"{$this->labelClass}\"" : '';
+        $id = $this->id && !empty($this->id) ? " id=\"{$this->id}\"" : '';
+        $name = $this->name && !empty($this->name) ? " name=\"{$this->name}\"" : '';
+        $class = $this->class && !empty($this->class) ? " class=\"{$this->class}\"" : '';
         $disabled = $this->disabled ? 'disabled' : '';
+        $optionsHtml = $this->getOptions();
         if ($this->allowNull) {
             $optionsHtml = "<option value=\"\">---</option>{$optionsHtml}";
         }
-        return ($this->label ? "<label for=\"{$this->id}\">{$this->labelStr}</label>" : '')
-            . "<select id=\"{$this->id}\" name=\"{$this->name}\" class=\"{$this->class}\"{$disabled}>{$optionsHtml}</select>";
+        return ($this->label ? "<label for=\"{$this->id}\"{$labelClass}>{$this->labelStr}</label>" : '')
+            . "<select{$id}{$name}{$class}{$disabled}>{$optionsHtml}</select>";
     }
 
     /**
