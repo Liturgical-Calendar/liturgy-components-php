@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-05 10:30+0000\n"
+"POT-Creation-Date: 2024-11-11 05:46+0000\n"
 "PO-Revision-Date: 2024-11-03 12:54+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Spanish <https://translate.johnromanodorazio.com/projects/"
@@ -19,22 +19,31 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.6.1\n"
 
-#: src/WebCalendar.php:365
+#: src/WebCalendar.php:503
 msgid "or"
 msgstr "o"
 
-#: src/WebCalendar.php:406
+#: src/WebCalendar.php:557
 msgid "Month"
 msgstr "Mes"
 
-#: src/WebCalendar.php:410
+#. translators: 'Season' refers to the liturgical season.
+#: src/WebCalendar.php:560
+msgid "Season"
+msgstr ""
+
+#: src/WebCalendar.php:566
 msgid "Date"
 msgstr "Fecha"
 
-#: src/WebCalendar.php:414
+#: src/WebCalendar.php:570
 msgid "Celebration"
 msgstr "Celebración"
 
-#: src/WebCalendar.php:418
+#: src/WebCalendar.php:574
 msgid "Liturgical Grade"
 msgstr "Grado litúrgico"
+
+#: src/WebCalendar.php:579
+msgid "Psalter"
+msgstr ""
