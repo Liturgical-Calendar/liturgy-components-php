@@ -83,7 +83,7 @@ class ApiOptions
             foreach ($options as $key => $value) {
                 switch ($key) {
                     case 'locale':
-                        $value = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+                        $value = null !== $value ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : 'en-US';
                         self::$locale = \Locale::canonicalize($value);
                         break;
                     case 'formLabel':

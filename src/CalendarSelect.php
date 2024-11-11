@@ -183,7 +183,7 @@ class CalendarSelect
      *
      * @return self
      */
-    public function locale($locale): self
+    public function locale(string $locale): self
     {
         $locale = \Locale::canonicalize($locale);
         if (!self::isValidLocale($locale)) {
