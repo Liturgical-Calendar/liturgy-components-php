@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-05 10:30+0000\n"
+"POT-Creation-Date: 2024-11-11 05:46+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,22 +17,31 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/WebCalendar.php:365
+#: src/WebCalendar.php:503
 msgid "or"
 msgstr ""
 
-#: src/WebCalendar.php:406
+#: src/WebCalendar.php:557
 msgid "Month"
 msgstr ""
 
-#: src/WebCalendar.php:410
+#. translators: 'Season' refers to the liturgical season.
+#: src/WebCalendar.php:560
+msgid "Season"
+msgstr ""
+
+#: src/WebCalendar.php:566
 msgid "Date"
 msgstr ""
 
-#: src/WebCalendar.php:414
+#: src/WebCalendar.php:570
 msgid "Celebration"
 msgstr ""
 
-#: src/WebCalendar.php:418
+#: src/WebCalendar.php:574
 msgid "Liturgical Grade"
+msgstr ""
+
+#: src/WebCalendar.php:579
+msgid "Psalter"
 msgstr ""
