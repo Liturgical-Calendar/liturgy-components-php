@@ -601,21 +601,6 @@ class WebCalendar
             $keyname = $this->LitCalKeys[$keyindex];
             $litevent = $this->LiturgicalCalendar->litcal->$keyname;
 
-            // Check if the liturgical event has liturgical_season or liturgical_season_lcl properties (unfortunately not all events have them),
-            // and if not determine the liturgical season and retrieve the localized form from another event with the same season.
-            if (!property_exists($litevent, "liturgical_season") || $litevent->liturgical_season === null || $litevent->liturgical_season === "") {
-                $litevent->liturgical_season = $this->determineSeason($litevent);
-            }
-            if (!property_exists($litevent, "liturgical_season_lcl") || $litevent->liturgical_season_lcl === null || $litevent->liturgical_season_lcl === "") {
-                foreach ($this->LiturgicalCalendar->litcal as $item) {
-                    if ($item->event_idx !== $litevent->event_idx && $item->liturgical_season === $litevent->liturgical_season) {
-                        $litevent->liturgical_season_lcl = $item->liturgical_season_lcl;
-                        break;
-                    }
-                }
-            }
-
-
             // Check if we are at the start of a new month, and if so count how many events we have in that same month,
             // so we can display the Month table cell with the correct colspan when firstColumnGrouping is BY_MONTH.
             $eventMonth = (int) $litevent->date->format('n');
