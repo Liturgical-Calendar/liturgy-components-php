@@ -17,7 +17,7 @@ A collection of reusable frontend components, that work with the Liturgical Cale
 Installing the package in your project is as simple as `composer require liturgical-calendar/components`.
 Include in your project's PHP script with `include_once 'vendor/autoload.php';` (adjust the path to vendor/autoload.php accordingly).
 
-Note that this package requires <b>PHP >= 8.1</b>, seeing it makes use of [Enums](https://www.php.net/manual/en/language.types.enumerations.php) (which were introduced in PHP 8.1).
+Note that this package requires <b>PHP >= 8.1</b>, seeing it makes use of [Enums](https://www.php.net/manual/en/language.types.enumerations.php) (which were introduced in PHP 8.1). It also requires PHP `ext-intl`. To check if you have all the requirements you can run `composer check-platform-reqs --no-dev`. If you intend on contributing to the repository and installing development requirements, you should run `composer check-platform-reqs`.
 
 ### CalendarSelect
 Produces an html <kbd>\<select\></kbd> element the <kbd>\<option\></kbd>s of which are populated with data
@@ -506,13 +506,16 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
    * `DateFormat::SHORT`: The short date format for the locale, e.g. "3/3/23" or "03/03/23".
    * `DateFormat::DAY_ONLY`: Only the day of the month and the weekday, e.g. "3 Friday" or "3 venerdì".
 
+## Examples
+An examples folder has been included in the repo to allow for easy testing. Currently there is a `/webcalendar` subfolder with an example of usage of the `WebCalendar` component. To quickly test it out, `cd` into the `/webcalendar` subfolder and run `php -S localhost:8000`, then open your browser at `http://localhost:8000`. You should see a form with `ApiOptions` and `CalendarSelect`. Click on <kbd>Submit</kbd> to see the actual web calendar.
+
 ## Tests
 The package includes a few unit tests to ensure that the component is working as expected.
 In order to run the tests, clone the package repository locally and install the dev dependencies:
 ```bash session
 git clone https://github.com/Liturgical-Calendar/liturgy-components-php.git
 cd liturgy-components-php
-composer install
+composer install --no-dev
 ```
 
 Then run the `composer test` script, which calls the included PHPUnit package to run the tests in the `tests` folder.
