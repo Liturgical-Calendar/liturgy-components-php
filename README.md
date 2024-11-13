@@ -405,10 +405,93 @@ if (JSON_ERROR_NONE === json_last_error()) {
 }
 ```
 
+#### CSS classes
+Most of the table styling should be handled with CSS styling rules.
+
+To this end, a number of CSS classes are created by default in the resulting table.
+* <kbd>&lt;colgroup&gt;</kbd>: each <kbd>&lt;col&gt;</kbd> element within the table's <kbd>&lt;colgroup&gt;</kbd> will have a class of `colN` where `N` is the number of the column, starting from 1. This allows to set for example the width styling of specific columns, rather than relying on the browser to calculate the width automatically.
+* the first column has a default class of `rotate` which allows for a CSS rule that will rotate the text such as:
+   ```css
+   #LitCalTable td.rotate div {
+     writing-mode: vertical-rl;
+     transform: rotate(180.0deg);
+   }
+   ```
+   Additionally, if the first column grouping is set to `Grouping::BY_MONTH`, each cell of the column will have class `month`.
+   If instead the grouping is set to `Grouping::BY_LITURGICAL_SEASON`, each cell of the column will have additional classes `season {LITURGICAL_SEASON}` where `{LITURGICAL_SEASON}` is the a value of `ADVENT`, `CHRISTMAS`, `LENT`, `EASTER_TRIDUUM`, `EASTER` or `ORDINARY_TIME`.
+* if Month header rows are enabled, each Month header cell will have a class of `monthHeader`
+* Date column cells have a class of `dateEntry`
+* Event details column cells have a class of `eventDetails liturgicalGrade_{GRADE}` where `{GRADE}` is the numerical rank of the festivity, with a value between 0 = weekday and 7 = higher solemnity
+* Liturgical grade column cells have a class of `liturgicalGrade liturgicalGrade_{GRADE}` (as above)
+* if Psalter week grouping is enabled, Psalter week column cells will have a class of `psalterWeek`
+
+#### Chainable methods
+
+The WebCalendar instance also has a number of methods that allow to further adjust and customize the layout of the calendar.
+These methods allow for chaining, making it easy to call them one after the other:
+```php
+use LiturgicalCalendar\Components\WebCalendar;
+use LiturgicalCalendar\Components\WebCalendar\Grouping;
+use LiturgicalCalendar\Components\WebCalendar\ColorAs;
+use LiturgicalCalendar\Components\WebCalendar\Column;
+use LiturgicalCalendar\Components\WebCalendar\DateFormat;
+
+// make your request and get an object from the response...
+
+    $webCalendar = new WebCalendar($LiturgicalCalendar);
+    $webCalendar->id('LitCalTable')
+                ->class('.liturgicalCalendar')
+                ->firstColumnGrouping(Grouping::BY_LITURGICAL_SEASON)
+                ->psalterWeekGrouping()
+                ->removeHeaderRow()
+                ->removeCaption()
+                ->seasonColor(ColorAs::CSS_CLASS)
+                ->seasonColorColumns(Column::LITURGICAL_SEASON)
+                ->eventColor(ColorAs::INDICATOR)
+                ->eventColorColumns(Column::EVENT)
+                ->monthHeader()
+                ->dateFormat(DateFormat::DAY_ONLY);
+```
+
+* `id(string $id)`: sets the `id` attribute of the `<table>` element
+* `class(string $class)`: sets the `class` attribute of the `<table>` element
+* `firstColumnGrouping(Grouping $grouping)`: sets the grouping for the first column. Can take an enum value of:
+   * `Grouping::BY_MONTH`: the first column will contain month groupings
+   * `Grouping::BY_LITURGICAL_SEASON`: the first column will contain liturgical season groupings
+* `psalterWeekGrouping(bool $boolVal = true)`: sets whether the psalter week column is produced.
+   It is always the last column, and liturgical events within the same Psalter week are grouped together.
+* `removeHeaderRow(bool $removeHeaderRow = true)`: sets whether the header row should be removed from the table
+* `removeCaption(bool $removeCaption = true)`: sets whether the table caption should be removed from the table
+* `seasonColor(ColorAs $colorAs)`: sets how the season color is applied to the table. Can take an enum value of:
+   * `ColorAs::CSS_CLASS`: the season color will be applied to given column cells as a class (value of `green`, `red`, `white`, `purple`, `pink`)
+   * `ColorAs::BACKGROUND`: the season color will be applied to given column cells as an inline style
+   * `ColorAs::INDICATOR`: a small circle with background color corresponding to the season color will be created in given column cells
+   * `ColorAs::NONE`: none of the above
+* `seasonColorColumns(Column|int $columnFlags = Column::NONE)`: sets which columns should be affected by the `seasonColor` settings. The method takes a `Column` enum as parameter, the available enum cases are:
+   * `Column::LITURGICAL_SEASON`
+   * `Column::MONTH`
+   * `Column::DATE`
+   * `Column::EVENT`
+   * `Column::GRADE`
+   * `Column::PSALTER_WEEK`
+   * `Column::ALL`
+   * `Column::NONE`
+
+  The `Column` enum values are bitfield values, so they can be combined with a bitwise OR operator `|`, but being an enum, the values are obtained with `Column::LITURGICAL_SEASON->value`, `Column::MONTH->value`, etc. A bitwise combination of columns would like: `seasonColorColumns(Column::LITURGICAL_SEASON->value | Column::DATE->value | Column::PSALTER_WEEK->value)`. As a convenience, we have a `Column::ALL` enum case that represents the OR'd value of all columns, and a `Column::NONE` enum case the represents a zero value, effectively disabling all columns from any season color effects.
+* `eventColor(ColorAs $colorAs)`: sets how the color for the single liturgical celebration is applied to the table. See `seasonColor` above for the `ColorAs` enum cases.
+* `eventColorColumns(Columns|int $columnFlags = Column::NONE)`: sets which columns should be affected by the `eventColor` settings. See the `seasonColorColumns` method above for usage of the `Column` enum cases.
+* `monthHeader(bool $monthHeader = true)`: sets whether month headers should be produced at the start of each month
+* `dateFormat(DateFormat $dateFormat = DateFormat::FULL)`: sets how the date should be displayed in the Date column. The `DateFornat` enum cases are a selection of `IntlDateFormatter` constants:
+   * `DateFormat::FULL`: The full date format for the locale, e.g. "Friday, March 3, 2023" or "venerdì 3 marzo 2023".
+   * `DateFormat::LONG`: The long date format for the locale, e.g. "March 3, 2023" or "3 marzo 2023".
+   * `DateFormat::MEDIUM`: The medium date format for the locale, e.g. "Mar 3, 2023" or "3 mar 2023".
+   * `DateFormat::SHORT`: The short date format for the locale, e.g. "3/3/23" or "03/03/23".
+   * `DateFormat::DAY_ONLY`: Only the day of the month and the weekday, e.g. "3 Friday" or "3 venerdì".
+
 ## Tests
 The package includes a few unit tests to ensure that the component is working as expected.
 In order to run the tests, clone the package repository locally and install the dev dependencies:
-```console
+```bash session
 git clone https://github.com/Liturgical-Calendar/liturgy-components-php.git
 cd liturgy-components-php
 composer install

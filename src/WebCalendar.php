@@ -20,21 +20,21 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
  * - messages: the messages object from the Liturgical Calendar API
  *
  * The class provides the following methods:
- * - {@see buildTable()}: returns an HTML string containing a table of the liturgical events.
  * - {@see id(string $id)}: sets the id of the table element.
  * - {@see class(string $class)}: sets the class of the table element.
- * - {@see daysCreated()}: returns the number of days created in the table.
- * - {@see getLocale()}: returns the locale that was set when the WebCalendar object was created / buildTable was called.
  * - {@see firstColumnGrouping(Grouping $grouping)}: sets the grouping of the first column of the table.
+ * - {@see psalterWeekGrouping(bool $psalterWeekGrouping)}: sets whether to display grouped psalter weeks.
  * - {@see removeHeaderRow(bool $removeHeaderRow)}: sets whether to remove the header row of the table.
  * - {@see removeCaption(bool $removeCaption)}: sets whether to remove the caption of the table.
  * - {@see dateFormat(DateFormat $dateFormat)}: sets the date format of the table.
- * - {@see psalterWeekGrouping(bool $psalterWeekGrouping)}: sets whether to display grouped psalter weeks.
  * - {@see monthHeader(bool $monthHeader)}: sets whether to display month headers.
  * - {@see seasonColor(ColorAs $seasonColor)}: sets how the season color is handled (background color, CSS class, or inline block element).
  * - {@see eventColor(ColorAs $eventColor)}: sets how the event color is handled (background color, CSS class, or inline block element).
  * - {@see seasonColorColumns(ColumnSet $seasonColorColumns)}: sets which columns to apply the season color to.
  * - {@see eventColorColumns(ColumnSet $eventColorColumns)}: sets which columns to apply the event color to.
+ * - {@see getLocale()}: returns the locale that was set when the WebCalendar object was created / buildTable was called.
+ * - {@see buildTable()}: returns an HTML string containing a table of the liturgical events.
+ * - {@see daysCreated()}: returns the number of days created in the table.
  */
 class WebCalendar
 {
@@ -352,7 +352,7 @@ class WebCalendar
      * - LONG: The long date format for the locale, e.g. "March 3, 2023" or "3 marzo 2023".
      * - MEDIUM: The medium date format for the locale, e.g. "Mar 3, 2023" or "3 mar 2023".
      * - SHORT: The short date format for the locale, e.g. "3/3/23" or "03/03/23".
-     * - DAY_ONLY: Only the day of the month, e.g. "3 Friday" or "3 venerdì".
+     * - DAY_ONLY: Only the day of the month and the weekday, e.g. "3 Friday" or "3 venerdì".
      *
      * The default is DateFormat::FULL.
      *
