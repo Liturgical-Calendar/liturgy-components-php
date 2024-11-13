@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-11-13 19:10+0000\n"
-"PO-Revision-Date: 2024-11-03 12:54+0000\n"
+"PO-Revision-Date: 2024-11-13 19:26+0000\n"
 "Last-Translator: Weblate Admin <admin@example.com>\n"
 "Language-Team: Italian <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/liturgy-components-php-webcalendar/it/>\n"
@@ -27,13 +27,13 @@ msgstr "oppure"
 #: src/WebCalendar.php:885
 #, php-format
 msgid "Liturgical Calendar for the %1$s - %2$s"
-msgstr ""
+msgstr "Calendario liturgico per la %1$s - %2$s"
 
 #. translators: 1. name of the nation, 2. year
 #: src/WebCalendar.php:893
 #, php-format
 msgid "Liturgical Calendar for %1$s - %2$s"
-msgstr ""
+msgstr "Calendario liturgico per %1$s - %2$s"
 
 #: src/WebCalendar.php:899
 #, php-format
@@ -47,7 +47,7 @@ msgstr "Mese"
 #. translators: 'Season' refers to the liturgical season.
 #: src/WebCalendar.php:917
 msgid "Season"
-msgstr ""
+msgstr "Tempo"
 
 #: src/WebCalendar.php:923
 msgid "Date"
