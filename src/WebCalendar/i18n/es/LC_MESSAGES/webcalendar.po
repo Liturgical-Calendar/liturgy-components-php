@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-11-13 19:10+0000\n"
-"PO-Revision-Date: 2024-11-03 12:54+0000\n"
+"PO-Revision-Date: 2024-11-13 19:26+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Spanish <https://translate.johnromanodorazio.com/projects/"
 "liturgical-calendar/liturgy-components-php-webcalendar/es/>\n"
@@ -33,12 +33,12 @@ msgstr ""
 #: src/WebCalendar.php:893
 #, php-format
 msgid "Liturgical Calendar for %1$s - %2$s"
-msgstr ""
+msgstr "Calendario Litúrgico para %1$s - %2$s"
 
 #: src/WebCalendar.php:899
 #, php-format
 msgid "General Roman Calendar - %1$s"
-msgstr ""
+msgstr "Calendario General Romano - %1$s"
 
 #: src/WebCalendar.php:914
 msgid "Month"
@@ -63,4 +63,4 @@ msgstr "Grado litúrgico"
 
 #: src/WebCalendar.php:936
 msgid "Psalter"
-msgstr ""
+msgstr "Salterio"
