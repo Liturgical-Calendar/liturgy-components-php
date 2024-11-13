@@ -418,12 +418,24 @@ To this end, a number of CSS classes are created by default in the resulting tab
    }
    ```
    Additionally, if the first column grouping is set to `Grouping::BY_MONTH`, each cell of the column will have class `month`.
-   If instead the grouping is set to `Grouping::BY_LITURGICAL_SEASON`, each cell of the column will have additional classes `season {LITURGICAL_SEASON}` where `{LITURGICAL_SEASON}` is the a value of `ADVENT`, `CHRISTMAS`, `LENT`, `EASTER_TRIDUUM`, `EASTER` or `ORDINARY_TIME`.
+   If instead the grouping is set to `Grouping::BY_LITURGICAL_SEASON`, each cell of the column will have additional classes `season {LITURGICAL_SEASON}` where `{LITURGICAL_SEASON}` is a value of `ADVENT`, `CHRISTMAS`, `LENT`, `EASTER_TRIDUUM`, `EASTER` or `ORDINARY_TIME`.
 * if Month header rows are enabled, each Month header cell will have a class of `monthHeader`
 * Date column cells have a class of `dateEntry`
-* Event details column cells have a class of `eventDetails liturgicalGrade_{GRADE}` where `{GRADE}` is the numerical rank of the festivity, with a value between 0 = weekday and 7 = higher solemnity
+* Event details column cells have a class of `eventDetails liturgicalGrade_{GRADE}` where `{GRADE}` is the numerical rank of the festivity, where:
+   * 0 = weekday
+   * 1 = commemoration
+   * 2 = optional memorial
+   * 3 = memorial
+   * 4 = feast
+   * 5 = feast of the Lord
+   * 6 = solemnity
+   * 7 = higher solemnity
 * Liturgical grade column cells have a class of `liturgicalGrade liturgicalGrade_{GRADE}` (as above)
 * if Psalter week grouping is enabled, Psalter week column cells will have a class of `psalterWeek`
+
+> [!NOTE]
+> The WebCalendar component currently suppresses the `display_grade` for celebrations of rank 7, since it is more explanatory than actually useful for display in a web calendar, having a value along the lines of *'celebration with precedence over solemnities'*.
+
 
 #### Chainable methods
 
