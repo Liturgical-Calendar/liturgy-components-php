@@ -2,6 +2,12 @@
 ![php version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FLiturgical-Calendar%2Fliturgy-components-php%2Fmain%2Fcomposer.json&query=require.php&label=php)
 [![Packagist](https://img.shields.io/packagist/v/liturgical-calendar/components.svg)](https://packagist.org/packages/liturgical-calendar/components)
 [![Packagist stats](https://img.shields.io/packagist/dt/liturgical-calendar/components.svg)](https://packagist.org/packages/liturgical-calendar/components/stats)
+<a href="https://translate.johnromanodorazio.com/engage/liturgical-calendar/" target="_blank" title="ApiOptions translations">
+<img src="https://translate.johnromanodorazio.com/widget/liturgical-calendar/liturgy-components-php-apioptions/svg-badge.svg" alt="Stato traduzione ApiOptions" />
+</a>
+<a href="https://translate.johnromanodorazio.com/engage/liturgical-calendar/" target="_blank" title="WebCalendar translations">
+<img src="https://translate.johnromanodorazio.com/widget/liturgical-calendar/liturgy-components-php-webcalendar/svg-badge.svg" alt="Stato traduzione WebCalendar" />
+</a>
 
 # Liturgical Calendar Components for PHP
 A collection of reusable frontend components, that work with the Liturgical Calendar API
@@ -514,3 +520,23 @@ Then run the `composer test` script, which calls the included PHPUnit package to
 To run a single test class or a single method within a class, use the `composer test-filter` script
 followed by the desired `Class` or `Class::method`, e.g.
 `composer test-filter CalendarSelectTest::testIsValidLocale`.
+
+## Translations
+The few translatable strings in the component are handled via weblate. Click on the following badges to contribute to the translations.
+
+### ApiOptions translations
+
+<a href="https://translate.johnromanodorazio.com/engage/liturgical-calendar/" target="_blank">
+<img src="https://translate.johnromanodorazio.com/widget/liturgical-calendar/liturgy-components-php-apioptions/multi-auto.svg" alt="Stato traduzione" />
+</a>
+<a href="https://translate.johnromanodorazio.com/engage/liturgical-calendar/" target="_blank">
+<img src="https://translate.johnromanodorazio.com/widget/liturgical-calendar/liturgy-components-php-apioptions/287x66-white.png" alt="Stato traduzione" />
+</a>
+
+### WebCalendar translations
+<a href="https://translate.johnromanodorazio.com/engage/liturgical-calendar/" target="_blank">
+<img src="https://translate.johnromanodorazio.com/widget/liturgical-calendar/liturgy-components-php-webcalendar/multi-auto.svg" alt="Stato traduzione" />
+</a>
+<a href="https://translate.johnromanodorazio.com/engage/liturgical-calendar/" target="_blank">
+<img src="https://translate.johnromanodorazio.com/widget/liturgical-calendar/liturgy-components-php-webcalendar/287x66-white.png" alt="Stato traduzione" />
+</a>
