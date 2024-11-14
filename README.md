@@ -440,7 +440,7 @@ To this end, a number of CSS classes are created by default in the resulting tab
 * if Psalter week grouping is enabled, Psalter week column cells will have a class of `psalterWeek`
 
 > [!NOTE]
-> The WebCalendar component currently suppresses the `display_grade` for celebrations of rank 7, since it is more explanatory than actually useful for display in a web calendar, having a value along the lines of *'celebration with precedence over solemnities'*.
+> The WebCalendar component currently suppresses the `grade_display` for celebrations of rank 7, since it is more explanatory than actually useful for display in a web calendar, having a value along the lines of *'celebration with precedence over solemnities'*.
 
 
 #### Chainable methods
