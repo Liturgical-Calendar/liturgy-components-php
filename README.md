@@ -203,6 +203,7 @@ The `locale` select will now look like this:
 <select data-param="locale">
     <option value="fr">francese</option>
     <option value="id">indonesiano</option>
+    <option value="en">inglese</option>
     <option value="it">italiano</option>
     <option value="la" selected="">latino</option>
     <option value="nl">olandese</option>
