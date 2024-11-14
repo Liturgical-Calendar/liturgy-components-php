@@ -425,7 +425,7 @@ To this end, a number of CSS classes are created by default in the resulting tab
      transform: rotate(180.0deg);
    }
    ```
-   Additionally, if the first column grouping is set to `Grouping::BY_MONTH`, each cell of the column will have class `month`.
+   Additionally, if the first column grouping is set to `Grouping::BY_MONTH` (see [Chainable methods](https://github.com/Liturgical-Calendar/liturgy-components-php#chainable-methods) below), each cell of the column will have class `month`.
    If instead the grouping is set to `Grouping::BY_LITURGICAL_SEASON`, each cell of the column will have additional classes `season {LITURGICAL_SEASON}` where `{LITURGICAL_SEASON}` is a value of `ADVENT`, `CHRISTMAS`, `LENT`, `EASTER_TRIDUUM`, `EASTER` or `ORDINARY_TIME`.
 * if Month header rows are enabled, each Month header cell will have a class of `monthHeader`
 * Date column cells have a class of `dateEntry`
