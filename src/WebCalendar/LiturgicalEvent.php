@@ -18,7 +18,7 @@ class LiturgicalEvent
     public string $type;
     public int $grade;
     public string $grade_lcl;
-    public string $display_grade;
+    public string $grade_display;
     public array $common;
     public string $common_lcl;
     public string $liturgical_year;
@@ -48,7 +48,7 @@ class LiturgicalEvent
      *                                          * 6 = SOLEMNITY
      *                                          * 7 = HIGHER_SOLEMNITY
      *                               - 'grade_lcl': The grade of the liturgical event translated to the current locale.
-     *                               - 'display_grade': The grade of the liturgical event translated to the current locale and formatted for display.
+     *                               - 'grade_display': The grade of the liturgical event translated to the current locale and formatted for display.
      *                               - 'common': The common of the liturgical event (if applicable).
      *                               - 'common_lcl': The common of the liturgical event translated to the current locale (if applicable).
      *                               - 'liturgical_year': The liturgical cycle (festive A, B, or C; or weekday I or II) of the liturgical event.
@@ -69,7 +69,7 @@ class LiturgicalEvent
         $this->type                  = $LitEvent->type;
         $this->grade                 = $LitEvent->grade;
         $this->grade_lcl             = $LitEvent->grade_lcl;
-        $this->display_grade         = $LitEvent->display_grade ?? '';
+        $this->grade_display         = $LitEvent->grade_display ?? '';
         $this->common                = $LitEvent->common;
         $this->common_lcl            = $LitEvent->common_lcl;
         $this->liturgical_year       = $LitEvent->liturgical_year ?? '';

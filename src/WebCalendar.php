@@ -804,8 +804,8 @@ class WebCalendar
         $tr->appendChild($eventDetailsCell);
 
         // Fifth column contains the liturgical grade or rank of the celebration
-        $displayGrade = $litevent->display_grade !== ''
-                            ? $litevent->display_grade
+        $displayGrade = $litevent->grade_display !== ''
+                            ? $litevent->grade_display
                             : ($litevent->grade < 7 ? $litevent->grade_lcl : '');
         $liturgicalGradeCell = $this->dom->createElement('td');
         $liturgicalGradeCell->setAttribute('class', 'liturgicalGrade liturgicalGrade_' . $litevent->grade);
