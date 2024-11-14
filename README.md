@@ -506,6 +506,14 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
    * `DateFormat::SHORT`: The short date format for the locale, e.g. "3/3/23" or "03/03/23".
    * `DateFormat::DAY_ONLY`: Only the day of the month and the weekday, e.g. "3 Friday" or "3 venerdì".
 
+#### Non chainable methods
+
+There a few methods that return a value, and therefore do not allow for chaining, because they do not return the instance but rather a value.
+
+* `getLocale()`: returns the locale that the WebCalendar instance is currently set to. Note that the locale can only be set by the Liturgical Object that is passed into the WebCalendar constructor.
+* `daysCreated()`: returns the count of days on wich liturgical events take place in the current WebCalendar. Note that this will only return a value after `buildTable()` is called. The value will vary depending on whether the year requested is a leap year or not, and on whether a CIVIL or LITURGICAL year is being produced.
+* `buildTable()`: returns an HTML string with the table containing the Liturgical Calendar, built according to the settings from the chainable methods.
+
 ## Examples
 An examples folder has been included in the repo to allow for easy testing. Currently there is a `/webcalendar` subfolder with an example of usage of the `WebCalendar` component. To quickly test it out, `cd` into the `/webcalendar` subfolder and run `php -S localhost:8000`, then open your browser at `http://localhost:8000`. You should see a form with `ApiOptions` and `CalendarSelect`. Click on <kbd>Submit</kbd> to see the actual web calendar.
 
