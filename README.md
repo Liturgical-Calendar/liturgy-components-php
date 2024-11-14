@@ -68,10 +68,6 @@ echo $CalendarSelect->getSelect();
 The options can also be set by using the methods of the same name after instantiating the `CalendarSelect` instance,
 rather than passing them into the constructor. These methods allow for chaining.
 
-> [!CAUTION]
-> When using the `->setOptions()` method with a value of `OptionsType::DIOCESES_FOR_NATION`,
-> the `->nationFilter()` method <b>MUST</b> be called <b>BEFORE</b> calling the `->setOptions()` method, otherwise an exception will occur.
-
 Example:
 ```php
 <?php
@@ -84,6 +80,10 @@ $CalendarSelect->nationFilter('NL')->setOptions(OptionsType::DIOCESES_FOR_NATION
 
 echo $CalendarSelect->getSelect();
 ```
+
+> [!CAUTION]
+> When using the `->setOptions()` method with a value of `OptionsType::DIOCESES_FOR_NATION`,
+> the `->nationFilter()` method <b>MUST</b> be called <b>BEFORE</b> calling the `->setOptions()` method, otherwise an exception will occur.
 
 
 ### ApiOptions
