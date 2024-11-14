@@ -131,6 +131,7 @@ Output:
 <label>locale</label>
 <select data-param="locale">
     <option value="nl">Dutch</option>
+    <option value="en">English</option>
     <option value="fr">French</option>
     <option value="de">German</option>
     <option value="hu">Hungarian</option>
