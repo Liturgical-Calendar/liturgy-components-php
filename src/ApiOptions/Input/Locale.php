@@ -30,20 +30,21 @@ class Locale extends ApiOptions\Input
     public function __construct()
     {
         if (empty(self::$apiLocales)) {
-            $metadataRaw = file_get_contents('https://litcal.johnromanodorazio.com/api/dev/calendars');
+            $apiUrl = ApiOptions::getApiUrl();
+            $metadataRaw = file_get_contents("{$apiUrl}/calendars");
             if ($metadataRaw === false) {
-                throw new \Exception('Failed to fetch locales from https://litcal.johnromanodorazio.com/api/dev/calendars');
+                throw new \Exception("Failed to fetch locales from {$apiUrl}/calendars");
             }
             $metadataJson = json_decode($metadataRaw);
             if (JSON_ERROR_NONE !== json_last_error()) {
-                throw new \Exception('Failed to decode locales from https://litcal.johnromanodorazio.com/api/dev/calendars');
+                throw new \Exception("Failed to decode locales from {$apiUrl}/calendars");
             }
             if (
                 false === property_exists($metadataJson, 'litcal_metadata')
                 || false === property_exists($metadataJson->litcal_metadata, 'locales')
                 || false === is_array($metadataJson->litcal_metadata->locales)
             ) {
-                throw new \Exception('Invalid `locales` property from https://litcal.johnromanodorazio.com/api/dev/calendars: ' . var_export($metadataJson->litcal_metadata->locales, true));
+                throw new \Exception("Invalid `locales` property from {$apiUrl}/calendars: " . var_export($metadataJson->litcal_metadata->locales, true));
             }
 
             self::$apiLocales = $metadataJson->litcal_metadata->locales;

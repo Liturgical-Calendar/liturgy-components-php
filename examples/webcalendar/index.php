@@ -14,16 +14,16 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
-
-$apiOptions = new ApiOptions();
+$options = [ 'url' => 'http://localhost:8000' ];
+$apiOptions = new ApiOptions($options);
 $apiOptions->acceptHeaderInput->hide();
 Input::setGlobalWrapper('td');
 
-$calendarSelectNations = new CalendarSelect();
+$calendarSelectNations = new CalendarSelect($options);
 $calendarSelectNations->label(true)->labelText('nation')
     ->id('national_calendar')->name('national_calendar')->setOptions(OptionsType::NATIONS)->allowNull(true);
 
-$calendarSelectDioceses = new CalendarSelect();
+$calendarSelectDioceses = new CalendarSelect($options);
 $calendarSelectDioceses->label(true)->labelText('diocese')
     ->id('diocesan_calendar')->name('diocesan_calendar')->setOptions(OptionsType::DIOCESES)->allowNull(true);
 
@@ -106,7 +106,8 @@ if (isset($_POST) && !empty($_POST)) {
     } elseif ($selectedLocale) {
         $requestHeaders[] = 'Accept-Language: ' . $selectedLocale;
     }
-    $requestUrl = "https://litcal.johnromanodorazio.com/api/dev/calendar{$requestPath}{$requestYear}";
+    //$requestUrl = "https://litcal.johnromanodorazio.com/api/dev/calendar{$requestPath}{$requestYear}";
+    $requestUrl = "http://localhost:8000/calendar{$requestPath}{$requestYear}";
 
     $webCalendarHtml = '';
     $ch = curl_init();

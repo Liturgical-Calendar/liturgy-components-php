@@ -11,6 +11,7 @@ namespace LiturgicalCalendar\Components\WebCalendar;
 class LiturgicalEvent
 {
     public int $event_idx;
+    public string $event_key;
     public string $name;
     public \DateTime $date;
     public array $color;
@@ -33,6 +34,7 @@ class LiturgicalEvent
      *
      * @param array|object $LitEvent An associative array or object with the following keys:
      *                               - 'event_idx': The unique index of the liturgical event.
+     *                               - 'event_key': The unique ID of the liturgical event.
      *                               - 'name': The name of the liturgical event.
      *                               - 'date': The date of the liturgical event as a PHP timestamp.
      *                               - 'color': The color of the liturgical event as an array of possible liturgical colors.
@@ -62,6 +64,7 @@ class LiturgicalEvent
             $LitEvent = (object) $LitEvent;
         }
         $this->event_idx             = $LitEvent->event_idx;
+        $this->event_key             = $LitEvent->event_key;
         $this->name                  = $LitEvent->name;
         $this->date                  = \DateTime::createFromFormat('U', $LitEvent->date, new \DateTimeZone('UTC'));
         $this->color                 = $LitEvent->color;

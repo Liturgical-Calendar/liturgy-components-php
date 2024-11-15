@@ -58,6 +58,7 @@ class ApiOptions
     public string $currentSetLocale       = '';
     public string $expectedTextDomainPath = '';
     public string $currentTextDomainPath  = '';
+    private static $apiUrl                = 'https://litcal.johnromanodorazio.com/api/dev';
 
     /**
      * Constructor for ApiOptions class.
@@ -112,6 +113,16 @@ class ApiOptions
                             $this->$key = $value;
                         }
                         break;
+                    case 'url':
+                        if (false === is_string($value)) {
+                            throw new \InvalidArgumentException('The API URL must be a valid URL string.');
+                        }
+                        $value = filter_var($value, FILTER_VALIDATE_URL);
+                        if (false === $value) {
+                            throw new \InvalidArgumentException('The API URL is not valid: ' . $value);
+                        }
+                        self::$apiUrl = rtrim($value, '/');
+                        break;
                 }
             }
         }
@@ -125,6 +136,15 @@ class ApiOptions
         $this->yearTypeInput          = new YearType();
         $this->localeInput            = new Locale();
         $this->acceptHeaderInput      = new AcceptHeader();
+    }
+
+    /**
+     * Returns the URL of the liturgical calendar API.
+     * @return string The URL of the liturgical calendar API.
+     */
+    public static function getApiUrl(): string
+    {
+        return self::$apiUrl;
     }
 
     /**
