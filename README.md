@@ -501,7 +501,7 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
 * `eventColor(ColorAs $colorAs)`: sets how the color for the single liturgical celebration is applied to the table. See `seasonColor` above for the `ColorAs` enum cases.
 * `eventColorColumns(Columns|int $columnFlags = Column::NONE)`: sets which columns should be affected by the `eventColor` settings. See the `seasonColorColumns` method above for usage of the `Column` enum cases.
 * `monthHeader(bool $monthHeader = true)`: sets whether month headers should be produced at the start of each month
-* `dateFormat(DateFormat $dateFormat = DateFormat::FULL)`: sets how the date should be displayed in the Date column. The `DateFornat` enum cases are a selection of `IntlDateFormatter` constants:
+* `dateFormat(DateFormat $dateFormat = DateFormat::FULL)`: sets how the date should be displayed in the Date column. The `DateFormat` enum cases correspond to a selection of `IntlDateFormatter` constants:
    * `DateFormat::FULL`: The full date format for the locale, e.g. "Friday, March 3, 2023" or "venerdì 3 marzo 2023".
    * `DateFormat::LONG`: The long date format for the locale, e.g. "March 3, 2023" or "3 marzo 2023".
    * `DateFormat::MEDIUM`: The medium date format for the locale, e.g. "Mar 3, 2023" or "3 mar 2023".
