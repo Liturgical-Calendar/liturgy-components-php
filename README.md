@@ -513,7 +513,7 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
 There a few methods that return a value, and therefore do not allow for chaining, because they do not return the instance but rather a value.
 
 * `getLocale()`: returns the locale that the WebCalendar instance is currently set to. Note that the locale can only be set by the Liturgical Object that is passed into the WebCalendar constructor.
-* `daysCreated()`: returns the count of days on wich liturgical events take place in the current WebCalendar. Note that this will only return a value after `buildTable()` is called. The value will vary depending on whether the year requested is a leap year or not, and on whether a CIVIL or LITURGICAL year is being produced.
+* `daysCreated()`: returns the count of days on which liturgical events take place in the current WebCalendar. Note that this will only return a value after `buildTable()` is called. The value will vary depending on whether the year requested is a leap year or not, and on whether a CIVIL or LITURGICAL year is being produced.
 * `buildTable()`: returns an HTML string with the table containing the Liturgical Calendar, built according to the settings from the chainable methods.
 
 ## Examples
