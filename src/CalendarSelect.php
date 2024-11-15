@@ -84,7 +84,12 @@ class CalendarSelect
         }
 
         if (isset($options['url'])) {
-            $this->setUrl($options['url']);
+            $url = filter_var($options['url'], FILTER_VALIDATE_URL);
+            if (false === $url) {
+                throw new \Exception("Invalid URL: {$options['url']}");
+            }
+            $url = rtrim($url, '/');
+            $this->setUrl($url . '/calendars');
         } else {
             $this->setUrl(self::METADATA_URL);
         }

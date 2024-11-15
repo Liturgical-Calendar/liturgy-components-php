@@ -14,27 +14,27 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
  *
  * The class takes an object from the Liturgical Calendar API as a parameter in its constructor.
  * The object should have the following properties:
- * - litcal: an array of liturgical event objects with date, liturgical color, liturgical common, and liturgical grade properties
- * - settings: the settings object from the Liturgical Calendar API
- * - metadata: the metadata object from the Liturgical Calendar API
- * - messages: the messages object from the Liturgical Calendar API
+ * - __litcal__: a collection of liturgical event objects with date, liturgical color, liturgical common, and liturgical grade properties
+ * - __settings__: the settings object from the Liturgical Calendar API
+ * - __metadata__: the metadata object from the Liturgical Calendar API
+ * - __messages__: the messages object from the Liturgical Calendar API
  *
  * The class provides the following methods:
- * - {@see id(string $id)}: sets the id of the table element.
- * - {@see class(string $class)}: sets the class of the table element.
- * - {@see firstColumnGrouping(Grouping $grouping)}: sets the grouping of the first column of the table.
- * - {@see psalterWeekGrouping(bool $psalterWeekGrouping)}: sets whether to display grouped psalter weeks.
- * - {@see removeHeaderRow(bool $removeHeaderRow)}: sets whether to remove the header row of the table.
- * - {@see removeCaption(bool $removeCaption)}: sets whether to remove the caption of the table.
- * - {@see dateFormat(DateFormat $dateFormat)}: sets the date format of the table.
- * - {@see monthHeader(bool $monthHeader)}: sets whether to display month headers.
- * - {@see seasonColor(ColorAs $seasonColor)}: sets how the season color is handled (background color, CSS class, or inline block element).
- * - {@see eventColor(ColorAs $eventColor)}: sets how the event color is handled (background color, CSS class, or inline block element).
- * - {@see seasonColorColumns(ColumnSet $seasonColorColumns)}: sets which columns to apply the season color to.
- * - {@see eventColorColumns(ColumnSet $eventColorColumns)}: sets which columns to apply the event color to.
- * - {@see getLocale()}: returns the locale that was set when the WebCalendar object was created / buildTable was called.
- * - {@see buildTable()}: returns an HTML string containing a table of the liturgical events.
- * - {@see daysCreated()}: returns the number of days created in the table.
+ * - __{@see id(string $id)}__: sets the id of the table element.
+ * - __{@see class(string $class)}__: sets the class of the table element.
+ * - __{@see firstColumnGrouping(Grouping $grouping)}__: sets the grouping of the first column of the table.
+ * - __{@see psalterWeekGrouping(bool $psalterWeekGrouping)}__: sets whether to display grouped psalter weeks.
+ * - __{@see removeHeaderRow(bool $removeHeaderRow)}__: sets whether to remove the header row of the table.
+ * - __{@see removeCaption(bool $removeCaption)}__: sets whether to remove the caption of the table.
+ * - __{@see dateFormat(DateFormat $dateFormat)}__: sets the date format of the table.
+ * - __{@see monthHeader(bool $monthHeader)}__: sets whether to display month headers.
+ * - __{@see seasonColor(ColorAs $seasonColor)}__: sets how the season color is handled (background color, CSS class, or inline block element).
+ * - __{@see eventColor(ColorAs $eventColor)}__: sets how the event color is handled (background color, CSS class, or inline block element).
+ * - __{@see seasonColorColumns(ColumnSet $seasonColorColumns)}__: sets which columns to apply the season color to.
+ * - __{@see eventColorColumns(ColumnSet $eventColorColumns)}__: sets which columns to apply the event color to.
+ * - __{@see getLocale()}__: returns the locale that was set when the WebCalendar object was created / buildTable was called.
+ * - __{@see buildTable()}__: returns an HTML string containing a table of the liturgical events.
+ * - __{@see daysCreated()}__: returns the number of days created in the table.
  */
 class WebCalendar
 {
@@ -148,8 +148,9 @@ class WebCalendar
             throw new \Exception("The Liturgical Calendar 'settings' object or array must contain the property or key 'locale'.");
         }
 
-        foreach ($LiturgicalCalendar->litcal as $key => $value) {
-            $LiturgicalCalendar->litcal->$key = new LiturgicalEvent($value);
+        foreach ($LiturgicalCalendar->litcal as $idx => $value) {
+            $key = $value->event_key;
+            $LiturgicalCalendar->litcal[$idx] = new LiturgicalEvent($value);
             $this->LitCalKeys[] = $key;
         }
 
@@ -434,9 +435,9 @@ class WebCalendar
     private function countSameDayEvents(int $currentKeyIndex, int &$cd)
     {
         $EventsObject = $this->LiturgicalCalendar->litcal;
-        $currentEvent = $EventsObject->{$this->LitCalKeys[$currentKeyIndex]};
-        if ($currentKeyIndex < count($this->LitCalKeys) - 1) {
-            $nextEvent = $EventsObject->{$this->LitCalKeys[$currentKeyIndex + 1]};
+        $currentEvent = $EventsObject[$currentKeyIndex];
+        if ($currentKeyIndex < count($EventsObject) - 1) {
+            $nextEvent = $EventsObject[$currentKeyIndex + 1];
             // date->format('U'): Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT) aka timestamp
             if ($nextEvent->date->format('U') === $currentEvent->date->format('U')) {
                 $cd++;
@@ -454,9 +455,9 @@ class WebCalendar
     private function countSameMonthEvents(int $currentKeyIndex, int &$cm)
     {
         $EventsObject = $this->LiturgicalCalendar->litcal;
-        $currentEvent = $EventsObject->{$this->LitCalKeys[$currentKeyIndex]};
-        if ($currentKeyIndex < count($this->LitCalKeys) - 1) {
-            $nextEvent = $EventsObject->{$this->LitCalKeys[$currentKeyIndex + 1]};
+        $currentEvent = $EventsObject[$currentKeyIndex];
+        if ($currentKeyIndex < count($EventsObject) - 1) {
+            $nextEvent = $EventsObject[$currentKeyIndex + 1];
             // date->format('n'): Numeric representation of a month, without leading zeros, 1-12
             if ($nextEvent->date->format('n') === $currentEvent->date->format('n')) {
                 $cm++;
@@ -474,9 +475,9 @@ class WebCalendar
     private function countSameSeasonEvents(int $currentKeyIndex, int &$cs)
     {
         $EventsObject = $this->LiturgicalCalendar->litcal;
-        $currentEvent = $EventsObject->{$this->LitCalKeys[$currentKeyIndex]};
-        if ($currentKeyIndex < count($this->LitCalKeys) - 1) {
-            $nextEvent = $EventsObject->{$this->LitCalKeys[$currentKeyIndex + 1]};
+        $currentEvent = $EventsObject[$currentKeyIndex];
+        if ($currentKeyIndex < count($EventsObject) - 1) {
+            $nextEvent = $EventsObject[$currentKeyIndex + 1];
             $currentEventLiturgicalSeason = $currentEvent->liturgical_season ?? $this->determineSeason($currentEvent);
             $nextEventLiturgicalSeason = $nextEvent->liturgical_season ?? $this->determineSeason($nextEvent);
             if ($nextEventLiturgicalSeason === $currentEventLiturgicalSeason) {
@@ -489,9 +490,9 @@ class WebCalendar
     private function countSamePsalterWeekEvents(int $currentKeyIndex, int &$cw)
     {
         $EventsObject = $this->LiturgicalCalendar->litcal;
-        $currentEvent = $EventsObject->{$this->LitCalKeys[$currentKeyIndex]};
-        if ($currentKeyIndex < count($this->LitCalKeys) - 1) {
-            $nextEvent = $EventsObject->{$this->LitCalKeys[$currentKeyIndex + 1]};
+        $currentEvent = $EventsObject[$currentKeyIndex];
+        if ($currentKeyIndex < count($EventsObject) - 1) {
+            $nextEvent = $EventsObject[$currentKeyIndex + 1];
             // $cepw = current event psalter week
             $cepsw = $currentEvent->psalter_week;
             // $nepw = next event psalter week
@@ -952,11 +953,10 @@ class WebCalendar
         $newSeason = false;
         $newPsalterWeek = false;
 
-        // Loop through the liturgical event keys
-        for ($keyindex = 0; $keyindex < count($this->LitCalKeys); $keyindex++) {
+        // Loop through the liturgical events
+        for ($eventIdx = 0; $eventIdx < count($this->LitCalKeys); $eventIdx++) {
             $this->daysCreated++;
-            $keyname = $this->LitCalKeys[$keyindex];
-            $litevent = $this->LiturgicalCalendar->litcal->$keyname;
+            $litevent = $this->LiturgicalCalendar->litcal[$eventIdx];
 
             // Check if we are at the start of a new month, and if so count how many events we have in that same month,
             // so we can display the Month table cell with the correct colspan when firstColumnGrouping is BY_MONTH.
@@ -966,7 +966,7 @@ class WebCalendar
                 $currentMonth = $eventMonth;
                 /** @var int $cm Count events in the same month */
                 $cm = 0;
-                $this->countSameMonthEvents($keyindex, $cm);
+                $this->countSameMonthEvents($eventIdx, $cm);
             }
 
             // Check if we are at the start of a new season, and if so count how many events we have in that same season,
@@ -976,7 +976,7 @@ class WebCalendar
                 $currentSeason = $litevent->liturgical_season;
                 /** @var int $cs Count events in the same season */
                 $cs = 0;
-                $this->countSameSeasonEvents($keyindex, $cs);
+                $this->countSameSeasonEvents($eventIdx, $cs);
             }
 
             // Check if we are at the start of a new Psalter week, and if so count how many events we have with the same Psalter week,
@@ -986,20 +986,19 @@ class WebCalendar
                 /** @var int $cw Count events in the same psalter week */
                 $cw = 0;
                 $currentPsalterWeek = $litevent->psalter_week;
-                $this->countSamePsalterWeekEvents($keyindex, $cw);
+                $this->countSamePsalterWeekEvents($eventIdx, $cw);
             }
 
             // Check if we have more than one event on the same day, such as optional memorials,
             // so we can display the Date table cell with the correct colspan.
             /** @var int $cd Count events in the same day */
             $cd = 0;
-            $this->countSameDayEvents($keyindex, $cd);
+            $this->countSameDayEvents($eventIdx, $cd);
 
             if ($cd > 0) {
                 /** @var int $ev Index of the liturgical event within the same day $cd count. */
                 for ($ev = 0; $ev <= $cd; $ev++) {
-                    $keyname = $this->LitCalKeys[$keyindex];
-                    $litevent = $this->LiturgicalCalendar->litcal->$keyname;
+                    $litevent = $this->LiturgicalCalendar->litcal[$eventIdx];
 
                     // Check if we are at the start of a new season, and if so count how many events we have in that same season,
                     // so we can display the Season table cell with the correct colspan when firstColumnGrouping is BY_LITURGICAL_SEASON.
@@ -1008,7 +1007,7 @@ class WebCalendar
                         $currentSeason = $litevent->liturgical_season;
                         /** @var int $cs Count events in the same season */
                         $cs = 0;
-                        $this->countSameSeasonEvents($keyindex, $cs);
+                        $this->countSameSeasonEvents($eventIdx, $cs);
                     }
 
                     // Check if we are at the start of a new Psalter week, and if so count how many events we have with the same Psalter week,
@@ -1018,16 +1017,16 @@ class WebCalendar
                         /** @var int $cw Count events in the same psalter week */
                         $cw = 0;
                         $currentPsalterWeek = $litevent->psalter_week;
-                        $this->countSamePsalterWeekEvents($keyindex, $cw);
+                        $this->countSamePsalterWeekEvents($eventIdx, $cw);
                     }
 
                     $trs = $this->buildTableRow($litevent, $newMonth, $newSeason, $newPsalterWeek, $cd, $cm, $cs, $cw, $ev);
                     foreach ($trs as $tr) {
                         $tbody->appendChild($tr);
                     }
-                    $keyindex++;
+                    $eventIdx++;
                 }
-                $keyindex--;
+                $eventIdx--;
             } else {
                 // Only a single liturgical event on this day. No need for an event index.
                 $trs = $this->buildTableRow($litevent, $newMonth, $newSeason, $newPsalterWeek, $cd, $cm, $cs, $cw, null);
