@@ -113,6 +113,7 @@ if (isset($_POST) && !empty($_POST)) {
         $calendarSelectDioceses->selectedOption($selectedDiocese);
         if ($selectedNation) {
             $calendarSelectNations->selectedOption($selectedNation);
+            $calendarSelectDioceses->nationFilter($selectedNation)->setOptions(OptionsType::DIOCESES_FOR_NATION);
         }
     } elseif ($selectedNation) {
         $requestPath = '/nation/' . $selectedNation;
