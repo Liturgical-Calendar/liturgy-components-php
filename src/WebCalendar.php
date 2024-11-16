@@ -6,6 +6,7 @@ use LiturgicalCalendar\Components\WebCalendar\LiturgicalEvent;
 use LiturgicalCalendar\Components\WebCalendar\Grouping;
 use LiturgicalCalendar\Components\WebCalendar\ColorAs;
 use LiturgicalCalendar\Components\WebCalendar\Column;
+use LiturgicalCalendar\Components\WebCalendar\ColumnOrder;
 use LiturgicalCalendar\Components\WebCalendar\ColumnSet;
 use LiturgicalCalendar\Components\WebCalendar\DateFormat;
 
@@ -32,6 +33,7 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
  * - __{@see eventColor(ColorAs $eventColor)}__: sets how the event color is handled (background color, CSS class, or inline block element).
  * - __{@see seasonColorColumns(ColumnSet $seasonColorColumns)}__: sets which columns to apply the season color to.
  * - __{@see eventColorColumns(ColumnSet $eventColorColumns)}__: sets which columns to apply the event color to.
+ * - __{@see columnOrder(ColumnOrder $columnOrder)}__: sets the order of the third and fourth columns in the table (liturgical grade and event details).
  * - __{@see getLocale()}__: returns the locale that was set when the WebCalendar object was created / buildTable was called.
  * - __{@see buildTable()}__: returns an HTML string containing a table of the liturgical events.
  * - __{@see daysCreated()}__: returns the number of days created in the table.
@@ -54,6 +56,7 @@ class WebCalendar
     private ColorAs $seasonColor            = ColorAs::BACKGROUND;
     private ColumnSet $seasonColorColumns;
     private ColumnSet $eventColorColumns;
+    private ColumnOrder $columnOrder        = ColumnOrder::EVENT_DETAILS_FIRST;
     private DateFormat $dateFormat          = DateFormat::FULL;
     private bool $removeHeaderRow           = false;
     private bool $removeCaption             = false;
@@ -364,6 +367,25 @@ class WebCalendar
     public function dateFormat(DateFormat $dateFormat = DateFormat::FULL): self
     {
         $this->dateFormat = $dateFormat;
+        return $this;
+    }
+
+    /**
+     * Controls the order of the columns.
+     *
+     * This method allows the user to control the order of the columns in the table.
+     * The default is ColumnOrder::GRADE_FIRST, meaning that the grade column is first, followed by the event details.
+     * If the user wants the event details to come first, followed by the grade column, they can use ColumnOrder::EVENT_DETAILS_FIRST.
+     *
+     * The default is ColumnOrder::EVENT_DETAILS_FIRST.
+     *
+     * @param ColumnOrder $columnOrder The order of the columns.
+     *
+     * @return $this The current instance of the class.
+     */
+    public function columnOrder(ColumnOrder $columnOrder = ColumnOrder::EVENT_DETAILS_FIRST): self
+    {
+        $this->columnOrder = $columnOrder;
         return $this;
     }
 
@@ -791,7 +813,7 @@ class WebCalendar
             $tr->appendChild($dateCell);
         }
 
-        // Fourth column contains the event details such as name of the celebration, liturgical_year cycle, liturgical colors, and liturgical commons
+        // Third column contains the event details such as name of the celebration, liturgical_year cycle, liturgical colors, and liturgical commons
         $currentCycle = property_exists($litevent, 'liturgical_year') && $litevent->liturgical_year !== null && $litevent->liturgical_year !== ''
                             ? ' (' . $litevent->liturgical_year . ')'
                             : '';
@@ -802,9 +824,8 @@ class WebCalendar
         $eventDetailsContents = $this->dom->createDocumentFragment();
         $eventDetailsContents->appendXML($litevent->name . $currentCycle . ' - <i>' . implode(' ' . dgettext('webcalendar', 'or') . ' ', $litevent->color_lcl) . '</i><br /><i>' . $litevent->common_lcl . '</i>');
         $eventDetailsCell->appendChild($eventDetailsContents);
-        $tr->appendChild($eventDetailsCell);
 
-        // Fifth column contains the liturgical grade or rank of the celebration
+        // Fourth column contains the liturgical grade or rank of the celebration
         $displayGrade = $litevent->grade_display !== ''
                             ? $litevent->grade_display
                             : ($litevent->grade < 7 ? $litevent->grade_lcl : '');
@@ -813,9 +834,20 @@ class WebCalendar
         $this->handleSeasonColorForColumn($seasonColor, $liturgicalGradeCell, Column::GRADE);
         $this->handleEventColorForColumn($litevent->color, $liturgicalGradeCell, Column::GRADE);
         $liturgicalGradeCell->appendChild($this->dom->createTextNode($displayGrade));
-        $tr->appendChild($liturgicalGradeCell);
 
-        // Sixth column contains the Psalter week if Psalter week grouping is enabled
+        // Third and fourth column order depends on value of $this->columnOrder
+        switch ($this->columnOrder) {
+            case ColumnOrder::GRADE_FIRST:
+                $tr->appendChild($liturgicalGradeCell);
+                $tr->appendChild($eventDetailsCell);
+                break;
+            case ColumnOrder::EVENT_DETAILS_FIRST:
+                $tr->appendChild($eventDetailsCell);
+                $tr->appendChild($liturgicalGradeCell);
+                break;
+        }
+
+        // Fifth column contains the Psalter week if Psalter week grouping is enabled
         if ($this->psalterWeekGrouping && false === $newPsalterWeek && null !== $monthHeaderRow) {
             $psalterWeekCellRowSpan = self::$lastPsalterWeekCell->getAttribute('rowspan');
             self::$lastPsalterWeekCell->setAttribute('rowspan', (int)$psalterWeekCellRowSpan + 1);
@@ -926,11 +958,21 @@ class WebCalendar
 
             $th3 = $this->dom->createElement('th');
             $th3->appendChild($this->dom->createTextNode(dgettext('webcalendar', 'Celebration')));
-            $theadRow->appendChild($th3);
 
             $th4 = $this->dom->createElement('th');
             $th4->appendChild($this->dom->createTextNode(dgettext('webcalendar', 'Liturgical Grade')));
-            $theadRow->appendChild($th4);
+
+            // Third and fourth column order depends on value of $this->columnOrder
+            switch ($this->columnOrder) {
+                case ColumnOrder::GRADE_FIRST:
+                    $theadRow->appendChild($th4);
+                    $theadRow->appendChild($th3);
+                    break;
+                case ColumnOrder::EVENT_DETAILS_FIRST:
+                    $theadRow->appendChild($th3);
+                    $theadRow->appendChild($th4);
+                    break;
+            }
 
             if ($this->psalterWeekGrouping) {
                 $th5 = $this->dom->createElement('th');

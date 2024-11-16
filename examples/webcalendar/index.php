@@ -10,13 +10,17 @@ use LiturgicalCalendar\Components\WebCalendar;
 use LiturgicalCalendar\Components\WebCalendar\Grouping;
 use LiturgicalCalendar\Components\WebCalendar\ColorAs;
 use LiturgicalCalendar\Components\WebCalendar\Column;
+use LiturgicalCalendar\Components\WebCalendar\ColumnOrder;
 use LiturgicalCalendar\Components\WebCalendar\DateFormat;
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
+
 $options = null;
 if (class_exists('Dotenv\Dotenv')) {
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.production'], false);
+    $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
+    $dotenv->ifPresent(['API_PORT'])->isInteger();
     $dotenv->safeLoad();
     if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'development') {
         if (false === isset($_ENV['API_PROTOCOL']) || false === isset($_ENV['API_HOST']) || false === isset($_ENV['API_PORT'])) {
@@ -133,6 +137,13 @@ if (isset($_POST) && !empty($_POST)) {
         //echo '<pre>' . $response . '</pre>';
         $LiturgicalCalendar = json_decode($response);
         if (JSON_ERROR_NONE === json_last_error()) {
+            $apiOptions->epiphanyInput->selectedValue($LiturgicalCalendar->settings->epiphany);
+            $apiOptions->ascensionInput->selectedValue($LiturgicalCalendar->settings->ascension);
+            $apiOptions->corpusChristiInput->selectedValue($LiturgicalCalendar->settings->corpus_christi);
+            $apiOptions->eternalHighPriestInput->selectedValue($LiturgicalCalendar->settings->eternal_high_priest ? 'true' : 'false');
+            $baseLocale = \Locale::getPrimaryLanguage($LiturgicalCalendar->settings->locale);
+            $apiOptions->localeInput->selectedValue($baseLocale);
+
             $webCalendar = new WebCalendar($LiturgicalCalendar);
             $webCalendar->id('LitCalTable')
                         ->firstColumnGrouping(Grouping::BY_LITURGICAL_SEASON)
@@ -143,7 +154,8 @@ if (isset($_POST) && !empty($_POST)) {
                         ->eventColor(ColorAs::INDICATOR)
                         ->eventColorColumns(Column::EVENT)
                         ->monthHeader()
-                        ->dateFormat(DateFormat::DAY_ONLY);
+                        ->dateFormat(DateFormat::DAY_ONLY)
+                        ->columnOrder(ColumnOrder::GRADE_FIRST);
             $webCalendarHtml = $webCalendar->buildTable();
             $webCalendarHtml .=  '<div style="text-align:center;border:3px ridge Green;background-color:LightBlue;width:75%;margin:10px auto;padding:10px;">' . $webCalendar->daysCreated() . ' event days created</div>';
         } else {
@@ -358,7 +370,7 @@ if (isset($_POST) && !empty($_POST)) {
                 }
                 echo $webCalendarHtml;
             } else {
-                echo '<div class="col-12">No POST data</div>';
+                echo '<div class="col-12">No POST data (perhaps click on Submit?)</div>';
             }
             ?>
         </div>
