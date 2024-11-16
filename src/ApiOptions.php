@@ -21,7 +21,7 @@ use LiturgicalCalendar\Components\ApiOptions\PathType;
  * The form elements can be fully customized using the methods provided by the class.
  *
  * @method __construct(?array $options = null) Initializes the ApiOptions object with default or provided settings:
- *                                             - $options: An array of options, including 'locale', 'formLabel', 'wrapper', 'submit', and 'after'.
+ *                                             - $options: An array of options, including 'locale', 'formLabel', 'wrapper', 'submit', 'after', and 'url'.
  *
  *                                             The following properties are initialized on the object instance:
  *                                             - formLabel: A FormLabel object if the 'formLabel' key is present in the options array.
@@ -152,7 +152,6 @@ class ApiOptions
      * In this case, we create a magic value for ApiOptions::baseLocale().
      *
      * @param string $name The name of the static method or property.
-     * @param array  $arguments The arguments to pass to the static method.
      *
      * @throws \Exception If the static property or method does not exist.
      *

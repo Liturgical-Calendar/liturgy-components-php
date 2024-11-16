@@ -517,7 +517,10 @@ There a few methods that return a value, and therefore do not allow for chaining
 * `buildTable()`: returns an HTML string with the table containing the Liturgical Calendar, built according to the settings from the chainable methods.
 
 ## Examples
-An examples folder has been included in the repo to allow for easy testing. Currently there is a `/webcalendar` subfolder with an example of usage of the `WebCalendar` component. To quickly test it out, `cd` into the `/webcalendar` subfolder and run `php -S localhost:8000`, then open your browser at `http://localhost:8000`. You should see a form with `ApiOptions` and `CalendarSelect`. Click on <kbd>Submit</kbd> to see the actual web calendar.
+An examples folder has been included in the repo to allow for easy testing. Currently there is a `/webcalendar` subfolder with an example of usage of the `WebCalendar` component. To quickly test locally, `cd` into the `/webcalendar` subfolder and run `php -S localhost:3000`, then open your browser at `http://localhost:3000`. You should see a form with `ApiOptions` and `CalendarSelect`. Click on <kbd>Submit</kbd> to see the actual web calendar.
+
+Note that this will use the default remote API. If you would like to test against a local instance of the API, first make sure that you have installed the development requirements with `composer install` (whereas `composer install --no-dev` would install without development requirements).
+With development requirements in place, copy `/examples/webcalendar/.env.example` to `/examples/webcalendar/.env.development`, and set the value of `API_PORT` to the port of your local API instance. If you are spawning an instance of the API on port 8000, then set `API_PORT` to 8000. As long as `APP_ENV` is set to `development`, the `/examples/webcalendar` example will use your local API instance instead of the remote production API. For more information on spawning a local instance of the API, see the [Liturgical Calendar API Readme - testing locally](https://github.com/Liturgical-Calendar/LiturgicalCalendarAPI?tab=readme-ov-file#testing-locally).
 
 ## Tests
 The package includes a few unit tests to ensure that the component is working as expected.

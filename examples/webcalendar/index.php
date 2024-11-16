@@ -14,7 +14,18 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
-$options = [ 'url' => 'http://localhost:8000' ];
+$options = null;
+if (class_exists('Dotenv\Dotenv')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.production'], false);
+    $dotenv->safeLoad();
+    if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'development') {
+        if (false === isset($_ENV['API_PROTOCOL']) || false === isset($_ENV['API_HOST']) || false === isset($_ENV['API_PORT'])) {
+            die("API_PROTOCOL, API_HOST and API_PORT must be defined in .env.development or similar dotenv when APP_ENV is development");
+        }
+        $options = ['url' => "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}:{$_ENV['API_PORT']}"];
+    }
+}
+
 $apiOptions = new ApiOptions($options);
 $apiOptions->acceptHeaderInput->hide();
 Input::setGlobalWrapper('td');

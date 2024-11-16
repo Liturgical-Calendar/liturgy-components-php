@@ -10,3 +10,6 @@
 .history/
 
 /vendor/
+/**/.env
+/**/.env.*
+!/**/.env.example
