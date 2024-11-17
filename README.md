@@ -454,7 +454,9 @@ use LiturgicalCalendar\Components\WebCalendar;
 use LiturgicalCalendar\Components\WebCalendar\Grouping;
 use LiturgicalCalendar\Components\WebCalendar\ColorAs;
 use LiturgicalCalendar\Components\WebCalendar\Column;
+use LiturgicalCalendar\Components\WebCalendar\ColumnOrder;
 use LiturgicalCalendar\Components\WebCalendar\DateFormat;
+use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
 
 // make your request and get an object from the response...
 
@@ -465,12 +467,14 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
                 ->psalterWeekGrouping()
                 ->removeHeaderRow()
                 ->removeCaption()
+                ->monthHeader()
                 ->seasonColor(ColorAs::CSS_CLASS)
                 ->seasonColorColumns(Column::LITURGICAL_SEASON)
                 ->eventColor(ColorAs::INDICATOR)
                 ->eventColorColumns(Column::EVENT)
-                ->monthHeader()
-                ->dateFormat(DateFormat::DAY_ONLY);
+                ->columnOrder(ColumnOrder::GRADE_FIRST)
+                ->dateFormat(DateFormat::DAY_ONLY)
+                ->gradeDisplay(GradeDisplay::ABBREVIATED);
 ```
 
 * `id(string $id)`: sets the `id` attribute of the `<table>` element
@@ -500,6 +504,7 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
   The `Column` enum values are bitfield values, so they can be combined with a bitwise OR operator `|`, but being an enum, the values are obtained with `Column::LITURGICAL_SEASON->value`, `Column::MONTH->value`, etc. A bitwise combination of columns would look like: `seasonColorColumns(Column::LITURGICAL_SEASON->value | Column::DATE->value | Column::PSALTER_WEEK->value)`. As a convenience, we have a `Column::ALL` enum case that represents the OR'd value of all columns, and a `Column::NONE` enum case the represents a zero value, effectively disabling all columns from any season color effects.
 * `eventColor(ColorAs $colorAs)`: sets how the color for the single liturgical celebration is applied to the table. See `seasonColor` above for the `ColorAs` enum cases.
 * `eventColorColumns(Columns|int $columnFlags = Column::NONE)`: sets which columns should be affected by the `eventColor` settings. See the `seasonColorColumns` method above for usage of the `Column` enum cases.
+* `columnOrder(ColumnOrder $columnOrder = ColumnOrder::EVENT_DETAILS_FIRST)`: sets the order of the third and fourth columns, whether Liturgical Grade first or Event Details first. The `ColumnOrder` enum as two cases: `ColumnOrder::GRADE_FIRST` and `ColumnOrder::EVENT_DETAILS_FIRST`.
 * `monthHeader(bool $monthHeader = true)`: sets whether month headers should be produced at the start of each month
 * `dateFormat(DateFormat $dateFormat = DateFormat::FULL)`: sets how the date should be displayed in the Date column. The `DateFormat` enum cases correspond to a selection of `IntlDateFormatter` constants:
    * `DateFormat::FULL`: The full date format for the locale, e.g. "Friday, March 3, 2023" or "venerdì 3 marzo 2023".
@@ -507,6 +512,7 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
    * `DateFormat::MEDIUM`: The medium date format for the locale, e.g. "Mar 3, 2023" or "3 mar 2023".
    * `DateFormat::SHORT`: The short date format for the locale, e.g. "3/3/23" or "03/03/23".
    * `DateFormat::DAY_ONLY`: Only the day of the month and the weekday, e.g. "3 Friday" or "3 venerdì".
+* `gradeDisplay(GradeDisplay $gradeDisplay = GradeDisplay::FULL)`: sets how the liturgical grade should be displayed, whether in full or in abbreviated form. The `GradeDisplay` enum has two cases: `GradeDisplay::FULL` and `GradeDisplay::ABBREVIATED`.
 
 #### Non chainable methods
 

@@ -12,6 +12,7 @@ use LiturgicalCalendar\Components\WebCalendar\ColorAs;
 use LiturgicalCalendar\Components\WebCalendar\Column;
 use LiturgicalCalendar\Components\WebCalendar\ColumnOrder;
 use LiturgicalCalendar\Components\WebCalendar\DateFormat;
+use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
@@ -156,7 +157,8 @@ if (isset($_POST) && !empty($_POST)) {
                         ->eventColorColumns(Column::EVENT)
                         ->monthHeader()
                         ->dateFormat(DateFormat::DAY_ONLY)
-                        ->columnOrder(ColumnOrder::GRADE_FIRST);
+                        ->columnOrder(ColumnOrder::GRADE_FIRST)
+                        ->gradeDisplay(GradeDisplay::ABBREVIATED);
             $webCalendarHtml = $webCalendar->buildTable();
             $webCalendarHtml .=  '<div style="text-align:center;border:3px ridge Green;background-color:LightBlue;width:75%;margin:10px auto;padding:10px;">' . $webCalendar->daysCreated() . ' event days created</div>';
         } else {
@@ -254,6 +256,15 @@ if (isset($_POST) && !empty($_POST)) {
 
         #LitCalTable .eventDetails {
             color: #BD752F;
+        }
+
+        #LitCalTable .liturgicalGrade {
+            text-align: center;
+            font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        }
+
+        #LitCalTable .liturgicalGrade.liturgicalGrade_0 {
+            visibility: hidden;
         }
 
         #LitCalTable .liturgicalGrade_0, #LitCalTable .liturgicalGrade_1, #LitCalTable .liturgicalGrade_2 {

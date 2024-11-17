@@ -9,6 +9,7 @@ use LiturgicalCalendar\Components\WebCalendar\Column;
 use LiturgicalCalendar\Components\WebCalendar\ColumnOrder;
 use LiturgicalCalendar\Components\WebCalendar\ColumnSet;
 use LiturgicalCalendar\Components\WebCalendar\DateFormat;
+use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
 
 /**
  * A class to generate a table of liturgical events for a given Liturgical Calendar.
@@ -27,13 +28,14 @@ use LiturgicalCalendar\Components\WebCalendar\DateFormat;
  * - __{@see psalterWeekGrouping(bool $psalterWeekGrouping)}__: sets whether to display grouped psalter weeks.
  * - __{@see removeHeaderRow(bool $removeHeaderRow)}__: sets whether to remove the header row of the table.
  * - __{@see removeCaption(bool $removeCaption)}__: sets whether to remove the caption of the table.
- * - __{@see dateFormat(DateFormat $dateFormat)}__: sets the date format of the table.
+ * - __{@see dateFormat(DateFormat $dateFormat)}__: sets the date format for the date column.
  * - __{@see monthHeader(bool $monthHeader)}__: sets whether to display month headers.
  * - __{@see seasonColor(ColorAs $seasonColor)}__: sets how the season color is handled (background color, CSS class, or inline block element).
  * - __{@see eventColor(ColorAs $eventColor)}__: sets how the event color is handled (background color, CSS class, or inline block element).
  * - __{@see seasonColorColumns(ColumnSet $seasonColorColumns)}__: sets which columns to apply the season color to.
  * - __{@see eventColorColumns(ColumnSet $eventColorColumns)}__: sets which columns to apply the event color to.
  * - __{@see columnOrder(ColumnOrder $columnOrder)}__: sets the order of the third and fourth columns in the table (liturgical grade and event details).
+ * - __{@see gradeDisplay(GradeDisplay $gradeDisplay)}__: sets how the liturgical grade is displayed (in full, or in abbreviated form).
  * - __{@see getLocale()}__: returns the locale that was set when the WebCalendar object was created / buildTable was called.
  * - __{@see buildTable()}__: returns an HTML string containing a table of the liturgical events.
  * - __{@see daysCreated()}__: returns the number of days created in the table.
@@ -58,6 +60,7 @@ class WebCalendar
     private ColumnSet $eventColorColumns;
     private ColumnOrder $columnOrder        = ColumnOrder::EVENT_DETAILS_FIRST;
     private DateFormat $dateFormat          = DateFormat::FULL;
+    private GradeDisplay $gradeDisplay      = GradeDisplay::FULL;
     private bool $removeHeaderRow           = false;
     private bool $removeCaption             = false;
     private bool $psalterWeekGrouping       = false;
@@ -386,6 +389,24 @@ class WebCalendar
     public function columnOrder(ColumnOrder $columnOrder = ColumnOrder::EVENT_DETAILS_FIRST): self
     {
         $this->columnOrder = $columnOrder;
+        return $this;
+    }
+
+    /**
+     * Controls how the liturgical grade is displayed.
+     *
+     * If GradeDisplay::FULL, the grade is displayed with its full rank.
+     * If GradeDisplay::ABBREVIATED, the grade is displayed with an abbreviated rank.
+     *
+     * The default is GradeDisplay::FULL.
+     *
+     * @param GradeDisplay $gradeDisplay The grade display.
+     *
+     * @return $this The current instance of the class.
+     */
+    public function gradeDisplay(GradeDisplay $gradeDisplay = GradeDisplay::FULL): self
+    {
+        $this->gradeDisplay = $gradeDisplay;
         return $this;
     }
 
@@ -826,9 +847,12 @@ class WebCalendar
         $eventDetailsCell->appendChild($eventDetailsContents);
 
         // Fourth column contains the liturgical grade or rank of the celebration
-        $displayGrade = $litevent->grade_display !== ''
+        $displayGrade = $litevent->grade_display !== null
                             ? $litevent->grade_display
-                            : ($litevent->grade < 7 ? $litevent->grade_lcl : '');
+                            : $litevent->grade_lcl;
+        if ($this->gradeDisplay === GradeDisplay::ABBREVIATED && $litevent->grade_display !== '') {
+            $displayGrade = $litevent->grade_abbr;
+        }
         $liturgicalGradeCell = $this->dom->createElement('td');
         $liturgicalGradeCell->setAttribute('class', 'liturgicalGrade liturgicalGrade_' . $litevent->grade);
         $this->handleSeasonColorForColumn($seasonColor, $liturgicalGradeCell, Column::GRADE);
