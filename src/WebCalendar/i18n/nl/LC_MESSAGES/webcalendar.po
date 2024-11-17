@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-13 19:10+0000\n"
+"POT-Creation-Date: 2024-11-17 08:30+0000\n"
 "PO-Revision-Date: 2024-11-13 19:26+0000\n"
 "Last-Translator: Weblate Admin <admin@example.com>\n"
 "Language-Team: Dutch <https://translate.johnromanodorazio.com/projects/"
@@ -19,48 +19,48 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.6.1\n"
 
-#: src/WebCalendar.php:802
+#: src/WebCalendar.php:846
 msgid "or"
 msgstr "of"
 
 #. translators: 1. name of the diocese, 2. year
-#: src/WebCalendar.php:885
+#: src/WebCalendar.php:942
 #, php-format
 msgid "Liturgical Calendar for the %1$s - %2$s"
 msgstr "Liturgische Kalender voor de %1$s - %2$s"
 
 #. translators: 1. name of the nation, 2. year
-#: src/WebCalendar.php:893
+#: src/WebCalendar.php:950
 #, php-format
 msgid "Liturgical Calendar for %1$s - %2$s"
 msgstr "Liturgische Kalender voor %1$s - %2$s"
 
-#: src/WebCalendar.php:899
+#: src/WebCalendar.php:956
 #, php-format
 msgid "General Roman Calendar - %1$s"
 msgstr "Algemene Romeinse Kalender - %1$s"
 
-#: src/WebCalendar.php:914
+#: src/WebCalendar.php:971
 msgid "Month"
 msgstr "Maand"
 
 #. translators: 'Season' refers to the liturgical season.
-#: src/WebCalendar.php:917
+#: src/WebCalendar.php:974
 msgid "Season"
 msgstr "Tijd"
 
-#: src/WebCalendar.php:923
+#: src/WebCalendar.php:980
 msgid "Date"
 msgstr "Datum"
 
-#: src/WebCalendar.php:927
+#: src/WebCalendar.php:984
 msgid "Celebration"
 msgstr "Viering"
 
-#: src/WebCalendar.php:931
+#: src/WebCalendar.php:987
 msgid "Liturgical Grade"
 msgstr "Liturgische Graad"
 
-#: src/WebCalendar.php:936
+#: src/WebCalendar.php:1003
 msgid "Psalter"
 msgstr "Psalter"
