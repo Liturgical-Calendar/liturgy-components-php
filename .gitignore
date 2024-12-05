@@ -12,4 +12,6 @@
 /vendor/
 /**/.env
 /**/.env.*
+/**/.envrc
 !/**/.env.example
+!/**/.envrc.example

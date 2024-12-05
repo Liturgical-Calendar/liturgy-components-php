@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "launch-browser",
+            "type": "shell",
+            "windows": {
+                "command": "${command:workbench.action.terminal.sendSequence}",
+                "args": [
+                {
+                    "text": "start http://${env:APP_HOST}:${env:APP_PORT}\n" // For Windows
+                }
+                ],
+                "problemMatcher": []
+            },
+            "linux": {
+                "command": "/bin/bash",
+                "args": [
+                    "-c",
+                    "if grep -q microsoft /proc/version; then powershell.exe Start-Process ${env:APP_PROTOCOL}://${env:APP_HOST}:${env:APP_PORT}; else xdg-open http://${env:APP_HOST}:${env:APP_PORT}; fi"
+                  ],
+                "problemMatcher": []
+            },
+            "osx": {
+                "command": "open http://${env:APP_HOST}:${env:APP_PORT}", // For macOS
+                "problemMatcher": []
+            }
+        },
+        {
+            "label": "php-server",
+            "type": "shell",
+            "command": "php -S ${env:APP_HOST}:${env:APP_PORT} -t examples/webcalendar/",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": [
+                "launch-browser"
+            ]
+        }
+    ]
+}
