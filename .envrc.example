@@ -1,4 +1,0 @@
-export APP_ENV=development
-export APP_PROTOCOL=http
-export APP_HOST=localhost
-export APP_PORT=3001

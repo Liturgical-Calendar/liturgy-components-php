@@ -1,5 +1,12 @@
 {
     "version": "2.0.0",
+    "options": {
+        "env": {
+            "APP_PROTOCOL": "http",
+            "APP_HOST": "localhost",
+            "APP_PORT": "3001"
+        }
+    },
     "tasks": [
         {
             "label": "launch-browser",
@@ -8,7 +15,7 @@
                 "command": "${command:workbench.action.terminal.sendSequence}",
                 "args": [
                 {
-                    "text": "start http://${env:APP_HOST}:${env:APP_PORT}\n" // For Windows
+                    "text": "start http://${APP_HOST}:${APP_PORT}\n" // For Windows
                 }
                 ],
                 "problemMatcher": []
@@ -17,19 +24,19 @@
                 "command": "/bin/bash",
                 "args": [
                     "-c",
-                    "if grep -q microsoft /proc/version; then powershell.exe Start-Process ${env:APP_PROTOCOL}://${env:APP_HOST}:${env:APP_PORT}; else xdg-open http://${env:APP_HOST}:${env:APP_PORT}; fi"
+                    "if grep -q microsoft /proc/version; then powershell.exe Start-Process ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}; else xdg-open http://${APP_HOST}:${APP_PORT}; fi"
                   ],
                 "problemMatcher": []
             },
             "osx": {
-                "command": "open http://${env:APP_HOST}:${env:APP_PORT}", // For macOS
+                "command": "open http://${APP_HOST}:${APP_PORT}", // For macOS
                 "problemMatcher": []
             }
         },
         {
             "label": "php-server",
             "type": "shell",
-            "command": "php -S ${env:APP_HOST}:${env:APP_PORT} -t examples/webcalendar/",
+            "command": "php -S ${APP_HOST}:${APP_PORT} -t examples/webcalendar/",
             "group": {
                 "kind": "build",
                 "isDefault": true
