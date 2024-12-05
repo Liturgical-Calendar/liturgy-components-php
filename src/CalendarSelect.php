@@ -549,7 +549,7 @@ class CalendarSelect
                     $this->disabled = true;
                     return '';
                 }
-                return implode('', $this->dioceseOptions[$this->nationFilterForDioceseOptions]);
+                return implode('', $this->dioceseOptions[$this->nationFilterForDioceseOptions] ?? []);
             case OptionsType::ALL:
             default:
                 return implode('', $this->nationOptions) . implode('', $this->dioceseOptionsGrouped);
