@@ -15,7 +15,7 @@
                 "command": "${command:workbench.action.terminal.sendSequence}",
                 "args": [
                 {
-                    "text": "start http://${APP_HOST}:${APP_PORT}\n" // For Windows
+                    "text": "start ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}\n" // For Windows
                 }
                 ],
                 "problemMatcher": []
@@ -24,12 +24,12 @@
                 "command": "/bin/bash",
                 "args": [
                     "-c",
-                    "if grep -q microsoft /proc/version; then powershell.exe Start-Process ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}; else xdg-open http://${APP_HOST}:${APP_PORT}; fi"
+                    "if grep -q microsoft /proc/version; then powershell.exe Start-Process ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}; else xdg-open ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}; fi"
                   ],
                 "problemMatcher": []
             },
             "osx": {
-                "command": "open http://${APP_HOST}:${APP_PORT}", // For macOS
+                "command": "open ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}", // For macOS
                 "problemMatcher": []
             }
         },
