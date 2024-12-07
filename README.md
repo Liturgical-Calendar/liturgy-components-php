@@ -452,6 +452,9 @@ if ($response) {
 }
 ```
 
+If no national or diocesan calendar was requested, but only the General Roman Calendar, then the inputs won't be disabled,
+their default selected values however will be set to those that were requested for the Calendar instance.
+
 ### WebCalendar
 
 A WebCalendar is instantiated with a response object from the Liturgical Calendar API. It does not currently take care of making the request,
