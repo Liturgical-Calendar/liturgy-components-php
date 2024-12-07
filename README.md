@@ -420,8 +420,8 @@ if ($response) {
 
 #### Disabling inputs and setting default selected values
 We can set the default selected value on the inputs as well as disable them.
-For example, after requesting a national or diocesan calendar, we might want to disable the `ApiOptions` inputs that can't send any other value
-than those that are determined by the requested calendar, and set the default selected options to those of the requested calendar.
+For example, after requesting a national or diocesan calendar, we might want to disable the `ApiOptions` inputs seeing that can't send any other value
+than those that are determined by the requested calendar. And we might want to set their default selected options to those of the requested calendar.
 
 ```php
 $selectedDiocese = (isset($_POST['diocesan_calendar']) && !empty($_POST['diocesan_calendar']))
