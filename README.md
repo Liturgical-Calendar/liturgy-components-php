@@ -353,7 +353,7 @@ on the `ApiOptions` instance as the following properties:
  * `localeInput`
  * `acceptHeaderInput`
 
-Each of these has it's own `->class()`, `->id()`, `->labelClass()`, `->wrapper()`, and `->wrapperClass()` methods.
+Each of these has it's own `->class()`, `->id()`, `->labelClass()`, `->wrapper()`, `->wrapperClass()`, `->disabled()` and `->selectedValue()` methods.
 If a global input wrapper or input class is also set, the single input's fine-grained methods will override the global settings
 for the specific input instance.
 
@@ -384,6 +384,72 @@ Output:
   </div>
   ...
 </div>
+```
+
+#### Updating the options for the Locale input
+The default options for the Locale <kbd>\<select\></kbd> input are the locales supported by the API for the General Roman Calendar. However, national calendars and diocesan calendars have their own set of supported locales. In order to set the options to those supported by a given national or diocesan calendar, we can use the `->setOptionsForCalendar(string $category, string $calendar_id)` method, where `$category` has a value of either `nation` or `diocese`, and `$calendar_id` corresponds to the `calendar_id` property of the national or diocesan calendar.
+
+Example:
+```php
+$selectedDiocese = (isset($_POST['diocesan_calendar']) && !empty($_POST['diocesan_calendar']))
+    ? htmlspecialchars($_POST['diocesan_calendar'], ENT_QUOTES, 'UTF-8')
+    : false;
+$selectedNation = (isset($_POST['national_calendar']) && !empty($_POST['national_calendar']))
+    ? htmlspecialchars($_POST['national_calendar'], ENT_QUOTES, 'UTF-8')
+    : false;
+if ($selectedDiocese) {
+  $apiOptions->localeInput->setOptionsForCalendar('diocese', $selectedDiocese);
+} elseif ($selectedNation) {
+  $apiOptions->localeInput->setOptionsForCalendar('nation', $selectedNation);
+}
+```
+
+We can then set the default selected value for the `localeInput` based on the calendar response, using the `settings->locale` property from the calendar response:
+
+```php
+// set up our cURL request to the calendar endpoint...
+$response = curl_exec($ch);
+curl_close($ch);
+if ($response) {
+  $LiturgicalCalendar = json_decode($response);
+  if (JSON_ERROR_NONE === json_last_error()) {
+    $apiOptions->localeInput->selectedValue($LiturgicalCalendar->settings->locale);
+  }
+}
+```
+
+#### Disabling inputs and setting default selected values
+We can set the default selected value on the inputs as well as disable them.
+For example, after requesting a national or diocesan calendar, we might want to disable the `ApiOptions` inputs that can't send any other value
+than those that are determined by the requested calendar, and set the default selected options to those of the requested calendar.
+
+```php
+$selectedDiocese = (isset($_POST['diocesan_calendar']) && !empty($_POST['diocesan_calendar']))
+    ? htmlspecialchars($_POST['diocesan_calendar'], ENT_QUOTES, 'UTF-8')
+    : false;
+$selectedNation = (isset($_POST['national_calendar']) && !empty($_POST['national_calendar']))
+    ? htmlspecialchars($_POST['national_calendar'], ENT_QUOTES, 'UTF-8')
+    : false;
+if ($selectedDiocese || $selectedNation) {
+    $apiOptions->epiphanyInput->disabled();
+    $apiOptions->ascensionInput->disabled();
+    $apiOptions->corpusChristiInput->disabled();
+    $apiOptions->eternalHighPriestInput->disabled();
+}
+
+// set up our cURL request to the calendar endpoint...
+$response = curl_exec($ch);
+curl_close($ch);
+if ($response) {
+  $LiturgicalCalendar = json_decode($response);
+  if (JSON_ERROR_NONE === json_last_error()) {
+    $apiOptions->epiphanyInput->selectedValue($LiturgicalCalendar->settings->epiphany);
+    $apiOptions->ascensionInput->selectedValue($LiturgicalCalendar->settings->ascension);
+    $apiOptions->corpusChristiInput->selectedValue($LiturgicalCalendar->settings->corpus_christi);
+    $apiOptions->eternalHighPriestInput->selectedValue($LiturgicalCalendar->settings->eternal_high_priest ? 'true' : 'false');
+    $apiOptions->localeInput->selectedValue($LiturgicalCalendar->settings->locale);
+  }
+}
 ```
 
 ### WebCalendar

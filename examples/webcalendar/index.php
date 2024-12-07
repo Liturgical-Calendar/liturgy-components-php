@@ -109,12 +109,19 @@ if (isset($_POST) && !empty($_POST)) {
         $apiOptions->eternalHighPriestInput->disabled();
     }
 
-    if ($selectedDiocese && $selectedNation) {
+    if ($selectedDiocese) {
         $requestPath = '/diocese/' . $selectedDiocese;
-        $calendarSelectDioceses->selectedOption($selectedDiocese);
         if ($selectedNation) {
             $calendarSelectNations->selectedOption($selectedNation);
             $calendarSelectDioceses->nationFilter($selectedNation)->setOptions(OptionsType::DIOCESES_FOR_NATION);
+            $calendarSelectDioceses->selectedOption($selectedDiocese);
+        } else {
+            // In order to set the `nation` based on the selected `diocese`, we would need info from the /calendars metadata route.
+            // We haven't made any requests to the metadata route yet, so we can't get this info yet.
+            // However we can also get this information from the calendar response in the `settings` object.
+            // Doing so will mean that setting `nation` to empty while there is still a `diocese` selected will force the `nation` back to that of the diocese,
+            // so setting `nation` to empty will not clear the `diocese` selection.
+            // Only setting to a `nation` for which the `diocese` is invalid will clear the `diocese` selection.
         }
         $apiOptions->localeInput->setOptionsForCalendar('diocese', $selectedDiocese);
     } elseif ($selectedNation) {
@@ -144,6 +151,11 @@ if (isset($_POST) && !empty($_POST)) {
             $apiOptions->corpusChristiInput->selectedValue($LiturgicalCalendar->settings->corpus_christi);
             $apiOptions->eternalHighPriestInput->selectedValue($LiturgicalCalendar->settings->eternal_high_priest ? 'true' : 'false');
             $apiOptions->localeInput->selectedValue($LiturgicalCalendar->settings->locale);
+            if ($selectedDiocese && false === $selectedNation) {
+                $calendarSelectNations->selectedOption($LiturgicalCalendar->settings->national_calendar);
+                $calendarSelectDioceses->nationFilter($LiturgicalCalendar->settings->national_calendar)
+                        ->setOptions(OptionsType::DIOCESES_FOR_NATION)->selectedOption($selectedDiocese);
+            }
 
             $webCalendar = new WebCalendar($LiturgicalCalendar);
             $webCalendar->id('LitCalTable')
