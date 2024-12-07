@@ -184,7 +184,7 @@ class ApiOptions
     private function prepareL10n(): void
     {
         if (self::$locale === null) {
-            self::$locale = 'en-US';
+            self::$locale = 'en_US';
         }
         /** @disregard P1014 because self::$baseLocale is a magic variable retrieved with a magic getter */
         $baseLocale = self::baseLocale();

@@ -90,11 +90,12 @@ if (isset($_POST) && !empty($_POST)) {
     $selectedNation = (isset($_POST['national_calendar']) && !empty($_POST['national_calendar']))
         ? htmlspecialchars($_POST['national_calendar'], ENT_QUOTES, 'UTF-8')
         : false;
-
     $selectedLocale = (isset($_POST['locale']) && !empty($_POST['locale']))
         ? htmlspecialchars($_POST['locale'], ENT_QUOTES, 'UTF-8')
-        : false;
-    $apiOptions->localeInput->selectedValue($selectedLocale);
+        : null;
+    if ($selectedLocale) {
+        $requestHeaders[] = 'Accept-Language: ' . $selectedLocale;
+    }
 
     if ($selectedDiocese && $selectedNation && false === CalendarSelect::isValidDioceseForNation($selectedDiocese, $selectedNation)) {
         $selectedDiocese = false;
@@ -106,25 +107,24 @@ if (isset($_POST) && !empty($_POST)) {
         $apiOptions->ascensionInput->disabled();
         $apiOptions->corpusChristiInput->disabled();
         $apiOptions->eternalHighPriestInput->disabled();
-        $apiOptions->localeInput->disabled();
     }
 
-    if ($selectedDiocese) {
+    if ($selectedDiocese && $selectedNation) {
         $requestPath = '/diocese/' . $selectedDiocese;
         $calendarSelectDioceses->selectedOption($selectedDiocese);
         if ($selectedNation) {
             $calendarSelectNations->selectedOption($selectedNation);
             $calendarSelectDioceses->nationFilter($selectedNation)->setOptions(OptionsType::DIOCESES_FOR_NATION);
         }
+        $apiOptions->localeInput->setOptionsForCalendar('diocese', $selectedDiocese);
     } elseif ($selectedNation) {
         $requestPath = '/nation/' . $selectedNation;
         $calendarSelectNations->selectedOption($selectedNation);
         $calendarSelectDioceses->nationFilter($selectedNation)->setOptions(OptionsType::DIOCESES_FOR_NATION);
-    } elseif ($selectedLocale) {
-        $requestHeaders[] = 'Accept-Language: ' . $selectedLocale;
+        $apiOptions->localeInput->setOptionsForCalendar('nation', $selectedNation);
     }
-    //$requestUrl = "https://litcal.johnromanodorazio.com/api/dev/calendar{$requestPath}{$requestYear}";
-    $requestUrl = "http://localhost:8000/calendar{$requestPath}{$requestYear}";
+
+    $requestUrl = "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}:{$_ENV['API_PORT']}/calendar{$requestPath}{$requestYear}";
 
     $webCalendarHtml = '';
     $ch = curl_init();
@@ -143,8 +143,7 @@ if (isset($_POST) && !empty($_POST)) {
             $apiOptions->ascensionInput->selectedValue($LiturgicalCalendar->settings->ascension);
             $apiOptions->corpusChristiInput->selectedValue($LiturgicalCalendar->settings->corpus_christi);
             $apiOptions->eternalHighPriestInput->selectedValue($LiturgicalCalendar->settings->eternal_high_priest ? 'true' : 'false');
-            $baseLocale = \Locale::getPrimaryLanguage($LiturgicalCalendar->settings->locale);
-            $apiOptions->localeInput->selectedValue($baseLocale);
+            $apiOptions->localeInput->selectedValue($LiturgicalCalendar->settings->locale);
 
             $webCalendar = new WebCalendar($LiturgicalCalendar);
             $webCalendar->id('LitCalTable')
@@ -384,6 +383,7 @@ if (isset($_POST) && !empty($_POST)) {
             } else {
                 echo '<div class="col-12">No POST data (perhaps click on Submit?)</div>';
             }
+            echo '<input type="hidden" id="selectedLocale2" value="' . $selectedLocale . '">';
             ?>
         </div>
     </div>
