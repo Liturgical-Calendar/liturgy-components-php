@@ -219,8 +219,7 @@ class ApiOptions
         return $this->epiphanyInput->get()
             . $this->ascensionInput->get()
             . $this->corpusChristiInput->get()
-            . $this->eternalHighPriestInput->get()
-            . $this->localeInput->get();
+            . $this->eternalHighPriestInput->get();
     }
 
     /**
@@ -233,7 +232,8 @@ class ApiOptions
     private function getAllPathsOptions(): string
     {
         return $this->yearTypeInput->get()
-            . ($this->acceptHeaderInput->isHidden() ? '' : $this->acceptHeaderInput->get());
+               . $this->localeInput->get()
+               . ($this->acceptHeaderInput->isHidden() ? '' : $this->acceptHeaderInput->get());
     }
 
     /**
