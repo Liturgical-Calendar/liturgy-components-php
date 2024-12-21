@@ -49,7 +49,6 @@ class WebCalendar
     private ?string $currentTextDomainPath  = null;
     private ?string $expectedTextDomainPath = null;
     private ?object $LiturgicalCalendar     = null;
-    private array $LitCalKeys               = [];
     private ?string $class                  = null;
     private ?string $id                     = null;
     private int $daysCreated                = 0;
@@ -66,9 +65,9 @@ class WebCalendar
     private bool $psalterWeekGrouping       = false;
     private bool $monthHeader               = false;
     private \DomDocument $dom;
-    private const HIGH_CONTRAST             = ['purple', 'red', 'green'];
-    private static ?\DomElement $lastSeasonCell      = null;
-    private static ?\DomElement $lastPsalterWeekCell = null;
+    private ?\DomElement $lastSeasonCell      = null;
+    private ?\DomElement $lastPsalterWeekCell = null;
+    private static const HIGH_CONTRAST        = ['purple', 'red', 'green'];
 
     /**
      * Latin names for the days of the week.
@@ -76,7 +75,7 @@ class WebCalendar
      * This is required since systems do not yet support the Latin language.
      * @var string[]
      */
-    public const DAYS_OF_THE_WEEK_LATIN = [
+    private static const DAYS_OF_THE_WEEK_LATIN = [
         "dies Solis",
         "dies Lunæ",
         "dies Martis",
@@ -93,7 +92,7 @@ class WebCalendar
      * This is required since systems do not yet support the Latin language.
      * @var string[]
      */
-    public const MONTHS_LATIN = [
+    private static const MONTHS_LATIN = [
         "",
         "Ianuarius",
         "Februarius",
@@ -113,7 +112,7 @@ class WebCalendar
      * An array of Roman numerals to translate the psalter week cycle
      * from arabic numerals to Roman numerals
      */
-    public const PSALTER_WEEK = [
+    private static const PSALTER_WEEK = [
         '', 'I', 'II', 'III', 'IV'
     ];
 
@@ -155,14 +154,11 @@ class WebCalendar
         }
 
         foreach ($LiturgicalCalendar->litcal as $idx => $value) {
-            $key = $value->event_key;
             $LiturgicalCalendar->litcal[$idx] = new LiturgicalEvent($value);
-            $this->LitCalKeys[] = $key;
         }
 
         //header('Content-Type: application/json');
         //die(json_encode($LiturgicalCalendar));
-        //die(json_encode($this->LitCalKeys));
         $this->LiturgicalCalendar = $LiturgicalCalendar;
         $this->seasonColorColumns = new ColumnSet(Column::LITURGICAL_SEASON->value | Column::MONTH->value | Column::DATE->value | Column::PSALTER_WEEK->value);
         $this->eventColorColumns = new ColumnSet(Column::EVENT->value | Column::GRADE->value);
@@ -530,15 +526,21 @@ class WebCalendar
         }
     }
 
+    /**
+     * Recursively counts the number of subsequent liturgical events in the same psalter week.
+     *
+     * @param int $currentKeyIndex The current position in the array of liturgical events on the given psalter week.
+     * @param int $cw [reference] The count of subsequent liturgical events in the same psalter week.
+     */
     private function countSamePsalterWeekEvents(int $currentKeyIndex, int &$cw)
     {
         $EventsObject = $this->LiturgicalCalendar->litcal;
         $currentEvent = $EventsObject[$currentKeyIndex];
         if ($currentKeyIndex < count($EventsObject) - 1) {
             $nextEvent = $EventsObject[$currentKeyIndex + 1];
-            // $cepw = current event psalter week
+            // $cepsw = current event psalter week
             $cepsw = $currentEvent->psalter_week;
-            // $nepw = next event psalter week
+            // $nepsw = next event psalter week
             $nepsw = $nextEvent->psalter_week;
             // We try to keep together valid psalter week values,
             // while we break up invalid psalter week values
@@ -632,7 +634,7 @@ class WebCalendar
         if ($this->seasonColorColumns->has($columnFlag)) {
             switch ($this->seasonColor) {
                 case ColorAs::BACKGROUND:
-                    $td->setAttribute('style', 'background-color:' . $seasonColor . ';' . (in_array($seasonColor, self::HIGH_CONTRAST) ? 'color:white;' : ''));
+                    $td->setAttribute('style', 'background-color:' . $seasonColor . ';' . (in_array($seasonColor, WebCalendar::HIGH_CONTRAST) ? 'color:white;' : ''));
                     break;
                 case ColorAs::CSS_CLASS:
                     $classes = $td->getAttribute('class');
@@ -666,7 +668,7 @@ class WebCalendar
         if ($this->eventColorColumns->has($columnFlag)) {
             switch ($this->eventColor) {
                 case ColorAs::BACKGROUND:
-                    $td->setAttribute('style', 'background-color:' . $eventColor[0] . ';' . (in_array($eventColor[0], self::HIGH_CONTRAST) ? 'color:white;' : ''));
+                    $td->setAttribute('style', 'background-color:' . $eventColor[0] . ';' . (in_array($eventColor[0], WebCalendar::HIGH_CONTRAST) ? 'color:white;' : ''));
                     break;
                 case ColorAs::CSS_CLASS:
                     $classes = $td->getAttribute('class');
@@ -751,8 +753,8 @@ class WebCalendar
                 $this->handleSeasonColorForColumn($seasonColor, $firstColCell, Column::MONTH);
                 $this->handleEventColorForColumn($litevent->color, $firstColCell, Column::MONTH);
                 $textNode = $this->baseLocale === 'la'
-                                ? strtoupper(self::MONTHS_LATIN[ (int)$litevent->date->format('n') ])
-                                : strtoupper($monthFmt->format($litevent->date->format('U')));
+                    ? strtoupper(WebCalendar::MONTHS_LATIN[ (int)$litevent->date->format('n') ])
+                    : strtoupper($monthFmt->format($litevent->date->format('U')));
                 $div = $this->dom->createElement('div');
                 $div->appendChild($this->dom->createTextNode($textNode));
                 $firstColCell->appendChild($div);
@@ -767,7 +769,7 @@ class WebCalendar
                 $firstColRowSpan = $cs + 1;
                 $firstColCell = $this->dom->createElement('td');
                 if ($this->monthHeader) {
-                    self::$lastSeasonCell = $firstColCell;
+                    $this->lastSeasonCell = $firstColCell;
                 }
                 $firstColCell->setAttribute('rowspan', $firstColRowSpan);
                 $firstColCell->setAttribute('class', "rotate season $litevent->liturgical_season");
@@ -791,8 +793,8 @@ class WebCalendar
                 }
             }
             if (false === $newSeason && $newMonth && $this->monthHeader && $this->firstColumnGrouping === Grouping::BY_LITURGICAL_SEASON) {
-                $firstColCellRowSpan = self::$lastSeasonCell->getAttribute('rowspan');
-                self::$lastSeasonCell->setAttribute('rowspan', (int)$firstColCellRowSpan + 1);
+                $firstColCellRowSpan = $this->lastSeasonCell->getAttribute('rowspan');
+                $this->lastSeasonCell->setAttribute('rowspan', (int)$firstColCellRowSpan + 1);
                 $monthHeaderRow = $this->dom->createElement('tr');
                 $monthHeaderCell = $this->dom->createElement('td');
                 $monthHeaderCell->setAttribute('colspan', 3);
@@ -809,9 +811,9 @@ class WebCalendar
         switch ($this->baseLocale) {
             case 'la':
                 $dayOfTheWeek = (int)$litevent->date->format('w'); //w = 0-Sunday to 6-Saturday
-                $dayOfTheWeekLatin = self::DAYS_OF_THE_WEEK_LATIN[$dayOfTheWeek];
+                $dayOfTheWeekLatin = WebCalendar::DAYS_OF_THE_WEEK_LATIN[$dayOfTheWeek];
                 $month = (int)$litevent->date->format('n'); //n = 1-January to 12-December
-                $monthLatin = self::MONTHS_LATIN[$month];
+                $monthLatin = WebCalendar::MONTHS_LATIN[$month];
                 $dateString = $dayOfTheWeekLatin . ' ' . $litevent->date->format('j') . ' ' . $monthLatin . ' ' . $litevent->date->format('Y');
                 break;
             default:
@@ -873,15 +875,15 @@ class WebCalendar
 
         // Fifth column contains the Psalter week if Psalter week grouping is enabled
         if ($this->psalterWeekGrouping && false === $newPsalterWeek && null !== $monthHeaderRow) {
-            $psalterWeekCellRowSpan = self::$lastPsalterWeekCell->getAttribute('rowspan');
-            self::$lastPsalterWeekCell->setAttribute('rowspan', (int)$psalterWeekCellRowSpan + 1);
+            $psalterWeekCellRowSpan = $this->lastPsalterWeekCell->getAttribute('rowspan');
+            $this->lastPsalterWeekCell->setAttribute('rowspan', (int)$psalterWeekCellRowSpan + 1);
         }
         if ($this->psalterWeekGrouping && $newPsalterWeek) {
             $psalterWeekCell = $this->dom->createElement('td');
             $psalterWeekCell->setAttribute('class', 'psalterWeek');
-            self::$lastPsalterWeekCell = $psalterWeekCell;
+            $this->lastPsalterWeekCell = $psalterWeekCell;
             /** @var string $romNumPsalterWeek The Roman numeral version of the Psalter week */
-            $romNumPsalterWeek = self::PSALTER_WEEK[$litevent->psalter_week];
+            $romNumPsalterWeek = WebCalendar::PSALTER_WEEK[$litevent->psalter_week];
             $this->handleSeasonColorForColumn($seasonColor, $psalterWeekCell, Column::PSALTER_WEEK);
             $this->handleEventColorForColumn($litevent->color, $psalterWeekCell, Column::PSALTER_WEEK);
             $psalterWeekCell->appendChild($this->dom->createTextNode($romNumPsalterWeek));
@@ -924,6 +926,7 @@ class WebCalendar
         if (null !== $this->class) {
             $table->setAttribute('class', $this->class);
         }
+
         $colGroup = $this->dom->createElement('colgroup');
         $colCount = $this->psalterWeekGrouping ? 5 : 4;
         for ($i = 0; $i < $colCount; $i++) {
@@ -1020,9 +1023,8 @@ class WebCalendar
         $newPsalterWeek = false;
 
         // Loop through the liturgical events
-        for ($eventIdx = 0; $eventIdx < count($this->LitCalKeys); $eventIdx++) {
+        foreach ($this->LiturgicalCalendar->litcal as $eventIdx => $litevent) {
             $this->daysCreated++;
-            $litevent = $this->LiturgicalCalendar->litcal[$eventIdx];
 
             // Check if we are at the start of a new month, and if so count how many events we have in that same month,
             // so we can display the Month table cell with the correct colspan when firstColumnGrouping is BY_MONTH.
