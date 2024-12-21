@@ -7,6 +7,18 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
 use DateTime;
 use IntlDateFormatter;
 
+/**
+ * Class CorpusChristi
+ *
+ * Represents an input option for selecting the date of Corpus Christi.
+ * This class provides functionality to generate the HTML for a select
+ * element with options for the Corpus Christi date.
+ *
+ * It extends the Input class and utilizes locale settings for formatting
+ * options. The select element contains two options: Thursday and Sunday.
+ * @see LiturgicalCalendar\Components\ApiOptions\Input
+ * @see LiturgicalCalendar\Components\ApiOptions
+ */
 final class CorpusChristi extends Input
 {
     public array $data           = [

@@ -2,6 +2,16 @@
 
 namespace LiturgicalCalendar\Components\ApiOptions;
 
+/**
+ * Abstract class for generating select elements in the API options form.
+ *
+ * This class is extended by other classes that represent specific input elements.
+ * It provides methods for setting properties of the input element and its wrapper
+ * element, label element, and options.
+ *
+ * @package LiturgicalCalendar\Components\ApiOptions
+ * @author John Roman Dorazio <priest@johnromanodorazio.com>
+ */
 abstract class Input
 {
     protected static ?string $globalWrapper      = null;

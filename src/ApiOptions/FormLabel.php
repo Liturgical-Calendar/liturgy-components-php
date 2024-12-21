@@ -4,6 +4,12 @@ namespace LiturgicalCalendar\Components\ApiOptions;
 
 use LiturgicalCalendar\Components\ApiOptions;
 
+/**
+ * Class FormLabel
+ *
+ * @package LiturgicalCalendar\Components\ApiOptions
+ * @author John Roman Dorazio <priest@johnromanodorazio.com>
+ */
 class FormLabel
 {
     private string $as      = 'label';

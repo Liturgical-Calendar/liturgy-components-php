@@ -15,9 +15,8 @@ use IntlDateFormatter;
  * - January 6th
  * - Sunday between January 2nd and 8th
  *
- * @see Input
- * @see ApiOptions
- * @package LiturgicalCalendar\Components\ApiOptions\Input
+ * @see LiturgicalCalendar\Components\ApiOptions\Input
+ * @see LiturgicalCalendar\Components\ApiOptions
  */
 final class Epiphany extends Input
 {

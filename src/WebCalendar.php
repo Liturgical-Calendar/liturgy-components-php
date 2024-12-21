@@ -39,6 +39,7 @@ use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
  * - __{@see getLocale()}__: returns the locale that was set when the WebCalendar object was created / buildTable was called.
  * - __{@see buildTable()}__: returns an HTML string containing a table of the liturgical events.
  * - __{@see daysCreated()}__: returns the number of days created in the table.
+ * @author John Roman Dorazio <priest@johnromanodorazio.com>
  */
 class WebCalendar
 {

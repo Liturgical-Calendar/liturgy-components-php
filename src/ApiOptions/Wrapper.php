@@ -4,12 +4,36 @@ namespace LiturgicalCalendar\Components\ApiOptions;
 
 use LiturgicalCalendar\Components\ApiOptions;
 
+/**
+ * Class Wrapper
+ *
+ * Wrapper element for the form inputs.
+ *
+ * Provides methods to set the type of HTML element, class, and id of the wrapper element.
+ *
+ * @see LiturgicalCalendar\Components\ApiOptions
+ * @package LiturgicalCalendar\Components\ApiOptions
+ * @author John Roman Dorazio <priest@johnromanodorazio.com>
+ */
 class Wrapper
 {
     private string $as      = 'div';
     private string $class   = '';
     private string $id      = '';
 
+    /**
+     * Constructor for the Wrapper class.
+     *
+     * Initializes the class properties based on the provided optional argument.
+     * If the $as argument is provided, it must be one of the following valid values:
+     * - 'div'
+     * - 'form'
+     *
+     * @param string|null $as The type of HTML element to use as the wrapper.
+     *                         If null, defaults to 'div'.
+     *
+     * @throws \Exception If the $as argument is not one of the valid values.
+     */
     public function __construct(?string $as = null)
     {
         if ($as !== null) {
@@ -20,6 +44,19 @@ class Wrapper
         }
     }
 
+    /**
+     * Sets the type of HTML element to use as the wrapper element.
+     *
+     * The provided $element must be one of the following valid values:
+     * - 'div'
+     * - 'form'
+     *
+     * @param string $element The type of HTML element to use as the wrapper.
+     *
+     * @return $this The current instance for method chaining.
+     *
+     * @throws \Exception If the $element argument is not one of the valid values.
+     */
     public function as(string $element)
     {
         if (false === in_array($element, ['div', 'form'])) {
@@ -29,6 +66,13 @@ class Wrapper
         return $this;
     }
 
+    /**
+     * Sets the class attribute for the wrapper element.
+     *
+     * @param string $class The value of the class attribute.
+     *
+     * @return $this The current instance for method chaining.
+     */
     public function class(string $class)
     {
         $class = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
@@ -36,6 +80,13 @@ class Wrapper
         return $this;
     }
 
+    /**
+     * Sets the id attribute for the wrapper element.
+     *
+     * @param string $id The value of the id attribute.
+     *
+     * @return $this The current instance for method chaining.
+     */
     public function id(string $id)
     {
         $id = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');

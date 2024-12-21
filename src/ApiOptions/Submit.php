@@ -4,6 +4,15 @@ namespace LiturgicalCalendar\Components\ApiOptions;
 
 use LiturgicalCalendar\Components\ApiOptions;
 
+/**
+ * Class to generate a submit button element.
+ *
+ * This class provides the necessary methods to generate a submit button element.
+ * The generated HTML includes the element's class, id, and value attributes.
+ *
+ * @package LiturgicalCalendar\Components\ApiOptions
+ * @author John Roman Dorazio <priest@johnromanodorazio.com>
+ */
 class Submit
 {
     private string $as      = 'input';
@@ -11,6 +20,15 @@ class Submit
     private string $id      = '';
     private string $value   = 'Submit';
 
+    /**
+     * Initializes the Submit object with default settings.
+     *
+     * The Submit object is initialized with the following default settings:
+     * - $as: 'input'
+     * - $class: ''
+     * - $id: ''
+     * - $value: 'Submit'
+     */
     public function __construct()
     {
     }

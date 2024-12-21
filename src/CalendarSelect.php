@@ -31,7 +31,7 @@ use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
  * - @static isValidDioceseForNation(string $diocese, string $nation): Checks if the given diocese is valid for the given nation.
  *
  * @package LiturgicalCalendar\Components
- * @author John Romano D'Orazio
+ * @author John Romano D'Orazio <priest@johnromanodorazio.com>
  */
 class CalendarSelect
 {

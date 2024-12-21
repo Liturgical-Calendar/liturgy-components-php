@@ -4,6 +4,18 @@ namespace LiturgicalCalendar\Components\ApiOptions\Input;
 
 use LiturgicalCalendar\Components\ApiOptions\Input;
 
+/**
+ * Class EternalHighPriest
+ *
+ * This class represents the Eternal High Priest input component for the Liturgical Calendar.
+ * It extends the Input class and is responsible for generating a select element
+ * that allows users to specify whether to include the Eternal High Priest celebration
+ * in the calendar.
+ *
+ * The input element is configurable, supporting the setting of element id, name,
+ * and other attributes via its methods.
+ * @see LiturgicalCalendar\Components\ApiOptions\Input
+ */
 final class EternalHighPriest extends Input
 {
     public array $data           = [

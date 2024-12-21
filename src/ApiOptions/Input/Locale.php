@@ -3,8 +3,18 @@
 namespace LiturgicalCalendar\Components\ApiOptions\Input;
 
 use LiturgicalCalendar\Components\ApiOptions;
+use LiturgicalCalendar\Components\ApiOptions\Input;
 
-class Locale extends ApiOptions\Input
+/**
+ * Class Locale
+ *
+ * Generates an HTML select element for selecting a locale in the Liturgical
+ * Calendar API options form.
+ *
+ * @see LiturgicalCalendar\Components\ApiOptions
+ * @see LiturgicalCalendar\Components\ApiOptions\Input
+ */
+class Locale extends Input
 {
     public array $data           = [
         'param' => 'locale'

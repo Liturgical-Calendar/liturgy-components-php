@@ -7,6 +7,17 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
 use DateTime;
 use IntlDateFormatter;
 
+/**
+ * Generates an HTML string for an Ascension date select element.
+ *
+ * This class uses the methods of the parent Input class to generate an HTML string
+ * for an Ascension date select element. It uses class attributes for styling the
+ * label, input, and wrapper. The generated HTML includes the select element's
+ * class, id, and contents.
+ *
+ * @see LiturgicalCalendar\Components\ApiOptions\Input
+ * @see LiturgicalCalendar\Components\ApiOptions
+ */
 final class Ascension extends Input
 {
     public array $data           = [

@@ -39,7 +39,7 @@ use LiturgicalCalendar\Components\ApiOptions\PathType;
  * @method static getLocale() Returns the locale used by the API options component.
  *
  * @package LiturgicalCalendar\Components
- * @author John Romano D'Orazio
+ * @author John Romano D'Orazio <priest@johnromanodorazio.com>
  */
 class ApiOptions
 {

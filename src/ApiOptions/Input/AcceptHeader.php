@@ -4,6 +4,15 @@ namespace LiturgicalCalendar\Components\ApiOptions\Input;
 
 use LiturgicalCalendar\Components\ApiOptions\Input;
 
+/**
+ * Class to generate an HTML select element for the 'accept' header of the API.
+ *
+ * This class provides the necessary methods to generate an HTML select element
+ * for the 'accept' header of the API. The generated HTML includes the element's
+ * class, id, and options attributes.
+ *
+ * @see LiturgicalCalendar\Components\ApiOptions\Input
+ */
 final class AcceptHeader extends Input
 {
     public array $data           = [

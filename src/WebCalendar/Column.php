@@ -2,15 +2,63 @@
 
 namespace LiturgicalCalendar\Components\WebCalendar;
 
+/**
+ * Enum of columns that can be displayed in the WebCalendar table.
+ *
+ * Contains the following constants:
+ * - {@see __LITURGICAL_SEASON__}: The column showing the liturgical season
+ * - {@see __MONTH__}: The column showing the month
+ * - {@see __DATE__}: The column showing the date
+ * - {@see __EVENT__}: The column showing the event
+ * - {@see __GRADE__}: The column showing the liturgical grade
+ * - {@see __PSALTER_WEEK__}: The column showing the psalter week
+ * - {@see __ALL__}: A bitfield of all the columns
+ * - {@see __NONE__}: A bitfield of no columns
+ *
+ * @package LiturgicalCalendar\Components\WebCalendar
+ * @author John Roman Dorazio <priest@johnromanodorazio.com>
+ */
 enum Column: int
 {
-    case LITURGICAL_SEASON  = 1 << 0; //1
-    case MONTH              = 1 << 1; //2
-    case DATE               = 1 << 2; //4
-    case EVENT              = 1 << 3; //8
-    case GRADE              = 1 << 4; //16
-    case PSALTER_WEEK       = 1 << 5; //32
-    case ALL                = self::LITURGICAL_SEASON->value | self::MONTH->value | self::DATE->value | self::EVENT->value | self::GRADE->value | self::PSALTER_WEEK->value; // 47
+    /**
+     * The column showing the liturgical season
+     * @var int 1
+     */
+    case LITURGICAL_SEASON  = 1 << 0;
+    /**
+     * The column showing the month
+     * @var int 2
+     */
+    case MONTH              = 1 << 1;
+    /**
+     * The column showing the date
+     * @var int 4
+     */
+    case DATE               = 1 << 2;
+    /**
+     * The column showing the event detauls
+     * @var int 8
+     */
+    case EVENT              = 1 << 3;
+    /**
+     * The column showing the liturgical grade
+     * @var int 16
+     */
+    case GRADE              = 1 << 4;
+    /**
+     * The column showing the psalter week
+     * @var int 32
+     */
+    case PSALTER_WEEK       = 1 << 5;
+    /**
+     * A bitfield of all the columns
+     * @var int 63
+     */
+    case ALL                = self::LITURGICAL_SEASON->value | self::MONTH->value | self::DATE->value | self::EVENT->value | self::GRADE->value | self::PSALTER_WEEK->value;
+    /**
+     * A bitfield of no columns
+     * @var int 0
+     */
     case NONE               = 0;
 
     /**

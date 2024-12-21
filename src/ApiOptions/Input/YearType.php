@@ -4,6 +4,16 @@ namespace LiturgicalCalendar\Components\ApiOptions\Input;
 
 use LiturgicalCalendar\Components\ApiOptions\Input;
 
+/**
+ * Class YearType
+ *
+ * Represents the year type input option for the Liturgical Calendar.
+ * This class provides functionality to generate a select element
+ * for choosing between different year types such as liturgical or civil.
+ * It extends the Input class and utilizes various settings for
+ * configuring the element's attributes and appearance.
+ * @see LiturgicalCalendar\Components\ApiOptions\Input
+ */
 final class YearType extends Input
 {
     public array $data           = [

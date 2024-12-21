@@ -2,6 +2,15 @@
 
 namespace LiturgicalCalendar\Components\WebCalendar;
 
+/**
+ * A class to manage a set of Column flags.
+ *
+ * The class provides methods to add, remove, toggle, and check for the presence of Column flags.
+ * The class also provides a method to retrieve the value of the columnFlags property.
+ *
+ * @package LiturgicalCalendar\Components\WebCalendar
+ * @author John Roman Dorazio <priest@johnromanodorazio.com>
+ */
 class ColumnSet
 {
     /**

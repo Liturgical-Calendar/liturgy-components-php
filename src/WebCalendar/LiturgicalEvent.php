@@ -3,10 +3,11 @@
 namespace LiturgicalCalendar\Components\WebCalendar;
 
 /**
- *  Class LiturgicalEvent
- *  similar to the Festivity class used in the Liturgical Calendar API,
+ * Similar to the Festivity class used in the Liturgical Calendar API,
  *  except that this class converts a PHP Timestamp to a DateTime object
  *  and does not implement JsonSerializeable or the comparator function
+ * @author  John R. D'Orazio <priest@johnromanodorazio.com>
+ * @package LiturgicalCalendar\Components\WebCalendar
  **/
 class LiturgicalEvent
 {
