@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-12-21 18:39+0000\n"
+"POT-Creation-Date: 2024-12-21 18:57+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,48 +17,48 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/WebCalendar.php:849
+#: src/WebCalendar.php:850
 msgid "or"
 msgstr ""
 
 #. translators: 1. name of the diocese, 2. year
-#: src/WebCalendar.php:946
+#: src/WebCalendar.php:947
 #, php-format
 msgid "Liturgical Calendar for the %1$s - %2$s"
 msgstr ""
 
 #. translators: 1. name of the nation, 2. year
-#: src/WebCalendar.php:954
+#: src/WebCalendar.php:955
 #, php-format
 msgid "Liturgical Calendar for %1$s - %2$s"
 msgstr ""
 
-#: src/WebCalendar.php:960
+#: src/WebCalendar.php:961
 #, php-format
 msgid "General Roman Calendar - %1$s"
 msgstr ""
 
-#: src/WebCalendar.php:975
+#: src/WebCalendar.php:976
 msgid "Month"
 msgstr ""
 
 #. translators: 'Season' refers to the liturgical season.
-#: src/WebCalendar.php:978
+#: src/WebCalendar.php:979
 msgid "Season"
 msgstr ""
 
-#: src/WebCalendar.php:984
+#: src/WebCalendar.php:985
 msgid "Date"
 msgstr ""
 
-#: src/WebCalendar.php:988
+#: src/WebCalendar.php:989
 msgid "Celebration"
 msgstr ""
 
-#: src/WebCalendar.php:991
+#: src/WebCalendar.php:992
 msgid "Liturgical Grade"
 msgstr ""
 
-#: src/WebCalendar.php:1007
+#: src/WebCalendar.php:1008
 msgid "Psalter"
 msgstr ""
