@@ -22,24 +22,25 @@ use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
  * - __messages__: the messages object from the Liturgical Calendar API
  *
  * The class provides the following methods:
- * - __{@see id(string $id)}__: sets the id of the table element.
- * - __{@see class(string $class)}__: sets the class of the table element.
- * - __{@see firstColumnGrouping(Grouping $grouping)}__: sets the grouping of the first column of the table.
- * - __{@see psalterWeekGrouping(bool $psalterWeekGrouping)}__: sets whether to display grouped psalter weeks.
- * - __{@see removeHeaderRow(bool $removeHeaderRow)}__: sets whether to remove the header row of the table.
- * - __{@see removeCaption(bool $removeCaption)}__: sets whether to remove the caption of the table.
- * - __{@see dateFormat(DateFormat $dateFormat)}__: sets the date format for the date column.
- * - __{@see monthHeader(bool $monthHeader)}__: sets whether to display month headers.
- * - __{@see seasonColor(ColorAs $seasonColor)}__: sets how the season color is handled (background color, CSS class, or inline block element).
- * - __{@see eventColor(ColorAs $eventColor)}__: sets how the event color is handled (background color, CSS class, or inline block element).
- * - __{@see seasonColorColumns(ColumnSet $seasonColorColumns)}__: sets which columns to apply the season color to.
- * - __{@see eventColorColumns(ColumnSet $eventColorColumns)}__: sets which columns to apply the event color to.
- * - __{@see columnOrder(ColumnOrder $columnOrder)}__: sets the order of the third and fourth columns in the table (liturgical grade and event details).
- * - __{@see gradeDisplay(GradeDisplay $gradeDisplay)}__: sets how the liturgical grade is displayed (in full, or in abbreviated form).
- * - __{@see getLocale()}__: returns the locale that was set when the WebCalendar object was created / buildTable was called.
- * - __{@see buildTable()}__: returns an HTML string containing a table of the liturgical events.
- * - __{@see daysCreated()}__: returns the number of days created in the table.
+ * @see \LiturgicalCalendar\Components\WebCalendar::id()  Sets the id of the table element.
+ * @see \LiturgicalCalendar\Components\WebCalendar::class() Sets the class of the table element.
+ * @see \LiturgicalCalendar\Components\WebCalendar::firstColumnGrouping() Sets the grouping of the first column of the table.
+ * @see \LiturgicalCalendar\Components\WebCalendar::psalterWeekGrouping() Sets whether to display grouped psalter weeks.
+ * @see \LiturgicalCalendar\Components\WebCalendar::removeHeaderRow() Sets whether to remove the header row of the table.
+ * @see \LiturgicalCalendar\Components\WebCalendar::removeCaption() Sets whether to remove the caption of the table.
+ * @see \LiturgicalCalendar\Components\WebCalendar::dateFormat() Sets the date format for the date column.
+ * @see \LiturgicalCalendar\Components\WebCalendar::monthHeader() Sets whether to display month headers.
+ * @see \LiturgicalCalendar\Components\WebCalendar::seasonColor() Sets how the season color is handled (background color, CSS class, or inline block element).
+ * @see \LiturgicalCalendar\Components\WebCalendar::eventColor() Sets how the event color is handled (background color, CSS class, or inline block element).
+ * @see \LiturgicalCalendar\Components\WebCalendar::seasonColorColumns() Sets which columns to apply the season color to.
+ * @see \LiturgicalCalendar\Components\WebCalendar::eventColorColumns() Sets which columns to apply the event color to.
+ * @see \LiturgicalCalendar\Components\WebCalendar::columnOrder() Sets the order of the third and fourth columns in the table (liturgical grade and event details).
+ * @see \LiturgicalCalendar\Components\WebCalendar::gradeDisplay() Sets how the liturgical grade is displayed (in full, or in abbreviated form).
+ * @see \LiturgicalCalendar\Components\WebCalendar::getLocale() Returns the locale that was set when the WebCalendar object was created / buildTable was called.
+ * @see \LiturgicalCalendar\Components\WebCalendar::buildTable() Returns an HTML string containing a table of the liturgical events.
+ * @see \LiturgicalCalendar\Components\WebCalendar::daysCreated() Returns the number of days created in the table.
  * @author John Roman Dorazio <priest@johnromanodorazio.com>
+ * @package LiturgicalCalendar\Components
  */
 class WebCalendar
 {

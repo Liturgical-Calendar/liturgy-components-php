@@ -11,24 +11,24 @@ use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
  * calendars, as well as the diocesan calendars for each nation.
  *
  * Public Methods:
- * - __construct(): Initializes the CalendarSelect object with default settings.
- * - setUrl(string $url): Sets the URL of the liturgical calendar metadata API endpoint.
- * - selectedOption(string $option): Sets the selected option.
- * - locale(string $locale): Sets the locale for the calendar select.
- * - class(string $class): Sets the class for the calendar select.
- * - id(string $id): Sets the ID for the select element.
- * - name(string $name): Sets the name for the select element.
- * - setOptions(OptionsType $type): Sets the type of option elements for the select element.
- * - nationFilter(string $nation): Sets the nation to filter the diocese options to.
- * - label(bool $show): Configures whether to show the label.
- * - labelText(string $text): Sets the text for the label.
- * - allowNull(bool $allow): Allows or disallows null selection.
- * - disabled(bool $disabled): Sets whether the select element is disabled.
- * - @static isValidLocale(string $locale): Checks if the given locale is valid.
- * - getSelect(): Returns the HTML for the select element.
- * - getMetadataUrl(): Returns the URL of the liturgical calendar metadata API endpoint.
- * - getLocale(): Returns the locale used by the calendar select instance.
- * - @static isValidDioceseForNation(string $diocese, string $nation): Checks if the given diocese is valid for the given nation.
+ * @see LiturgicalCalendar\Components\CalendarSelect::__construct() Initializes the CalendarSelect object with default settings.
+ * @see LiturgicalCalendar\Components\CalendarSelect::setUrl() Sets the URL of the liturgical calendar metadata API endpoint.
+ * @see LiturgicalCalendar\Components\CalendarSelect::selectedOption() Sets the selected option.
+ * @see LiturgicalCalendar\Components\CalendarSelect::locale() Sets the locale for the calendar select.
+ * @see LiturgicalCalendar\Components\CalendarSelect::class() Sets the class for the calendar select.
+ * @see LiturgicalCalendar\Components\CalendarSelect::id() Sets the ID for the select element.
+ * @see LiturgicalCalendar\Components\CalendarSelect::name() Sets the name for the select element.
+ * @see LiturgicalCalendar\Components\CalendarSelect::setOptions() Sets the type of option elements for the select element.
+ * @see LiturgicalCalendar\Components\CalendarSelect::nationFilter() Sets the nation to filter the diocese options to.
+ * @see LiturgicalCalendar\Components\CalendarSelect::label() Configures whether to show the label.
+ * @see LiturgicalCalendar\Components\CalendarSelect::labelText() Sets the text for the label.
+ * @see LiturgicalCalendar\Components\CalendarSelect::allowNull() Allows or disallows null selection.
+ * @see LiturgicalCalendar\Components\CalendarSelect::disabled() Sets whether the select element is disabled.
+ * @see LiturgicalCalendar\Components\CalendarSelect::isValidLocale() Checks if the given locale is valid.
+ * @see LiturgicalCalendar\Components\CalendarSelect::getSelect() Returns the HTML for the select element.
+ * @see LiturgicalCalendar\Components\CalendarSelect::getMetadataUrl() Returns the URL of the liturgical calendar metadata API endpoint.
+ * @see LiturgicalCalendar\Components\CalendarSelect::getLocale() Returns the locale used by the calendar select instance.
+ * @see LiturgicalCalendar\Components\CalendarSelect::isValidDioceseForNation() Checks if the given diocese is valid for the given nation.
  *
  * @package LiturgicalCalendar\Components
  * @author John Romano D'Orazio <priest@johnromanodorazio.com>

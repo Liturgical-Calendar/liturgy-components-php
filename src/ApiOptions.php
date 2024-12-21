@@ -20,23 +20,23 @@ use LiturgicalCalendar\Components\ApiOptions\PathType;
  * The class contains methods to generate the form, form label, form wrapper, and form submit elements.
  * The form elements can be fully customized using the methods provided by the class.
  *
- * @method __construct(?array $options = null) Initializes the ApiOptions object with default or provided settings:
- *                                             - $options: An array of options, including 'locale', 'formLabel', 'wrapper', 'submit', 'after', and 'url'.
+ * @see LiturgicalCalendar\Components\ApiOptions::__construct() Initializes the ApiOptions object with default or provided settings:
+ *                                             - __$options__: An array of options, including 'locale', 'formLabel', 'wrapper', 'submit', 'after', and 'url'.
  *
  *                                             The following properties are initialized on the object instance:
- *                                             - formLabel: A FormLabel object if the 'formLabel' key is present in the options array.
- *                                             - wrapper: A Wrapper object if the 'wrapper' key is present in the options array.
- *                                             - submit: A Submit object if the 'submit' key is present in the options array.
- *                                             - epiphanyInput: An Input object.
- *                                             - ascensionInput: An Input object.
- *                                             - corpusChristiInput: An Input object.
- *                                             - eternalHighPriestInput: An Input object.
- *                                             - yearTypeInput: An Input object.
- *                                             - localeInput: An Input object.
- *                                             - acceptHeaderInput: An Input object.
- * @method after(string $after) Sets the HTML to add after the form.
- * @method getForm(?PathType $pathType = null) Returns the HTML for the form.
- * @method static getLocale() Returns the locale used by the API options component.
+ *                                             - __formLabel__: A FormLabel object if the 'formLabel' key is present in the options array.
+ *                                             - __wrapper__: A Wrapper object if the 'wrapper' key is present in the options array.
+ *                                             - __submit__: A Submit object if the 'submit' key is present in the options array.
+ *                                             - __epiphanyInput__: An Input object.
+ *                                             - __ascensionInput__: An Input object.
+ *                                             - __corpusChristiInput__: An Input object.
+ *                                             - __eternalHighPriestInput__: An Input object.
+ *                                             - __yearTypeInput__: An Input object.
+ *                                             - __localeInput__: An Input object.
+ *                                             - __acceptHeaderInput__: An Input object.
+ * @see LiturgicalCalendar\Components\ApiOptions::after() Sets the HTML to add after the form.
+ * @see LiturgicalCalendar\Components\ApiOptions::getForm() Returns the HTML for the form.
+ * @see LiturgicalCalendar\Components\ApiOptions::getLocale() Returns the locale used by the API options component.
  *
  * @package LiturgicalCalendar\Components
  * @author John Romano D'Orazio <priest@johnromanodorazio.com>
