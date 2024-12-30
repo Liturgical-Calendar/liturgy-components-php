@@ -538,8 +538,9 @@ class WebCalendar
     {
         $EventsObject = $this->LiturgicalCalendar->litcal;
         $currentEvent = $EventsObject[$currentKeyIndex];
-        if ($currentKeyIndex < count($EventsObject) - 1) {
-            $nextEvent = $EventsObject[$currentKeyIndex + 1];
+        $nextEventIdx = $currentKeyIndex + 1;
+        if ($nextEventIdx < count($EventsObject)) {
+            $nextEvent = $EventsObject[$nextEventIdx];
             // $cepsw = current event psalter week
             $cepsw = $currentEvent->psalter_week;
             // $nepsw = next event psalter week
@@ -553,7 +554,7 @@ class WebCalendar
             //      * OR the next event is on the same day as the current event
             if ($nepsw === $cepsw && ($nepsw !== 0 || $currentEvent->date == $nextEvent->date)) {
                 $cw++;
-                $this->countSamePsalterWeekEvents($currentKeyIndex + 1, $cw);
+                $this->countSamePsalterWeekEvents($nextEventIdx, $cw);
             }
         }
     }
