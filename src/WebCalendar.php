@@ -69,7 +69,7 @@ class WebCalendar
     private \DomDocument $dom;
     private ?\DomElement $lastSeasonCell      = null;
     private ?\DomElement $lastPsalterWeekCell = null;
-    private static const HIGH_CONTRAST        = ['purple', 'red', 'green'];
+    private const HIGH_CONTRAST             = ['purple', 'red', 'green'];
 
     /**
      * Latin names for the days of the week.
