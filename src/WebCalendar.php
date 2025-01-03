@@ -77,7 +77,7 @@ class WebCalendar
      * This is required since systems do not yet support the Latin language.
      * @var string[]
      */
-    private static const DAYS_OF_THE_WEEK_LATIN = [
+    private const DAYS_OF_THE_WEEK_LATIN = [
         "dies Solis",
         "dies Lunæ",
         "dies Martis",
@@ -94,7 +94,7 @@ class WebCalendar
      * This is required since systems do not yet support the Latin language.
      * @var string[]
      */
-    private static const MONTHS_LATIN = [
+    private const MONTHS_LATIN = [
         "",
         "Ianuarius",
         "Februarius",
@@ -114,7 +114,7 @@ class WebCalendar
      * An array of Roman numerals to translate the psalter week cycle
      * from arabic numerals to Roman numerals
      */
-    private static const PSALTER_WEEK = [
+    private const PSALTER_WEEK = [
         '', 'I', 'II', 'III', 'IV'
     ];
 
