@@ -151,6 +151,8 @@ if (isset($_POST) && !empty($_POST)) {
             $apiOptions->corpusChristiInput->selectedValue($LiturgicalCalendar->settings->corpus_christi);
             $apiOptions->eternalHighPriestInput->selectedValue($LiturgicalCalendar->settings->eternal_high_priest ? 'true' : 'false');
             $apiOptions->localeInput->selectedValue($LiturgicalCalendar->settings->locale);
+            $apiOptions->yearTypeInput->selectedValue($LiturgicalCalendar->settings->year_type);
+            $apiOptions->yearInput->selectedValue($LiturgicalCalendar->settings->year);
             if ($selectedDiocese && false === $selectedNation) {
                 $calendarSelectNations->selectedOption($LiturgicalCalendar->settings->national_calendar);
                 $calendarSelectDioceses->nationFilter($LiturgicalCalendar->settings->national_calendar)
@@ -360,19 +362,17 @@ if (isset($_POST) && !empty($_POST)) {
                 <h1 class="text-center mb-4">Options Form for PHP example</h1>
                 <form method="post">
                     <table id="LitCalSettings">
-                        <tr>
                     <?php
-                    echo $apiOptions->getForm(PathType::BASE_PATH);
-                    echo '</tr>';
                     echo '<tr>';
-                    $year = isset($_POST['year']) ? $_POST['year'] : date('Y');
-                    echo '<td><label>year<br><input type="number" name="year" id="year" min="1970" max="9999" value="' . $year . '"></label></td>';
-                    echo $apiOptions->getForm(PathType::ALL_PATHS);
-
                     echo '<td colspan="1">' . $calendarSelectNations->getSelect() . '</td>';
                     echo '<td colspan="2">' . $calendarSelectDioceses->getSelect() . '</td>';
+                    echo $apiOptions->getForm(PathType::ALL_PATHS);
+                    echo '</tr>';
+
+                    echo '<tr>';
+                    echo $apiOptions->getForm(PathType::BASE_PATH);
+                    echo '</tr>';
                     ?>
-                        </tr>
                     </table>
                     <button type="submit" class="btn btn-primary mt-2">Submit</button></button>
                 </form>
@@ -395,7 +395,7 @@ if (isset($_POST) && !empty($_POST)) {
             } else {
                 echo '<div class="col-12">No POST data (perhaps click on Submit?)</div>';
             }
-            echo '<input type="hidden" id="selectedLocale2" value="' . $selectedLocale . '">';
+            echo '<input type="hidden" id="selectedLocale2" value="' . ($selectedLocale ?? '') . '">';
             ?>
         </div>
     </div>

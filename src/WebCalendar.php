@@ -470,19 +470,20 @@ class WebCalendar
     /**
      * Recursively counts the number of subsequent liturgical events in the same day.
      *
-     * @param int $currentKeyIndex The current position in the array of liturgical events on the given day.
+     * @param int $currentEventIdx The current position in the array of liturgical events on the given day.
      * @param int $cd [reference] The count of subsequent liturgical events in the same day.
      */
-    private function countSameDayEvents(int $currentKeyIndex, int &$cd)
+    private function countSameDayEvents(int $currentEventIdx, int &$cd)
     {
         $EventsObject = $this->LiturgicalCalendar->litcal;
-        $currentEvent = $EventsObject[$currentKeyIndex];
-        if ($currentKeyIndex < count($EventsObject) - 1) {
-            $nextEvent = $EventsObject[$currentKeyIndex + 1];
+        $currentEvent = $EventsObject[$currentEventIdx];
+        $nextEventIdx = $currentEventIdx + 1;
+        if ($nextEventIdx < count($EventsObject) ) {
+            $nextEvent = $EventsObject[$nextEventIdx];
             // date->format('U'): Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT) aka timestamp
             if ($nextEvent->date->format('U') === $currentEvent->date->format('U')) {
                 $cd++;
-                $this->countSameDayEvents($currentKeyIndex + 1, $cd);
+                $this->countSameDayEvents($nextEventIdx, $cd);
             }
         }
     }
@@ -490,19 +491,20 @@ class WebCalendar
     /**
      * Recursively counts the number of subsequent liturgical events in the same month.
      *
-     * @param int $currentKeyIndex The current position in the array of liturgical events on the given month.
+     * @param int $currentEventIdx The current position in the array of liturgical events on the given month.
      * @param int $cm [reference] The count of subsequent liturgical events in the same month.
      */
-    private function countSameMonthEvents(int $currentKeyIndex, int &$cm)
+    private function countSameMonthEvents(int $currentEventIdx, int &$cm)
     {
         $EventsObject = $this->LiturgicalCalendar->litcal;
-        $currentEvent = $EventsObject[$currentKeyIndex];
-        if ($currentKeyIndex < count($EventsObject) - 1) {
-            $nextEvent = $EventsObject[$currentKeyIndex + 1];
+        $currentEvent = $EventsObject[$currentEventIdx];
+        $nextEventIdx = $currentEventIdx + 1;
+        if ($nextEventIdx < count($EventsObject)) {
+            $nextEvent = $EventsObject[$nextEventIdx];
             // date->format('n'): Numeric representation of a month, without leading zeros, 1-12
             if ($nextEvent->date->format('n') === $currentEvent->date->format('n')) {
                 $cm++;
-                $this->countSameMonthEvents($currentKeyIndex + 1, $cm);
+                $this->countSameMonthEvents($nextEventIdx, $cm);
             }
         }
     }
@@ -510,20 +512,21 @@ class WebCalendar
     /**
      * Recursively counts the number of subsequent liturgical events in the same liturgical season.
      *
-     * @param int $currentKeyIndex The current position in the array of liturgical events on the given liturgical season.
+     * @param int $currentEventIdx The current position in the array of liturgical events on the given liturgical season.
      * @param int $cs [reference] The count of subsequent liturgical events in the same liturgical season.
      */
-    private function countSameSeasonEvents(int $currentKeyIndex, int &$cs)
+    private function countSameSeasonEvents(int $currentEventIdx, int &$cs)
     {
         $EventsObject = $this->LiturgicalCalendar->litcal;
-        $currentEvent = $EventsObject[$currentKeyIndex];
-        if ($currentKeyIndex < count($EventsObject) - 1) {
-            $nextEvent = $EventsObject[$currentKeyIndex + 1];
+        $currentEvent = $EventsObject[$currentEventIdx];
+        $nextEventIdx = $currentEventIdx + 1;
+        if ($nextEventIdx < count($EventsObject)) {
+            $nextEvent = $EventsObject[$nextEventIdx];
             $currentEventLiturgicalSeason = $currentEvent->liturgical_season ?? $this->determineSeason($currentEvent);
             $nextEventLiturgicalSeason = $nextEvent->liturgical_season ?? $this->determineSeason($nextEvent);
             if ($nextEventLiturgicalSeason === $currentEventLiturgicalSeason) {
                 $cs++;
-                $this->countSameSeasonEvents($currentKeyIndex + 1, $cs);
+                $this->countSameSeasonEvents($nextEventIdx, $cs);
             }
         }
     }
@@ -531,14 +534,14 @@ class WebCalendar
     /**
      * Recursively counts the number of subsequent liturgical events in the same psalter week.
      *
-     * @param int $currentKeyIndex The current position in the array of liturgical events on the given psalter week.
+     * @param int $currentEventIdx The current position in the array of liturgical events on the given psalter week.
      * @param int $cw [reference] The count of subsequent liturgical events in the same psalter week.
      */
-    private function countSamePsalterWeekEvents(int $currentKeyIndex, int &$cw)
+    private function countSamePsalterWeekEvents(int $currentEventIdx, int &$cw)
     {
         $EventsObject = $this->LiturgicalCalendar->litcal;
-        $currentEvent = $EventsObject[$currentKeyIndex];
-        $nextEventIdx = $currentKeyIndex + 1;
+        $currentEvent = $EventsObject[$currentEventIdx];
+        $nextEventIdx = $currentEventIdx + 1;
         if ($nextEventIdx < count($EventsObject)) {
             $nextEvent = $EventsObject[$nextEventIdx];
             // $cepsw = current event psalter week
@@ -1024,9 +1027,12 @@ class WebCalendar
         $newMonth = false;
         $newSeason = false;
         $newPsalterWeek = false;
+        $eventsCount = count($this->LiturgicalCalendar->litcal);
 
         // Loop through the liturgical events
-        foreach ($this->LiturgicalCalendar->litcal as $eventIdx => $litevent) {
+        // Cannot use foreach here because we are manually manipulating the value of $eventIdx within the loop!
+        for ($eventIdx = 0; $eventIdx < $eventsCount; $eventIdx++) {
+            $litevent = $this->LiturgicalCalendar->litcal[$eventIdx];
             $this->daysCreated++;
 
             // Check if we are at the start of a new month, and if so count how many events we have in that same month,

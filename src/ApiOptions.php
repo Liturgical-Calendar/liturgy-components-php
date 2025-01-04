@@ -8,6 +8,7 @@ use LiturgicalCalendar\Components\ApiOptions\Input\Ascension;
 use LiturgicalCalendar\Components\ApiOptions\Input\Epiphany;
 use LiturgicalCalendar\Components\ApiOptions\Input\CorpusChristi;
 use LiturgicalCalendar\Components\ApiOptions\Input\EternalHighPriest;
+use LiturgicalCalendar\Components\ApiOptions\Input\Year;
 use LiturgicalCalendar\Components\ApiOptions\Input\YearType;
 use LiturgicalCalendar\Components\ApiOptions\Input\Locale;
 use LiturgicalCalendar\Components\ApiOptions\Wrapper;
@@ -31,6 +32,7 @@ use LiturgicalCalendar\Components\ApiOptions\PathType;
  *                                             - __ascensionInput__: An Input object.
  *                                             - __corpusChristiInput__: An Input object.
  *                                             - __eternalHighPriestInput__: An Input object.
+ *                                             - __yearInput__: An Input object.
  *                                             - __yearTypeInput__: An Input object.
  *                                             - __localeInput__: An Input object.
  *                                             - __acceptHeaderInput__: An Input object.
@@ -52,6 +54,7 @@ class ApiOptions
     public Ascension $ascensionInput;
     public CorpusChristi $corpusChristiInput;
     public EternalHighPriest $eternalHighPriestInput;
+    public Year $yearInput;
     public YearType $yearTypeInput;
     public Locale $localeInput;
     public AcceptHeader $acceptHeaderInput;
@@ -133,6 +136,7 @@ class ApiOptions
         $this->ascensionInput         = new Ascension();
         $this->corpusChristiInput     = new CorpusChristi();
         $this->eternalHighPriestInput = new EternalHighPriest();
+        $this->yearInput              = new Year();
         $this->yearTypeInput          = new YearType();
         $this->localeInput            = new Locale();
         $this->acceptHeaderInput      = new AcceptHeader();
@@ -231,8 +235,9 @@ class ApiOptions
      */
     private function getAllPathsOptions(): string
     {
-        return $this->yearTypeInput->get()
-               . $this->localeInput->get()
+        return $this->localeInput->get()
+               . $this->yearInput->get()
+               . $this->yearTypeInput->get()
                . ($this->acceptHeaderInput->isHidden() ? '' : $this->acceptHeaderInput->get());
     }
 
