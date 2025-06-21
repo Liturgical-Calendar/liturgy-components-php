@@ -24,12 +24,10 @@ class ApiOptionsTest extends TestCase
         $this->assertStringContainsString('<label for="ascension">ascension</label>', $form);
         $this->assertStringContainsString('<label for="corpus_christi">corpus_christi</label>', $form);
         $this->assertStringContainsString('<label for="eternal_high_priest">eternal_high_priest</label>', $form);
-        $this->assertStringContainsString('<label for="locale">locale</label>', $form);
         $this->assertStringContainsString('<select id="epiphany" name="epiphany" data-param="epiphany">', $form);
         $this->assertStringContainsString('<select id="ascension" name="ascension" data-param="ascension">', $form);
         $this->assertStringContainsString('<select id="corpus_christi" name="corpus_christi" data-param="corpus_christi">', $form);
         $this->assertStringContainsString('<select id="eternal_high_priest" name="eternal_high_priest" data-param="eternal_high_priest">', $form);
-        $this->assertStringContainsString('<select id="locale" name="locale" data-param="locale">', $form);
     }
 
     public function testGetFormAllPaths(): void
@@ -38,8 +36,10 @@ class ApiOptionsTest extends TestCase
         $form = $apiOptions->getForm(PathType::ALL_PATHS);
         $this->assertStringContainsString('<label for="year_type">year_type</label>', $form);
         $this->assertStringContainsString('<label for="return_type">accept header</label>', $form);
+        $this->assertStringContainsString('<label for="locale">locale</label>', $form);
         $this->assertStringContainsString('<select id="year_type" name="year_type" data-param="year_type">', $form);
         $this->assertStringContainsString('<select id="return_type" name="return_type" data-param="accept">', $form);
+        $this->assertStringContainsString('<select id="locale" name="locale" data-param="locale">', $form);
     }
 
     public function testGetFormBasePathWithCustomOptions(): void

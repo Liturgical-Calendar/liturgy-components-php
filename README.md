@@ -173,14 +173,14 @@ echo '<br>';
 echo $apiOptions->getForm(PathType::ALL_PATHS);
 ```
 
-The output will be similar to the previous output, with a `<br>` separating the `year_type` and `accept header` <kbd>\<select\></kbd> elements
+The output will be similar to the previous output, with a `<br>` separating the `locale`, `year_type`, and `accept header` <kbd>\<select\></kbd> elements
 from the other <kbd>\<select\></kbd> elements.
 
 #### Set locale for language names and display values
 We can change the `locale` for the `ApiOptions` component, which will affect:
-  * the `locale` select element, so that the language names in the select options are displayed according to the given locale
-  * the display values of the `eternal_high_priest` select element (since the final value is a boolean, the display values are simply
-    text representations of boolean values, and not the actual value that is sent in an API request)
+  * the display values of the `locale` select element, so that the language names in the select options are displayed according to the given locale
+  * the display values of the `eternal_high_priest` select element (since the final value is a boolean, the display values are localized
+    text representations of the underlying boolean values that are sent to the API)
   * the display values of the `epiphany` select element (which are descriptive to make them more comprehensible)
   * the display values of the `ascension` and `corpus_christ` select elements ("Sunday" and "Thursday" will be displayed according to the given locale)
 
