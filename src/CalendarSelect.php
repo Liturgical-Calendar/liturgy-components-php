@@ -83,7 +83,7 @@ class CalendarSelect
             $this->locale($options['locale']);
         }
 
-        if (isset($options['url'])) {
+        if (isset($options['url']) && $options['url'] !== self::METADATA_URL) {
             $url = filter_var($options['url'], FILTER_VALIDATE_URL);
             if (false === $url) {
                 throw new \Exception("Invalid URL: {$options['url']}");
