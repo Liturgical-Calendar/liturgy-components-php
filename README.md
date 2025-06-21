@@ -603,7 +603,7 @@ In order to run the tests, clone the package repository locally and install the 
 ```bash session
 git clone https://github.com/Liturgical-Calendar/liturgy-components-php.git
 cd liturgy-components-php
-composer install --no-dev
+composer install
 ```
 
 Then run the `composer test` script, which calls the included PHPUnit package to run the tests in the `tests` folder.
