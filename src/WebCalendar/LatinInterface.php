@@ -24,6 +24,13 @@ enum LatinInterface
      */
     case ECCLESIASTICAL;
 
+    /**
+     * Returns the Latin name of the day of the week, based on the current Latin interface setting.
+     *
+     * @param int $dayOfWeek The day of the week, where 0 = Sunday, 1 = Monday, ..., 6 = Saturday.
+     * @return string The Latin name of the day of the week.
+     * @throws \InvalidArgumentException If the day of the week is invalid.
+     */
     public function dayOfTheWeekLatin(int $dayOfWeek): string
     {
         return match ($this) {
@@ -50,6 +57,13 @@ enum LatinInterface
         };
     }
 
+    /**
+     * Returns the abbreviated Latin name of the day of the week, based on the current Latin interface setting.
+     *
+     * @param int $dayOfWeek The day of the week, where 0 = Sunday, 1 = Monday, ..., 6 = Saturday.
+     * @return string The abbreviated Latin name of the day of the week.
+     * @throws \InvalidArgumentException If the day of the week is invalid.
+     */
     public function dayOfTheWeekLatinAbbr(int $dayOfWeek): string
     {
         return match ($this) {
@@ -76,6 +90,13 @@ enum LatinInterface
         };
     }
 
+    /**
+     * Returns the Latin name of the month, based on the given month number.
+     *
+     * @param int $month The month number, where 1 = January, 2 = February, ..., 12 = December.
+     * @return string The Latin name of the month.
+     * @throws \InvalidArgumentException If the month number is invalid.
+     */
     public function monthLatin(int $month): string
     {
         if ($month < 1 || $month > 12) {
@@ -94,10 +115,16 @@ enum LatinInterface
             10 => 'October',
             11 => 'November',
             12 => 'December',
-            default => throw new \InvalidArgumentException("Invalid month: $month"),
         };
     }
 
+    /**
+     * Returns the abbreviated Latin name of the month, based on the given month number.
+     *
+     * @param int $month The month number, where 1 = January, 2 = February, ..., 12 = December.
+     * @return string The abbreviated Latin name of the month.
+     * @throws \InvalidArgumentException If the month number is invalid.
+     */
     public function monthLatinAbbr(int $month): string
     {
         if ($month < 1 || $month > 12) {
@@ -116,10 +143,24 @@ enum LatinInterface
             10 => 'Oct',
             11 => 'Nov',
             12 => 'Dec',
-            default => throw new \InvalidArgumentException("Invalid month: $month"),
         };
     }
 
+    /**
+     * Returns a string representation of the given date, formatted according to the provided date format.
+     *
+     * The following date formats are supported:
+     * - __FULL__: The full date format for the locale, e.g. "Friday, March 3, 2023" or "venerdì 3 marzo 2023".
+     * - __LONG__: The long date format for the locale, e.g. "March 3, 2023" or "3 marzo 2023".
+     * - __MEDIUM__: The medium date format for the locale, e.g. "Mar 3, 2023" or "3 mar 2023".
+     * - __SHORT__: The short date format for the locale, e.g. "3/3/23" or "03/03/23".
+     * - __DAY_ONLY__: Only the day of the month and the weekday, e.g. "3 Friday" or "3 venerdì".
+     *
+     * @param DateFormat $dateFmt The date format to use.
+     * @param \DateTime $date The date to format.
+     * @return string The formatted date string.
+     * @throws \InvalidArgumentException If the input date format is invalid.
+     */
     public function formatDate(DateFormat $dateFmt, \DateTime $date): string
     {
         $dayOfTheWeek = (int) $date->format('w'); //w = 0-Sunday to 6-Saturday

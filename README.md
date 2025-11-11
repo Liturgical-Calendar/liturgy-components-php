@@ -25,7 +25,7 @@ If you intend on contributing to the repository and installing development requi
 
 ### CalendarSelect
 
-Produces an html <kbd>\<select\></kbd> element the <kbd>\<option\></kbd>s of which are populated with data
+Produces an HTML <kbd>\<select\></kbd> element with <kbd>\<option\></kbd>s that are populated with data
 from the Liturgical Calendar API `/calendars` route. Can be instantiated passing in an array of options
 with the following keys:
 
@@ -95,7 +95,7 @@ echo $CalendarSelect->getSelect();
 
 ### ApiOptions
 
-Produces a number of html <kbd>\<select\></kbd> elements, with <kbd>\<option\></kbd>s that correspond to the values of parameters
+Produces a number of HTML <kbd>\<select\></kbd> elements, with <kbd>\<option\></kbd>s that correspond to the values of parameters
 that can be sent in a request to the Liturgical Calendar API `/calendar` route.
 The only <kbd>\<select\></kbd> element with options that are populated from the Liturgical API `/calendars` route
 is that of the `locale` parameter, with current supported language locales.
@@ -621,7 +621,7 @@ use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
   but being an enum, the values are obtained with `Column::LITURGICAL_SEASON->value`, `Column::MONTH->value`, etc.
   A bitwise combination of columns would look like: `seasonColorColumns(Column::LITURGICAL_SEASON->value | Column::DATE->value | Column::PSALTER_WEEK->value)`.
   As a convenience, we have a `Column::ALL` enum case that represents the OR'd value of all columns,
-  as well as a `Column::NONE` enum case the represents a zero value, effectively disabling all columns from any season color effects.
+  as well as a `Column::NONE` enum case that represents a zero value, effectively disabling all columns from any season color effects.
 - `eventColor(ColorAs $colorAs)`: sets how the color for the single liturgical celebration is applied to the table.
   See `seasonColor` above for the `ColorAs` enum cases.
 - `eventColorColumns(Columns|int $columnFlags = Column::NONE)`: sets which columns should be affected by the `eventColor` settings.
@@ -643,7 +643,7 @@ use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
 
 #### Non chainable methods
 
-There a few methods that return a value, and therefore do not allow for chaining, because they do not return the instance but rather a value.
+There are a few methods that return a value, and therefore do not allow for chaining, because they do not return the instance but rather a value.
 
 - `getLocale()`: returns the locale that the WebCalendar instance is currently set to.
   Note that the locale can only be set by the Liturgical Object that is passed into the WebCalendar constructor.

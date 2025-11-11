@@ -69,7 +69,7 @@ class LiturgicalEvent
         $this->event_idx             = $LitEvent->event_idx;
         $this->event_key             = $LitEvent->event_key;
         $this->name                  = $LitEvent->name;
-        $this->date                  = \DateTime::createFromFormat(\DateTime::ATOM, $LitEvent->date);
+        $date                  = \DateTime::createFromFormat(\DateTime::ATOM, $LitEvent->date);
         $this->color                 = $LitEvent->color;
         $this->color_lcl             = $LitEvent->color_lcl;
         $this->type                  = $LitEvent->type;
@@ -89,8 +89,9 @@ class LiturgicalEvent
         if (property_exists($LitEvent, 'is_vigil_for')) {
             $this->is_vigil_for = $LitEvent->is_vigil_for;
         }
-        if ($this->date === false) {
+        if ($date === false) {
             throw new \Exception('Failed to parse date field. Expected RFC 3339 (ISO 8601) format, got: ' . $LitEvent->date);
         }
+        $this->date = $date;
     }
 }
