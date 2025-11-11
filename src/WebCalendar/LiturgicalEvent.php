@@ -89,5 +89,8 @@ class LiturgicalEvent
         if (property_exists($LitEvent, 'is_vigil_for')) {
             $this->is_vigil_for = $LitEvent->is_vigil_for;
         }
+        if ($this->date === false) {
+            throw new \Exception('Failed to parse date field. Expected RFC 3339 (ISO 8601) format, got: ' . $LitEvent->date);
+        }
     }
 }
