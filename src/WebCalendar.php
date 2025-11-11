@@ -10,6 +10,7 @@ use LiturgicalCalendar\Components\WebCalendar\ColumnOrder;
 use LiturgicalCalendar\Components\WebCalendar\ColumnSet;
 use LiturgicalCalendar\Components\WebCalendar\DateFormat;
 use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
+use LiturgicalCalendar\Components\WebCalendar\LatinInterface;
 
 /**
  * A class to generate a table of liturgical events for a given Liturgical Calendar.
@@ -22,24 +23,25 @@ use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
  * - __messages__: the messages object from the Liturgical Calendar API
  *
  * The class provides the following methods:
- * @see \LiturgicalCalendar\Components\WebCalendar::id()  Sets the id of the table element.
- * @see \LiturgicalCalendar\Components\WebCalendar::class() Sets the class of the table element.
- * @see \LiturgicalCalendar\Components\WebCalendar::firstColumnGrouping() Sets the grouping of the first column of the table.
- * @see \LiturgicalCalendar\Components\WebCalendar::psalterWeekGrouping() Sets whether to display grouped psalter weeks.
- * @see \LiturgicalCalendar\Components\WebCalendar::removeHeaderRow() Sets whether to remove the header row of the table.
- * @see \LiturgicalCalendar\Components\WebCalendar::removeCaption() Sets whether to remove the caption of the table.
- * @see \LiturgicalCalendar\Components\WebCalendar::dateFormat() Sets the date format for the date column.
- * @see \LiturgicalCalendar\Components\WebCalendar::monthHeader() Sets whether to display month headers.
- * @see \LiturgicalCalendar\Components\WebCalendar::seasonColor() Sets how the season color is handled (background color, CSS class, or inline block element).
- * @see \LiturgicalCalendar\Components\WebCalendar::eventColor() Sets how the event color is handled (background color, CSS class, or inline block element).
- * @see \LiturgicalCalendar\Components\WebCalendar::seasonColorColumns() Sets which columns to apply the season color to.
- * @see \LiturgicalCalendar\Components\WebCalendar::eventColorColumns() Sets which columns to apply the event color to.
- * @see \LiturgicalCalendar\Components\WebCalendar::columnOrder() Sets the order of the third and fourth columns in the table (liturgical grade and event details).
- * @see \LiturgicalCalendar\Components\WebCalendar::gradeDisplay() Sets how the liturgical grade is displayed (in full, or in abbreviated form).
- * @see \LiturgicalCalendar\Components\WebCalendar::getLocale() Returns the locale that was set when the WebCalendar object was created / buildTable was called.
- * @see \LiturgicalCalendar\Components\WebCalendar::buildTable() Returns an HTML string containing a table of the liturgical events.
- * @see \LiturgicalCalendar\Components\WebCalendar::daysCreated() Returns the number of days created in the table.
- * @author John Roman Dorazio <priest@johnromanodorazio.com>
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::id()}  Sets the id of the table element.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::class()} Sets the class of the table element.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::firstColumnGrouping()} Sets the grouping of the first column of the table.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::psalterWeekGrouping()} Sets whether to display grouped psalter weeks.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::removeHeaderRow()} Sets whether to remove the header row of the table.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::removeCaption()} Sets whether to remove the caption of the table.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::dateFormat()} Sets the date format for the date column.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::monthHeader()} Sets whether to display month headers.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::seasonColor()} Sets how the season color is handled (background color, CSS class, or inline block element).
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::eventColor()} Sets how the event color is handled (background color, CSS class, or inline block element).
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::seasonColorColumns()} Sets which columns to apply the season color to.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::eventColorColumns()} Sets which columns to apply the event color to.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::columnOrder()} Sets the order of the third and fourth columns in the table (liturgical grade and event details).
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::gradeDisplay()} Sets how the liturgical grade is displayed (in full, or in abbreviated form).
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::getLocale()} Returns the locale that was set when the WebCalendar object was created / buildTable was called.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::buildTable()} Returns an HTML string containing a table of the liturgical events.
+ * - {@see \LiturgicalCalendar\Components\WebCalendar::daysCreated()} Returns the number of days created in the table.
+ *
+ * @author John Romano Dorazio <priest@johnromanodorazio.com>
  * @package LiturgicalCalendar\Components
  */
 class WebCalendar
@@ -62,6 +64,7 @@ class WebCalendar
     private ColumnOrder $columnOrder        = ColumnOrder::EVENT_DETAILS_FIRST;
     private DateFormat $dateFormat          = DateFormat::FULL;
     private GradeDisplay $gradeDisplay      = GradeDisplay::FULL;
+    private LatinInterface $latinInterface  = LatinInterface::ECCLESIASTICAL;
     private bool $removeHeaderRow           = false;
     private bool $removeCaption             = false;
     private bool $psalterWeekGrouping       = false;
@@ -71,44 +74,6 @@ class WebCalendar
     private ?\DomElement $lastPsalterWeekCell = null;
     private const HIGH_CONTRAST             = ['purple', 'red', 'green'];
 
-    /**
-     * Latin names for the days of the week.
-     * Array indexed 0-Sunday, 1-Monday, 2-Tuesday, 3-Wednesday, 4-Thursday, 5-Friday, 6-Saturday.
-     * This is required since systems do not yet support the Latin language.
-     * @var string[]
-     */
-    private const DAYS_OF_THE_WEEK_LATIN = [
-        "dies Solis",
-        "dies Lunæ",
-        "dies Martis",
-        "dies Mercurii",
-        "dies Iovis",
-        "dies Veneris",
-        "dies Saturni"
-    ];
-
-    /**
-     * An array of the months of the year in Latin
-     * The index of the array is the month number (1-12)
-     * The value is the Latin name of the month.
-     * This is required since systems do not yet support the Latin language.
-     * @var string[]
-     */
-    private const MONTHS_LATIN = [
-        "",
-        "Ianuarius",
-        "Februarius",
-        "Martius",
-        "Aprilis",
-        "Maius",
-        "Iunius",
-        "Iulius",
-        "Augustus",
-        "September",
-        "October",
-        "November",
-        "December"
-    ];
 
     /**
      * An array of Roman numerals to translate the psalter week cycle
@@ -164,6 +129,7 @@ class WebCalendar
         $this->LiturgicalCalendar = $LiturgicalCalendar;
         $this->seasonColorColumns = new ColumnSet(Column::LITURGICAL_SEASON->value | Column::MONTH->value | Column::DATE->value | Column::PSALTER_WEEK->value);
         $this->eventColorColumns = new ColumnSet(Column::EVENT->value | Column::GRADE->value);
+        $this->latinInterface = LatinInterface::ECCLESIASTICAL;
         $this->dom = new \DomDocument();
     }
 
@@ -405,6 +371,12 @@ class WebCalendar
     public function gradeDisplay(GradeDisplay $gradeDisplay = GradeDisplay::FULL): self
     {
         $this->gradeDisplay = $gradeDisplay;
+        return $this;
+    }
+
+    public function latinInterface(LatinInterface $latinInterface = LatinInterface::ECCLESIASTICAL): self
+    {
+        $this->latinInterface = $latinInterface;
         return $this;
     }
 
@@ -759,7 +731,7 @@ class WebCalendar
                 $this->handleSeasonColorForColumn($seasonColor, $firstColCell, Column::MONTH);
                 $this->handleEventColorForColumn($litevent->color, $firstColCell, Column::MONTH);
                 $textNode = $this->baseLocale === 'la'
-                    ? strtoupper(WebCalendar::MONTHS_LATIN[ (int)$litevent->date->format('n') ])
+                    ? strtoupper($this->latinInterface->monthLatin( (int) $litevent->date->format('n') ))
                     : strtoupper($monthFmt->format($litevent->date->format('U')));
                 $div = $this->dom->createElement('div');
                 $div->appendChild($this->dom->createTextNode($textNode));
@@ -816,10 +788,10 @@ class WebCalendar
         $dateString = "";
         switch ($this->baseLocale) {
             case 'la':
-                $dayOfTheWeek = (int)$litevent->date->format('w'); //w = 0-Sunday to 6-Saturday
-                $dayOfTheWeekLatin = WebCalendar::DAYS_OF_THE_WEEK_LATIN[$dayOfTheWeek];
-                $month = (int)$litevent->date->format('n'); //n = 1-January to 12-December
-                $monthLatin = WebCalendar::MONTHS_LATIN[$month];
+                $dayOfTheWeek = (int) $litevent->date->format('w'); //w = 0-Sunday to 6-Saturday
+                $dayOfTheWeekLatin = $this->latinInterface->dayOfTheWeekLatin($dayOfTheWeek);
+                $month = (int) $litevent->date->format('n'); //n = 1-January to 12-December
+                $monthLatin = $this->latinInterface->monthLatin($month);
                 $dateString = $dayOfTheWeekLatin . ' ' . $litevent->date->format('j') . ' ' . $monthLatin . ' ' . $litevent->date->format('Y');
                 break;
             default:
