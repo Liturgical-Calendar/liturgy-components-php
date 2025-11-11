@@ -723,7 +723,7 @@ class WebCalendar
                     $monthHeaderCell = $this->dom->createElement('td');
                     $monthHeaderCell->setAttribute('colspan', 3);
                     $monthHeaderCell->setAttribute('class', 'monthHeader');
-                    $monthHeaderCell->appendChild($this->dom->createTextNode($monthFmt->format($litevent->date->format('U'))));
+                    $monthHeaderCell->appendChild($this->dom->createTextNode($monthFmt->format($litevent->date)));
                 }
                 $firstColCell = $this->dom->createElement('td');
                 $firstColCell->setAttribute('rowspan', $firstColRowSpan);
@@ -732,7 +732,7 @@ class WebCalendar
                 $this->handleEventColorForColumn($litevent->color, $firstColCell, Column::MONTH);
                 $textNode = $this->baseLocale === 'la'
                     ? strtoupper($this->latinInterface->monthLatinFull( (int) $litevent->date->format('n') ))
-                    : strtoupper($monthFmt->format($litevent->date->format('U')));
+                    : strtoupper($monthFmt->format($litevent->date));
                 $div = $this->dom->createElement('div');
                 $div->appendChild($this->dom->createTextNode($textNode));
                 $firstColCell->appendChild($div);
@@ -763,7 +763,7 @@ class WebCalendar
                     $monthHeaderCell = $this->dom->createElement('td');
                     $monthHeaderCell->setAttribute('colspan', 3);
                     $monthHeaderCell->setAttribute('class', 'monthHeader');
-                    $monthHeaderCell->appendChild($this->dom->createTextNode($monthFmt->format($litevent->date->format('U'))));
+                    $monthHeaderCell->appendChild($this->dom->createTextNode($monthFmt->format($litevent->date)));
                     $monthHeaderRow->appendChild($firstColCell);
                     $monthHeaderRow->appendChild($monthHeaderCell);
                 } else {
@@ -777,7 +777,7 @@ class WebCalendar
                 $monthHeaderCell = $this->dom->createElement('td');
                 $monthHeaderCell->setAttribute('colspan', 3);
                 $monthHeaderCell->setAttribute('class', 'monthHeader');
-                $monthHeaderCell->appendChild($this->dom->createTextNode($monthFmt->format($litevent->date->format('U'))));
+                $monthHeaderCell->appendChild($this->dom->createTextNode($monthFmt->format($litevent->date)));
                 $monthHeaderRow->appendChild($monthHeaderCell);
             }
             $newMonth = false;
@@ -791,7 +791,7 @@ class WebCalendar
                 $dateString = $this->latinInterface->formatDate($this->dateFormat, $litevent->date);
                 break;
             default:
-                $dateString = $dateFmt->format($litevent->date->format('U'));
+                $dateString = $dateFmt->format($litevent->date);
         }
 
         // We only need to "create" the dateEntry cell on first iteration of events within the same day (0 === $ev),
