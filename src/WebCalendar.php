@@ -129,7 +129,6 @@ class WebCalendar
         $this->LiturgicalCalendar = $LiturgicalCalendar;
         $this->seasonColorColumns = new ColumnSet(Column::LITURGICAL_SEASON->value | Column::MONTH->value | Column::DATE->value | Column::PSALTER_WEEK->value);
         $this->eventColorColumns = new ColumnSet(Column::EVENT->value | Column::GRADE->value);
-        $this->latinInterface = LatinInterface::ECCLESIASTICAL;
         $this->dom = new \DomDocument();
     }
 
@@ -374,6 +373,18 @@ class WebCalendar
         return $this;
     }
 
+    /**
+     * Controls how the days of the week are displayed in Latin.
+     *
+     * If LatinInterface::CIVIL, the days of the week are displayed in classic Latin, e.g. _Dies Solis_, _Dies Lunae_, _Dies Martis_, etc.
+     * If LatinInterface::ECCLESIASTICAL, the days of the week are displayed in ecclesiastical Latin, e.g. _Dominica_, _Feria Secunda_, _Feria Tertia_, etc.
+     *
+     * The default is LatinInterface::ECCLESIASTICAL.
+     *
+     * @param LatinInterface $latinInterface The Latin interface.
+     *
+     * @return $this The current instance of the class.
+     */
     public function latinInterface(LatinInterface $latinInterface = LatinInterface::ECCLESIASTICAL): self
     {
         $this->latinInterface = $latinInterface;
