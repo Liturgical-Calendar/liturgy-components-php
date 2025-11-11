@@ -655,18 +655,25 @@ There a few methods that return a value, and therefore do not allow for chaining
 
 ## Examples
 
-An examples folder has been included in the repo to allow for easy testing.
-Currently there is a `/webcalendar` subfolder with an example of usage of the `WebCalendar` component.
-To quickly test locally, `cd` into the `/webcalendar` subfolder and run `php -S localhost:3000`, then open your browser at `http://localhost:3000`.
+An `/examples` folder has been included in the repo to allow for easy testing.
+Currently there is a `/examples/webcalendar` subfolder with an example of usage of the `WebCalendar` component.
+To quickly test locally:
+
+```bash
+composer install # ensures development requirements are installed
+cd examples/webcalendar
+cp .env.example .env.local
+php -S localhost:3000 # requires API instance to be running locally on port 8000
+```
+
+Then navigate to `http://localhost:3000` in your browser.
 You should see a form with `ApiOptions` and `CalendarSelect`.
 Click on <kbd>Submit</kbd> to see the actual web calendar.
 
-Note that this will use the default remote API. If you would like to test against a local instance of the API,
-first make sure that you have installed the development requirements with `composer install` (whereas `composer install --no-dev` would install without development requirements).
-With development requirements in place, copy `/examples/webcalendar/.env.example` to `/examples/webcalendar/.env.development`,
-and set the value of `API_PORT` to the port of your local API instance.
-If you are spawning an instance of the API on port 8000, then set `API_PORT` to 8000.
-As long as `APP_ENV` is set to `development`, the `/examples/webcalendar` example will use your local API instance instead of the remote production API.
+If you would like to test against the remote instance of the API, without spawning a local instance on port 8000 or similar,
+then you must set the values of `API_PROTOCOL`, `API_HOST` and `API_PORT` in the `.env.local` file to those of the remote instance.
+Note however that as long as `APP_ENV` is set to `development`,
+the `/examples/webcalendar` example will use your local API instance instead of the remote production API.
 For more information on spawning a local instance of the API, see the [Liturgical Calendar API Readme - testing locally](https://github.com/Liturgical-Calendar/LiturgicalCalendarAPI?tab=readme-ov-file#testing-locally).
 
 ## Tests

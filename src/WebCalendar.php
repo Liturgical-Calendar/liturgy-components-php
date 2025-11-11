@@ -788,11 +788,7 @@ class WebCalendar
         $dateString = "";
         switch ($this->baseLocale) {
             case 'la':
-                $dayOfTheWeek = (int) $litevent->date->format('w'); //w = 0-Sunday to 6-Saturday
-                $dayOfTheWeekLatin = $this->latinInterface->dayOfTheWeekLatin($dayOfTheWeek);
-                $month = (int) $litevent->date->format('n'); //n = 1-January to 12-December
-                $monthLatin = $this->latinInterface->monthLatin($month);
-                $dateString = $dayOfTheWeekLatin . ' ' . $litevent->date->format('j') . ' ' . $monthLatin . ' ' . $litevent->date->format('Y');
+                $dateString = $this->latinInterface->formatDate($this->dateFormat, $litevent->date);
                 break;
             default:
                 $dateString = $dateFmt->format($litevent->date->format('U'));
