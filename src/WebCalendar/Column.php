@@ -6,17 +6,17 @@ namespace LiturgicalCalendar\Components\WebCalendar;
  * Enum of columns that can be displayed in the WebCalendar table.
  *
  * Contains the following constants:
- * - {@see __LITURGICAL_SEASON__}: The column showing the liturgical season
- * - {@see __MONTH__}: The column showing the month
- * - {@see __DATE__}: The column showing the date
- * - {@see __EVENT__}: The column showing the event
- * - {@see __GRADE__}: The column showing the liturgical grade
- * - {@see __PSALTER_WEEK__}: The column showing the psalter week
- * - {@see __ALL__}: A bitfield of all the columns
- * - {@see __NONE__}: A bitfield of no columns
+ * - __LITURGICAL_SEASON__: The column showing the liturgical season
+ * - __MONTH__: The column showing the month
+ * - __DATE__: The column showing the date
+ * - __EVENT__: The column showing the event
+ * - __GRADE__: The column showing the liturgical grade
+ * - __PSALTER_WEEK__: The column showing the psalter week
+ * - __ALL__: A bitfield of all the columns
+ * - __NONE__: A bitfield of no columns
  *
  * @package LiturgicalCalendar\Components\WebCalendar
- * @author John Roman Dorazio <priest@johnromanodorazio.com>
+ * @author John Romano Dorazio <priest@johnromanodorazio.com>
  */
 enum Column: int
 {

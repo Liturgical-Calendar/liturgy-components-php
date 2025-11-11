@@ -322,7 +322,7 @@ if (isset($_POST) && !empty($_POST)) {
             color: black;
         }
 
-        #LitCalTable td.pink {
+        #LitCalTable td.rose {
             background-color: mistyrose;
             color: black;
         }

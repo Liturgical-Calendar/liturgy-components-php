@@ -3,7 +3,7 @@
 namespace LiturgicalCalendar\Components\WebCalendar;
 
 /**
- * Similar to the Festivity class used in the Liturgical Calendar API,
+ * Similar to the Liturgical Event class used in the Liturgical Calendar API,
  *  except that this class converts a PHP Timestamp to a DateTime object
  *  and does not implement JsonSerializeable or the comparator function
  * @author  John R. D'Orazio <priest@johnromanodorazio.com>
@@ -14,7 +14,7 @@ class LiturgicalEvent
     public int $event_idx;
     public string $event_key;
     public string $name;
-    public \DateTime $date;
+    public \DateTimeImmutable $date;
     public array $color;
     public array $color_lcl;
     public string $type;
@@ -38,7 +38,7 @@ class LiturgicalEvent
      *                               - 'event_idx': The unique index of the liturgical event.
      *                               - 'event_key': The unique ID of the liturgical event.
      *                               - 'name': The name of the liturgical event.
-     *                               - 'date': The date of the liturgical event as a PHP timestamp.
+     *                               - 'date': The date of the liturgical event formatted in RFC 3339 (ISO 8601) format.
      *                               - 'color': The color of the liturgical event as an array of possible liturgical colors.
      *                               - 'color_lcl': The color of the liturgical event as an array of possible liturgical colors translated to the current locale.
      *                               - 'type': The type of the liturgical event, such as 'mobile' or 'fixed'.
@@ -69,7 +69,7 @@ class LiturgicalEvent
         $this->event_idx             = $LitEvent->event_idx;
         $this->event_key             = $LitEvent->event_key;
         $this->name                  = $LitEvent->name;
-        $this->date                  = \DateTime::createFromFormat('U', $LitEvent->date, new \DateTimeZone('UTC'));
+        $date                        = \DateTimeImmutable::createFromFormat(\DateTime::ATOM, $LitEvent->date);
         $this->color                 = $LitEvent->color;
         $this->color_lcl             = $LitEvent->color_lcl;
         $this->type                  = $LitEvent->type;
@@ -89,5 +89,9 @@ class LiturgicalEvent
         if (property_exists($LitEvent, 'is_vigil_for')) {
             $this->is_vigil_for = $LitEvent->is_vigil_for;
         }
+        if ($date === false) {
+            throw new \Exception('Failed to parse date field. Expected RFC 3339 (ISO 8601) format, got: ' . $LitEvent->date);
+        }
+        $this->date = $date;
     }
 }
