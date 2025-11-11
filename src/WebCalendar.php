@@ -731,7 +731,7 @@ class WebCalendar
                 $this->handleSeasonColorForColumn($seasonColor, $firstColCell, Column::MONTH);
                 $this->handleEventColorForColumn($litevent->color, $firstColCell, Column::MONTH);
                 $textNode = $this->baseLocale === 'la'
-                    ? strtoupper($this->latinInterface->monthLatin( (int) $litevent->date->format('n') ))
+                    ? strtoupper($this->latinInterface->monthLatinFull( (int) $litevent->date->format('n') ))
                     : strtoupper($monthFmt->format($litevent->date->format('U')));
                 $div = $this->dom->createElement('div');
                 $div->appendChild($this->dom->createTextNode($textNode));

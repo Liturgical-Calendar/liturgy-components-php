@@ -14,7 +14,7 @@ class LiturgicalEvent
     public int $event_idx;
     public string $event_key;
     public string $name;
-    public \DateTime $date;
+    public \DateTimeImmutable $date;
     public array $color;
     public array $color_lcl;
     public string $type;
@@ -69,7 +69,7 @@ class LiturgicalEvent
         $this->event_idx             = $LitEvent->event_idx;
         $this->event_key             = $LitEvent->event_key;
         $this->name                  = $LitEvent->name;
-        $date                  = \DateTime::createFromFormat(\DateTime::ATOM, $LitEvent->date);
+        $date                        = \DateTimeImmutable::createFromFormat(\DateTime::ATOM, $LitEvent->date);
         $this->color                 = $LitEvent->color;
         $this->color_lcl             = $LitEvent->color_lcl;
         $this->type                  = $LitEvent->type;

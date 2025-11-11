@@ -97,7 +97,7 @@ enum LatinInterface
      * @return string The Latin name of the month.
      * @throws \InvalidArgumentException If the month number is invalid.
      */
-    public function monthLatin(int $month): string
+    public function monthLatinFull(int $month): string
     {
         if ($month < 1 || $month > 12) {
             throw new \InvalidArgumentException("Invalid month: $month");
@@ -147,6 +147,36 @@ enum LatinInterface
     }
 
     /**
+     * Returns the short Latin name of the month, based on the given month number.
+     *
+     * The short Latin name of the month is the Roman numeral representation of the month number.
+     *
+     * @param int $month The month number, where 1 = January, 2 = February, ..., 12 = December.
+     * @return string The short Latin name of the month.
+     * @throws \InvalidArgumentException If the month number is invalid.
+     */
+    public function monthLatinShort(int $month): string
+    {
+        if ($month < 1 || $month > 12) {
+            throw new \InvalidArgumentException("Invalid month: $month");
+        }
+        return match ($month) {
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII',
+        };
+    }
+
+    /**
      * Returns a string representation of the given date, formatted according to the provided date format.
      *
      * The following date formats are supported:
@@ -157,26 +187,27 @@ enum LatinInterface
      * - __DAY_ONLY__: Only the day of the month and the weekday, e.g. "3 Friday" or "3 venerdì".
      *
      * @param DateFormat $dateFmt The date format to use.
-     * @param \DateTime $date The date to format.
+     * @param \DateTimeInterface $date The date to format.
      * @return string The formatted date string.
      * @throws \InvalidArgumentException If the input date format is invalid.
      */
-    public function formatDate(DateFormat $dateFmt, \DateTime $date): string
+    public function formatDate(DateFormat $dateFmt, \DateTimeInterface $date): string
     {
-        $dayOfTheWeek = (int) $date->format('w'); //w = 0-Sunday to 6-Saturday
+        $dayOfTheWeek      = (int) $date->format('w'); //w = 0-Sunday to 6-Saturday
         $dayOfTheWeekLatin = $this->dayOfTheWeekLatin($dayOfTheWeek);
-        //$dayOfTheWeekLatinAbbr = $this->dayOfTheWeekLatinAbbr($dayOfTheWeek);
-        $dayOfTheMonth = (int) $date->format('j');
-        $month = (int) $date->format('n'); //n = 1-January to 12-December
-        $monthLatin = $this->monthLatin($month);
-        $monthLatinAbbr = $this->monthLatinAbbr($month);
-        $yearFull = (int) $date->format('Y');
-        $yearShort = (int) $date->format('y');
+        $dayOfTheMonth     = (int) $date->format('j');
+        $month             = (int) $date->format('n'); //n = 1-January to 12-December
+        $monthLatinFull    = $this->monthLatinFull($month);
+        $monthLatinAbbr    = $this->monthLatinAbbr($month);
+        $monthLatinShort   = $this->monthLatinShort($month);
+        $yearFull          = (int) $date->format('Y');
+        $yearShort         = (int) $date->format('y');
+
         return match ($dateFmt) {
-            DateFormat::FULL => "$dayOfTheWeekLatin, $monthLatin $dayOfTheMonth, $yearFull",
-            DateFormat::LONG => "$monthLatin $dayOfTheMonth, $yearFull",
+            DateFormat::FULL => "$dayOfTheWeekLatin, $monthLatinFull $dayOfTheMonth, $yearFull",
+            DateFormat::LONG => "$monthLatinFull $dayOfTheMonth, $yearFull",
             DateFormat::MEDIUM => "$monthLatinAbbr $dayOfTheMonth, $yearFull",
-            DateFormat::SHORT => "$dayOfTheMonth/$month/$yearShort",
+            DateFormat::SHORT => "$dayOfTheMonth/$monthLatinShort/$yearShort",
             DateFormat::DAY_ONLY => "$dayOfTheMonth $dayOfTheWeekLatin",
             default => throw new \InvalidArgumentException("Invalid date format: $dateFmt"),
         };
