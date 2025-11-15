@@ -141,11 +141,19 @@ class CalendarSelect
         }
 
         if (isset($options['labelStr'])) {
-            $this->labelStr = htmlspecialchars($options['labelStr'], ENT_QUOTES, 'UTF-8');
+            $labelStr = $options['labelStr'];
+            if (!is_string($labelStr)) {
+                throw new \InvalidArgumentException('Expected string for labelStr, got ' . gettype($labelStr));
+            }
+            $this->labelStr = htmlspecialchars($labelStr, ENT_QUOTES, 'UTF-8');
         }
 
         if (isset($options['labelClass'])) {
-            $this->labelClass = htmlspecialchars($options['labelClass'], ENT_QUOTES, 'UTF-8');
+            $labelClass = $options['labelClass'];
+            if (!is_string($labelClass)) {
+                throw new \InvalidArgumentException('Expected string for labelClass, got ' . gettype($labelClass));
+            }
+            $this->labelClass = htmlspecialchars($labelClass, ENT_QUOTES, 'UTF-8');
         }
 
         if (isset($options['allowNull'])) {
@@ -260,14 +268,10 @@ class CalendarSelect
      *
      * @return $this
      *
-     * @throws \Exception If the options type is not valid.
      * @throws \Exception If the options type is OptionsType::DIOCESES_FOR_NATION and nationFilter has not been set.
      */
     public function setOptions(OptionsType $optionsType): self
     {
-        if (false === in_array($optionsType, OptionsType::cases(), true)) {
-            throw new \Exception("Invalid OptionsType: {$optionsType->name}, valid values are: " . implode(', ', array_map(fn(OptionsType $type) => $type->name, OptionsType::cases())));
-        }
         if (
             OptionsType::DIOCESES_FOR_NATION === $optionsType
             && ( null === $this->nationFilterForDioceseOptions || empty($this->nationFilterForDioceseOptions) )
@@ -393,7 +397,7 @@ class CalendarSelect
         if (false === $resourceBundle) {
             throw new \RuntimeException('Failed to retrieve locales from ResourceBundle.');
         }
-        $AllAvailableLocales = array_filter($resourceBundle, fn (string $value): bool => strpos($value, 'POSIX') === false);
+        $AllAvailableLocales = array_filter($resourceBundle, fn (mixed $value): bool => is_string($value) && strpos($value, 'POSIX') === false);
         return in_array($locale, $latin) || in_array($locale, $AllAvailableLocales);
     }
 
@@ -428,14 +432,18 @@ class CalendarSelect
             if (false === array_key_exists('litcal_metadata', $metadataJSON)) {
                 throw new \Exception("Missing 'litcal_metadata' in metadata from {$this->metadataUrl}");
             }
-            if (false === array_key_exists('diocesan_calendars', $metadataJSON['litcal_metadata'])) {
+            $litcalMetadata = $metadataJSON['litcal_metadata'];
+            if (!is_array($litcalMetadata)) {
+                throw new \Exception("'litcal_metadata' must be an array in metadata from {$this->metadataUrl}");
+            }
+            if (false === array_key_exists('diocesan_calendars', $litcalMetadata)) {
                 throw new \Exception("Missing 'diocesan_calendars' in metadata from {$this->metadataUrl}");
             }
-            if (false === array_key_exists('national_calendars', $metadataJSON['litcal_metadata'])) {
+            if (false === array_key_exists('national_calendars', $litcalMetadata)) {
                 throw new \Exception("Missing 'national_calendars' in metadata from {$this->metadataUrl}");
             }
-
-            self::$calendarIndex = CalendarIndex::fromArray($metadataJSON['litcal_metadata']);
+            /** @var array<string,mixed> $litcalMetadata */
+            self::$calendarIndex = CalendarIndex::fromArray($litcalMetadata);
         }
     }
 

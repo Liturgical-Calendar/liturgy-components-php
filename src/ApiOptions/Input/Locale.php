@@ -147,11 +147,13 @@ class Locale extends Input
 
             $locales = self::$metadata->locales;
             /** @var array<string> $locales */
-            self::$apiLocales                                 = $locales;
-            self::$apiLocalesDisplay[ApiOptions::getLocale()] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
+            self::$apiLocales = $locales;
+            $localeDisplay    = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
                 $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
                 return $carry;
             }, []);
+            /** @var array<string> $localeDisplay */
+            self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
             asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
         } elseif (null === $calendarId || null === $calendarType) {
             throw new \Exception('Invalid calendarType or calendarId');
@@ -177,11 +179,13 @@ class Locale extends Input
                     }
                     $locales = $calendar->locales;
                     /** @var array<string> $locales */
-                    self::$apiLocales                                 = $locales;
-                    self::$apiLocalesDisplay[ApiOptions::getLocale()] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
+                    self::$apiLocales = $locales;
+                    $localeDisplay    = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
                         $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
                         return $carry;
                     }, []);
+                    /** @var array<string> $localeDisplay */
+                    self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
                     asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
                     break;
                 case 'diocese':
@@ -204,11 +208,13 @@ class Locale extends Input
                     }
                     $locales = $calendar->locales;
                     /** @var array<string> $locales */
-                    self::$apiLocales                                 = $locales;
-                    self::$apiLocalesDisplay[ApiOptions::getLocale()] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
+                    self::$apiLocales = $locales;
+                    $localeDisplay    = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
                         $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
                         return $carry;
                     }, []);
+                    /** @var array<string> $localeDisplay */
+                    self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
                     asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
                     break;
                 default:

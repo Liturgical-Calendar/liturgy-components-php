@@ -982,10 +982,20 @@ class WebCalendar
         if (false === $this->removeCaption) {
             $caption = $this->dom->createElement('caption');
             if ($this->LiturgicalCalendar->settings->diocesanCalendar !== null) {
+                $dioceseName = property_exists($this->LiturgicalCalendar->metadata, 'diocese_name')
+                    ? $this->LiturgicalCalendar->metadata->diocese_name
+                    : '';
+                if (!is_string($dioceseName)) {
+                    if (is_scalar($dioceseName) || ( is_object($dioceseName) && method_exists($dioceseName, '__toString') )) {
+                        $dioceseName = (string) $dioceseName;
+                    } else {
+                        $dioceseName = '';
+                    }
+                }
                 $captionText = sprintf(
                     /**translators: 1. name of the diocese, 2. year */
                     dgettext('webcalendar', 'Liturgical Calendar for the %1$s - %2$s'),
-                    $this->LiturgicalCalendar->metadata->diocese_name,
+                    $dioceseName,
                     $this->LiturgicalCalendar->settings->year
                 );
             } elseif ($this->LiturgicalCalendar->settings->nationalCalendar !== null) {

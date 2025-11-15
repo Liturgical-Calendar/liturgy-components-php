@@ -38,6 +38,95 @@ class LiturgicalCalendarSettings
     }
 
     /**
+     * Helper to safely get int value from object property
+     *
+     * @param object $data
+     * @param string $key
+     * @param int $default
+     * @return int
+     */
+    private static function getIntProperty(object $data, string $key, int $default = 0): int
+    {
+        if (!property_exists($data, $key)) {
+            return $default;
+        }
+        $value = $data->$key;
+        if (is_int($value)) {
+            return $value;
+        }
+        $filtered = filter_var($value, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
+        return $filtered !== null ? (int) $filtered : $default;
+    }
+
+    /**
+     * Helper to safely get string value from object property
+     *
+     * @param object $data
+     * @param string $key
+     * @param string $default
+     * @return string
+     */
+    private static function getStringProperty(object $data, string $key, string $default = ''): string
+    {
+        if (!property_exists($data, $key)) {
+            return $default;
+        }
+        $value = $data->$key;
+        if (is_string($value)) {
+            return $value;
+        }
+        if (is_scalar($value) || ( is_object($value) && method_exists($value, '__toString') )) {
+            return (string) $value;
+        }
+        return $default;
+    }
+
+    /**
+     * Helper to safely get nullable string value from object property
+     *
+     * @param object $data
+     * @param string $key
+     * @return string|null
+     */
+    private static function getNullableStringProperty(object $data, string $key): ?string
+    {
+        if (!property_exists($data, $key)) {
+            return null;
+        }
+        $value = $data->$key;
+        if ($value === null) {
+            return null;
+        }
+        if (is_string($value)) {
+            return $value;
+        }
+        if (is_scalar($value) || ( is_object($value) && method_exists($value, '__toString') )) {
+            return (string) $value;
+        }
+        return null;
+    }
+
+    /**
+     * Helper to safely get bool value from object property
+     *
+     * @param object $data
+     * @param string $key
+     * @param bool $default
+     * @return bool
+     */
+    private static function getBoolProperty(object $data, string $key, bool $default = false): bool
+    {
+        if (!property_exists($data, $key)) {
+            return $default;
+        }
+        $value = $data->$key;
+        if (is_bool($value)) {
+            return $value;
+        }
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
      * Create an instance from an associative array or object
      *
      * @param array<string,mixed>|object $data The settings data
@@ -55,17 +144,17 @@ class LiturgicalCalendarSettings
             : [];
 
         return new self(
-            year: property_exists($data, 'year') ? (int) $data->year : 0,
-            epiphany: property_exists($data, 'epiphany') ? (string) $data->epiphany : '',
-            ascension: property_exists($data, 'ascension') ? (string) $data->ascension : '',
-            corpusChristi: property_exists($data, 'corpus_christi') ? (string) $data->corpus_christi : '',
-            eternalHighPriest: property_exists($data, 'eternal_high_priest') ? (bool) $data->eternal_high_priest : false,
-            locale: property_exists($data, 'locale') ? (string) $data->locale : '',
-            yearType: property_exists($data, 'year_type') ? (string) $data->year_type : '',
-            returnType: property_exists($data, 'return_type') ? (string) $data->return_type : '',
+            year: self::getIntProperty($data, 'year', 0),
+            epiphany: self::getStringProperty($data, 'epiphany', ''),
+            ascension: self::getStringProperty($data, 'ascension', ''),
+            corpusChristi: self::getStringProperty($data, 'corpus_christi', ''),
+            eternalHighPriest: self::getBoolProperty($data, 'eternal_high_priest', false),
+            locale: self::getStringProperty($data, 'locale', ''),
+            yearType: self::getStringProperty($data, 'year_type', ''),
+            returnType: self::getStringProperty($data, 'return_type', ''),
             holydaysOfObligation: HolyDaysOfObligation::fromArray($holydaysData),
-            nationalCalendar: property_exists($data, 'national_calendar') ? $data->national_calendar : null,
-            diocesanCalendar: property_exists($data, 'diocesan_calendar') ? $data->diocesan_calendar : null
+            nationalCalendar: self::getNullableStringProperty($data, 'national_calendar'),
+            diocesanCalendar: self::getNullableStringProperty($data, 'diocesan_calendar')
         );
     }
 

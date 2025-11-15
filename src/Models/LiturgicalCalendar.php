@@ -133,7 +133,7 @@ class LiturgicalCalendar
      * Convert the model to an associative array
      *
      * @return array{
-     *     litcal: array<string,mixed>,
+     *     litcal: array<int|string,mixed>,
      *     settings: array<string,mixed>,
      *     metadata: \stdClass,
      *     messages: string[]

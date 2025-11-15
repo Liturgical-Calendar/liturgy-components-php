@@ -52,7 +52,11 @@ class FormLabel
             }
 
             if (array_key_exists('for', $options)) {
-                $this->for($options['for'] ?? '');
+                $forValue = $options['for'] ?? '';
+                if (!is_string($forValue)) {
+                    throw new \InvalidArgumentException('Expected string for "for" attribute, got ' . gettype($forValue));
+                }
+                $this->for($forValue);
             }
         }
     }

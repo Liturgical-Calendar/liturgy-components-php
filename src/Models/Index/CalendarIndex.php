@@ -188,24 +188,24 @@ class CalendarIndex
     public function toArray(): array
     {
         return [
-            'national_calendars'      => array_map(
+            'national_calendars'      => array_values(array_map(
                 fn(NationalCalendar $calendar) => $calendar->toArray(),
                 $this->nationalCalendars
-            ),
+            )),
             'national_calendars_keys' => $this->nationalCalendarsKeys,
-            'diocesan_calendars'      => array_map(
+            'diocesan_calendars'      => array_values(array_map(
                 fn(DiocesanCalendar $calendar) => $calendar->toArray(),
                 $this->diocesanCalendars
-            ),
+            )),
             'diocesan_calendars_keys' => $this->diocesanCalendarsKeys,
-            'diocesan_groups'         => array_map(
+            'diocesan_groups'         => array_values(array_map(
                 fn(DiocesanGroup $group) => $group->toArray(),
                 $this->diocesanGroups
-            ),
-            'wider_regions'           => array_map(
+            )),
+            'wider_regions'           => array_values(array_map(
                 fn(WiderRegion $region) => $region->toArray(),
                 $this->widerRegions
-            ),
+            )),
             'wider_regions_keys'      => $this->widerRegionsKeys,
             'locales'                 => $this->locales
         ];
