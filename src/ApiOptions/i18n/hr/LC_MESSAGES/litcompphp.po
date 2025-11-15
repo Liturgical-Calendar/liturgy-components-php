@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-11 04:58+0000\n"
+"POT-Creation-Date: 2025-11-15 19:22+0000\n"
 "PO-Revision-Date: 2025-01-31 15:10+0000\n"
 "Last-Translator: Lovro <development.lovro@gmail.com>\n"
 "Language-Team: Croatian <https://translate.johnromanodorazio.com/projects/"
@@ -20,7 +20,7 @@ msgstr ""
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
 "X-Generator: Weblate 5.8.4\n"
 
-#: src/ApiOptions/Input/Epiphany.php:99
+#: src/ApiOptions/Input/Epiphany.php:106
 msgid "Sunday between January 2nd and 8th"
 msgstr "Nedjelja između 1. i 8. siječnja"
 
