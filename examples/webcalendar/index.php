@@ -1,6 +1,7 @@
 <?php
 
 require '../../vendor/autoload.php';
+
 use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
 use LiturgicalCalendar\Components\ApiOptions\PathType;
@@ -25,7 +26,7 @@ if (class_exists('Dotenv\Dotenv')) {
     $dotenv->safeLoad();
     if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'development') {
         if (false === isset($_ENV['API_PROTOCOL']) || false === isset($_ENV['API_HOST']) || false === isset($_ENV['API_PORT'])) {
-            die("API_PROTOCOL, API_HOST and API_PORT must be defined in .env.development or similar dotenv when APP_ENV is development");
+            die('API_PROTOCOL, API_HOST and API_PORT must be defined in .env.development or similar dotenv when APP_ENV is development');
         }
         $options = ['url' => "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}:{$_ENV['API_PORT']}"];
     }
@@ -44,12 +45,11 @@ $calendarSelectDioceses->label(true)->labelText('diocese')
     ->id('diocesan_calendar')->name('diocesan_calendar')->setOptions(OptionsType::DIOCESES)->allowNull(true);
 
 if (isset($_POST) && !empty($_POST)) {
-    $requestData = [];
-    $requestHeaders = [
-        'Accept: application/json'
-    ];
-    $requestPath = '';
-    $requestYear = '';
+    $requestData    = [];
+    $requestHeaders = ['Accept: application/json'];
+    $requestPath    = '';
+    $requestYear    = '';
+
     foreach ($_POST as $key => $value) {
         if (is_string($value)) {
             $value = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
@@ -75,6 +75,7 @@ if (isset($_POST) && !empty($_POST)) {
             case 'ascension':
             case 'corpus_christi':
             case 'eternal_high_priest':
+            //case 'holydays_of_obligation':
                 if (false === isset($_POST['national_calendar']) && false === isset($_POST['diocesan_calendar'])) {
                     $requestData[$key] = $value;
                 }
@@ -84,13 +85,13 @@ if (isset($_POST) && !empty($_POST)) {
         }
     }
 
-    $selectedDiocese = (isset($_POST['diocesan_calendar']) && !empty($_POST['diocesan_calendar']))
+    $selectedDiocese = ( isset($_POST['diocesan_calendar']) && !empty($_POST['diocesan_calendar']) )
         ? htmlspecialchars($_POST['diocesan_calendar'], ENT_QUOTES, 'UTF-8')
         : false;
-    $selectedNation = (isset($_POST['national_calendar']) && !empty($_POST['national_calendar']))
+    $selectedNation  = ( isset($_POST['national_calendar']) && !empty($_POST['national_calendar']) )
         ? htmlspecialchars($_POST['national_calendar'], ENT_QUOTES, 'UTF-8')
         : false;
-    $selectedLocale = (isset($_POST['locale']) && !empty($_POST['locale']))
+    $selectedLocale  = ( isset($_POST['locale']) && !empty($_POST['locale']) )
         ? htmlspecialchars($_POST['locale'], ENT_QUOTES, 'UTF-8')
         : null;
     if ($selectedLocale) {
@@ -107,6 +108,7 @@ if (isset($_POST) && !empty($_POST)) {
         $apiOptions->ascensionInput->disabled();
         $apiOptions->corpusChristiInput->disabled();
         $apiOptions->eternalHighPriestInput->disabled();
+        $apiOptions->holydaysOfObligationInput->disabled();
     }
 
     if ($selectedDiocese) {
@@ -134,7 +136,7 @@ if (isset($_POST) && !empty($_POST)) {
     $requestUrl = "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}:{$_ENV['API_PORT']}/calendar{$requestPath}{$requestYear}";
 
     $webCalendarHtml = '';
-    $ch = curl_init();
+    $ch              = curl_init();
     curl_setopt($ch, CURLOPT_URL, $requestUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
@@ -146,17 +148,21 @@ if (isset($_POST) && !empty($_POST)) {
         //echo '<pre>' . $response . '</pre>';
         $LiturgicalCalendar = json_decode($response);
         if (JSON_ERROR_NONE === json_last_error()) {
-            $apiOptions->epiphanyInput->selectedValue($LiturgicalCalendar->settings->epiphany);
-            $apiOptions->ascensionInput->selectedValue($LiturgicalCalendar->settings->ascension);
-            $apiOptions->corpusChristiInput->selectedValue($LiturgicalCalendar->settings->corpus_christi);
-            $apiOptions->eternalHighPriestInput->selectedValue($LiturgicalCalendar->settings->eternal_high_priest ? 'true' : 'false');
-            $apiOptions->localeInput->selectedValue($LiturgicalCalendar->settings->locale);
-            $apiOptions->yearTypeInput->selectedValue($LiturgicalCalendar->settings->year_type);
-            $apiOptions->yearInput->selectedValue($LiturgicalCalendar->settings->year);
-            if ($selectedDiocese && false === $selectedNation) {
-                $calendarSelectNations->selectedOption($LiturgicalCalendar->settings->national_calendar);
-                $calendarSelectDioceses->nationFilter($LiturgicalCalendar->settings->national_calendar)
-                        ->setOptions(OptionsType::DIOCESES_FOR_NATION)->selectedOption($selectedDiocese);
+            if (property_exists($LiturgicalCalendar, 'settings') && $LiturgicalCalendar->settings instanceof \stdClass) {
+                $apiOptions->epiphanyInput->selectedValue($LiturgicalCalendar->settings->epiphany);
+                $apiOptions->ascensionInput->selectedValue($LiturgicalCalendar->settings->ascension);
+                $apiOptions->corpusChristiInput->selectedValue($LiturgicalCalendar->settings->corpus_christi);
+                $apiOptions->eternalHighPriestInput->selectedValue($LiturgicalCalendar->settings->eternal_high_priest ? 'true' : 'false');
+                $apiOptions->localeInput->selectedValue($LiturgicalCalendar->settings->locale);
+                $apiOptions->yearTypeInput->selectedValue($LiturgicalCalendar->settings->year_type);
+                $apiOptions->yearInput->selectedValue($LiturgicalCalendar->settings->year);
+                $holyDaysOfObligationProperties = array_keys(array_filter((array) $LiturgicalCalendar->settings->holydays_of_obligation, fn (bool $v) => $v === true));
+                $apiOptions->holydaysOfObligationInput->selectedValue($holyDaysOfObligationProperties);
+                if ($selectedDiocese && false === $selectedNation) {
+                    $calendarSelectNations->selectedOption($LiturgicalCalendar->settings->national_calendar);
+                    $calendarSelectDioceses->nationFilter($LiturgicalCalendar->settings->national_calendar)
+                            ->setOptions(OptionsType::DIOCESES_FOR_NATION)->selectedOption($selectedDiocese);
+                }
             }
 
             $webCalendar = new WebCalendar($LiturgicalCalendar);
@@ -172,7 +178,7 @@ if (isset($_POST) && !empty($_POST)) {
                         ->dateFormat(DateFormat::DAY_ONLY)
                         ->columnOrder(ColumnOrder::GRADE_FIRST)
                         ->gradeDisplay(GradeDisplay::ABBREVIATED);
-            $webCalendarHtml = $webCalendar->buildTable();
+            $webCalendarHtml  = $webCalendar->buildTable();
             $webCalendarHtml .=  '<div style="text-align:center;border:3px ridge Green;background-color:LightBlue;width:75%;margin:10px auto;padding:10px;">' . $webCalendar->daysCreated() . ' event days created</div>';
         } else {
             $webCalendarHtml = '<div class="col-12">JSON error: ' . json_last_error_msg() . '</div>';
@@ -385,7 +391,7 @@ if (isset($_POST) && !empty($_POST)) {
                 echo '<div class="col-12">' . $requestUrl . '</div>';
                 echo '<h3><b>Request Data</b></h3>';
                 foreach ($requestData as $key => $value) {
-                    echo '<div class="col-2"><b>' . $key . '</b>: ' . ($value === null || empty($value) ? 'null' : $value) . '</div>';
+                    echo '<div class="col-2"><b>' . $key . '</b>: ' . ( $value === null || empty($value) ? 'null' : $value ) . '</div>';
                 }
                 echo '<h3><b>Request Headers</b></h3>';
                 foreach ($requestHeaders as $key => $value) {
@@ -395,7 +401,7 @@ if (isset($_POST) && !empty($_POST)) {
             } else {
                 echo '<div class="col-12">No POST data (perhaps click on Submit?)</div>';
             }
-            echo '<input type="hidden" id="selectedLocale2" value="' . ($selectedLocale ?? '') . '">';
+            echo '<input type="hidden" id="selectedLocale2" value="' . ( $selectedLocale ?? '' ) . '">';
             ?>
         </div>
     </div>

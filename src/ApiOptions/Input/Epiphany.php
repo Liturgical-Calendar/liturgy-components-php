@@ -20,7 +20,7 @@ use IntlDateFormatter;
  */
 final class Epiphany extends Input
 {
-    public array $data           = [
+    public array $data = [
         'param' => 'epiphany'
     ];
 
@@ -56,27 +56,27 @@ final class Epiphany extends Input
 
         $labelClass = $this->labelClass !== null
             ? " class=\"{$this->labelClass}\""
-            : (self::$globalLabelClass !== null
+            : ( self::$globalLabelClass !== null
                 ? ' class="' . self::$globalLabelClass . '"'
-                : '');
+                : '' );
         $labelAfter = $this->labelAfter !== null ? ' ' . $this->labelAfter : '';
 
         $inputClass = $this->inputClass !== null
             ? " class=\"{$this->inputClass}\""
-            : (self::$globalInputClass !== null
+            : ( self::$globalInputClass !== null
                 ? ' class="' . self::$globalInputClass . '"'
-                : '');
+                : '' );
 
         $wrapperClass = $this->wrapperClass !== null
             ? " class=\"{$this->wrapperClass}\""
-            : (self::$globalWrapperClass !== null
+            : ( self::$globalWrapperClass !== null
                 ? ' class="' . self::$globalWrapperClass . '"'
-                : '');
-        $wrapper = $this->wrapper !== null
+                : '' );
+        $wrapper      = $this->wrapper !== null
             ? $this->wrapper
-            : (self::$globalWrapper !== null
+            : ( self::$globalWrapper !== null
                 ? self::$globalWrapper
-                : null);
+                : null );
 
         $disabled = $this->disabled ? ' disabled' : '';
 
@@ -86,12 +86,12 @@ final class Epiphany extends Input
         if (ApiOptions::baseLocale() === 'en') {
             $Jan6 = $date->format('F jS');
         } else {
-            $formatter = new IntlDateFormatter(
+            $formatter          = new IntlDateFormatter(
                 ApiOptions::getLocale(),
                 IntlDateFormatter::LONG,    // Use LONG format, which typically shows full month and day
                 IntlDateFormatter::NONE     // No time formatting
             );
-            $pattern = $formatter->getPattern();
+            $pattern            = $formatter->getPattern();
             $patternWithoutYear = preg_replace('/,? y/', '', $pattern);
             $formatter->setPattern($patternWithoutYear);
             $Jan6 = $formatter->format($date);
@@ -99,20 +99,20 @@ final class Epiphany extends Input
         $SundayJan2Jan8 = dgettext('litcompphp', 'Sunday between January 2nd and 8th');
 
         $optionsArray = [
-            "" => "--",
-            "JAN6" => $Jan6,
-            "SUNDAY_JAN2_JAN8" => $SundayJan2Jan8
+            ''                 => '--',
+            'JAN6'             => $Jan6,
+            'SUNDAY_JAN2_JAN8' => $SundayJan2Jan8
         ];
-        $options = array_map(
-            fn (string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $k ? ' selected' : '') . ">{$v}</option>",
+        $options      = array_map(
+            fn (string $k, string $v) => "<option value=\"{$k}\"" . ( $this->selectedValue === $k ? ' selected' : '' ) . ">{$v}</option>",
             array_keys($optionsArray),
             array_values($optionsArray)
         );
-        $optionsHtml = implode('', $options);
+        $optionsHtml  = implode('', $options);
 
         $data = $this->getData();
-        $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
-        $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
+        $for  = $this->id !== '' ? " for=\"{$this->id}\"" : '';
+        $id   = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
 
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';

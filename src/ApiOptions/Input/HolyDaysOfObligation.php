@@ -13,39 +13,27 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
  *
  * @see LiturgicalCalendar\Components\ApiOptions\Input
  */
-final class AcceptHeader extends Input
+final class HolyDaysOfObligation extends Input
 {
-    /** @var array<string,string> */
-    public array $data = [
-        'param' => 'accept'
-    ];
-
-    private bool $as_return_type_param   = false;
-    private bool $hidden                 = false;
-    private const RETURN_TYPE_PARAM_VALS = ['JSON', 'XML', 'YML', 'ICS'];
-    private const ACCEPT_HEADER_VALS     = [
-        'application/json',
-        'application/xml',
-        'application/yaml',
-        'text/calendar'
+    private bool $hidden         = false;
+    private const HOLY_DAYS_VALS = [
+        'Christmas'            => 'Christmas',
+        'Epiphany'             => 'Epiphany',
+        'Ascension'            => 'Ascension',
+        'CorpusChristi'        => 'Corpus Christi',
+        'MaryMotherOfGod'      => 'Mary, Mother of God',
+        'ImmaculateConception' => 'Immaculate Conception',
+        'Assumption'           => 'Assumption',
+        'StJoseph'             => 'St. Joseph',
+        'StsPeterPaulAp'       => 'Sts. Peter and Paul, Apostles',
+        'AllSaints'            => 'All Saints'
     ];
 
     public function __construct()
     {
-        $this->name('return_type');
-        $this->id('return_type');
-    }
-
-    /**
-     * @param bool $as_return_type_param Set to true to include the accept header as a query parameter,
-     *     or false to not include it.  The default is true.
-     *
-     * @return self The instance of the class, for chaining.
-     */
-    public function asReturnTypeParam(bool $as_return_type_param = true): self
-    {
-        $this->as_return_type_param = $as_return_type_param;
-        return $this;
+        $this->name('holydays_of_obligation');
+        $this->id('holydays_of_obligation');
+        $this->selectedValue(array_keys(self::HOLY_DAYS_VALS));
     }
 
     /**
@@ -113,27 +101,24 @@ final class AcceptHeader extends Input
                 ? self::$globalWrapper
                 : null );
 
-        $disabled = $this->disabled ? ' disabled' : '';
+        $disabled = $this->disabled ? ' readonly' : '';
 
-        $returnTypeParamOptions = array_map(
-            fn ($val) => "<option value=\"$val\"" . ( $this->selectedValue === $val ? ' selected' : '' ) . ">$val</option>",
-            self::RETURN_TYPE_PARAM_VALS
+        $options     = array_map(
+            fn ($val, $name) => "<option value=\"$val\"" . ( in_array($val, $this->selectedValue) ? ' selected' : '' ) . ( $this->disabled ? ' disabled' : '' ) . ">$name</option>",
+            array_keys(self::HOLY_DAYS_VALS),
+            array_values(self::HOLY_DAYS_VALS)
         );
-        $acceptHeaderOptions    = array_map(
-            fn ($val) => "<option value=\"$val\"" . ( $this->selectedValue === $val ? ' selected' : '' ) . ">$val</option>",
-            self::ACCEPT_HEADER_VALS
-        );
-        $optionsHtml            = $this->as_return_type_param ? implode('', $returnTypeParamOptions) : implode('', $acceptHeaderOptions);
+        $optionsHtml = implode('', $options);
 
         $data      = $this->getData();
         $for       = $this->id !== '' ? " for=\"{$this->id}\"" : '';
         $id        = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name      = $this->name !== '' ? " name=\"{$this->name}\"" : '';
-        $labelText = $this->as_return_type_param ? 'return_type' : 'accept header';
+        $labelText = 'holydays_of_obligation';
 
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
         $html .= "<label{$labelClass}{$for}>{$labelText}{$labelAfter}</label>";
-        $html .= "<select{$id}{$name}{$inputClass}{$data}{$disabled}>$optionsHtml</select>";
+        $html .= "<select{$id}{$name}{$inputClass}{$data}{$disabled} multiple>$optionsHtml</select>";
         $html .= $wrapper !== null ? "</{$wrapper}>" : '';
         return $html;
     }

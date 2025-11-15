@@ -16,7 +16,7 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
  */
 final class YearType extends Input
 {
-    public array $data           = [
+    public array $data = [
         'param' => 'year_type'
     ];
 
@@ -52,41 +52,41 @@ final class YearType extends Input
 
         $labelClass = $this->labelClass !== null
             ? " class=\"{$this->labelClass}\""
-            : (self::$globalLabelClass !== null
+            : ( self::$globalLabelClass !== null
                 ? ' class="' . self::$globalLabelClass . '"'
-                : '');
+                : '' );
         $labelAfter = $this->labelAfter !== null ? ' ' . $this->labelAfter : '';
 
         $inputClass = $this->inputClass !== null
             ? " class=\"{$this->inputClass}\""
-            : (self::$globalInputClass !== null
+            : ( self::$globalInputClass !== null
                 ? ' class="' . self::$globalInputClass . '"'
-                : '');
+                : '' );
 
         $wrapperClass = $this->wrapperClass !== null
             ? " class=\"{$this->wrapperClass}\""
-            : (self::$globalWrapperClass !== null
+            : ( self::$globalWrapperClass !== null
                 ? ' class="' . self::$globalWrapperClass . '"'
-                : '');
-        $wrapper = $this->wrapper !== null
+                : '' );
+        $wrapper      = $this->wrapper !== null
             ? $this->wrapper
-            : (self::$globalWrapper !== null
+            : ( self::$globalWrapper !== null
                 ? self::$globalWrapper
-                : null);
+                : null );
 
         $disabled = $this->disabled ? ' disabled' : '';
 
         $optionsArray = [ 'LITURGICAL', 'CIVIL' ];
-        $options = array_map(
-            fn (string $option) => "<option value=\"{$option}\"" . ($this->selectedValue === $option ? ' selected' : '') . ">{$option}</option>",
+        $options      = array_map(
+            fn (string $option) => "<option value=\"{$option}\"" . ( $this->selectedValue === $option ? ' selected' : '' ) . ">{$option}</option>",
             $optionsArray
         );
-        $optionsHtml = implode('', $options);
+        $optionsHtml  = implode('', $options);
 
 
         $data = $this->getData();
-        $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
-        $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
+        $for  = $this->id !== '' ? " for=\"{$this->id}\"" : '';
+        $id   = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
 
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';

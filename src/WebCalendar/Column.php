@@ -6,60 +6,48 @@ namespace LiturgicalCalendar\Components\WebCalendar;
  * Enum of columns that can be displayed in the WebCalendar table.
  *
  * Contains the following constants:
- * - __LITURGICAL_SEASON__: The column showing the liturgical season
- * - __MONTH__: The column showing the month
- * - __DATE__: The column showing the date
- * - __EVENT__: The column showing the event
- * - __GRADE__: The column showing the liturgical grade
- * - __PSALTER_WEEK__: The column showing the psalter week
- * - __ALL__: A bitfield of all the columns
- * - __NONE__: A bitfield of no columns
+ * - __LITURGICAL_SEASON__: The column showing the liturgical season (1)
+ * - __MONTH__: The column showing the month (2)
+ * - __DATE__: The column showing the date (4)
+ * - __EVENT__: The column showing the event (8)
+ * - __GRADE__: The column showing the liturgical grade (16)
+ * - __PSALTER_WEEK__: The column showing the psalter week (32)
+ * - __ALL__: A bitfield of all the columns (63)
+ * - __NONE__: A bitfield of no columns (0)
  *
  * @package LiturgicalCalendar\Components\WebCalendar
  * @author John Romano Dorazio <priest@johnromanodorazio.com>
  */
 enum Column: int
 {
-    /**
-     * The column showing the liturgical season
-     * @var int 1
-     */
-    case LITURGICAL_SEASON  = 1 << 0;
-    /**
-     * The column showing the month
-     * @var int 2
-     */
-    case MONTH              = 1 << 1;
-    /**
-     * The column showing the date
-     * @var int 4
-     */
-    case DATE               = 1 << 2;
-    /**
-     * The column showing the event detauls
-     * @var int 8
-     */
-    case EVENT              = 1 << 3;
-    /**
-     * The column showing the liturgical grade
-     * @var int 16
-     */
-    case GRADE              = 1 << 4;
-    /**
-     * The column showing the psalter week
-     * @var int 32
-     */
-    case PSALTER_WEEK       = 1 << 5;
-    /**
-     * A bitfield of all the columns
-     * @var int 63
-     */
-    case ALL                = self::LITURGICAL_SEASON->value | self::MONTH->value | self::DATE->value | self::EVENT->value | self::GRADE->value | self::PSALTER_WEEK->value;
-    /**
-     * A bitfield of no columns
-     * @var int 0
-     */
-    case NONE               = 0;
+    /** The column showing the liturgical season */
+    case LITURGICAL_SEASON = 1 << 0; // 1
+
+    /** The column showing the month */
+    case MONTH = 1 << 1;             // 2
+
+    /** The column showing the date */
+    case DATE = 1 << 2;              // 4
+
+    /** The column showing the event details */
+    case EVENT = 1 << 3;             // 8
+
+    /** The column showing the liturgical grade */
+    case GRADE = 1 << 4;             // 16
+
+    /** The column showing the psalter week */
+    case PSALTER_WEEK = 1 << 5;      // 32
+
+    /** A bitfield of all the columns (63) */
+    case ALL = self::LITURGICAL_SEASON->value
+              | self::MONTH->value
+              | self::DATE->value
+              | self::EVENT->value
+              | self::GRADE->value
+              | self::PSALTER_WEEK->value; // 63
+
+    /** A bitfield of no columns (0) */
+    case NONE = 0;                    // 0
 
     /**
      * Checks if any of the valid column flags are set in the provided bitfield.
@@ -74,9 +62,9 @@ enum Column: int
     public static function isValid(Column|int $columnFlag): bool
     {
         if (is_int($columnFlag)) {
-            return ($columnFlag & self::ALL->value) !== self::NONE->value;
+            return ( $columnFlag & self::ALL->value ) !== self::NONE->value;
         }
-        return ($columnFlag->value & self::ALL->value) !== self::NONE->value;
+        return ( $columnFlag->value & self::ALL->value ) !== self::NONE->value;
     }
 
     /**
@@ -95,6 +83,6 @@ enum Column: int
         foreach ($columnFlags as $flag) {
             $combinedFlags |= $flag->value;
         }
-        return ($combinedFlags & self::ALL->value) !== self::NONE->value;
+        return ( $combinedFlags & self::ALL->value ) !== self::NONE->value;
     }
 }

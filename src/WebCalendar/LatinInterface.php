@@ -66,6 +66,9 @@ enum LatinInterface
      */
     public function dayOfTheWeekLatinAbbr(int $dayOfWeek): string
     {
+        if ($dayOfWeek < 0 || $dayOfWeek > 6) {
+            throw new \InvalidArgumentException("Invalid day of the week: $dayOfWeek");
+        }
         return match ($this) {
             self::CIVIL => match ($dayOfWeek) {
                 0 => 'Sol',
@@ -74,8 +77,7 @@ enum LatinInterface
                 3 => 'Mer',
                 4 => 'Iov',
                 5 => 'Ven',
-                6 => 'Sat',
-                default => throw new \InvalidArgumentException("Invalid day of the week: $dayOfWeek"),
+                6 => 'Sat'
             },
             self::ECCLESIASTICAL => match ($dayOfWeek) {
                 0 => 'Dom',
@@ -84,9 +86,8 @@ enum LatinInterface
                 3 => 'Qua',
                 4 => 'Qui',
                 5 => 'Sex',
-                6 => 'Sab',
-                default => throw new \InvalidArgumentException("Invalid day of the week: $dayOfWeek"),
-            },
+                6 => 'Sab'
+            }
         };
     }
 
@@ -189,7 +190,6 @@ enum LatinInterface
      * @param DateFormat $dateFmt The date format to use.
      * @param \DateTimeInterface $date The date to format.
      * @return string The formatted date string.
-     * @throws \InvalidArgumentException If the input date format is invalid.
      */
     public function formatDate(DateFormat $dateFmt, \DateTimeInterface $date): string
     {
@@ -208,8 +208,7 @@ enum LatinInterface
             DateFormat::LONG => "$monthLatinFull $dayOfTheMonth, $yearFull",
             DateFormat::MEDIUM => "$monthLatinAbbr $dayOfTheMonth, $yearFull",
             DateFormat::SHORT => "$dayOfTheMonth/$monthLatinShort/$yearShort",
-            DateFormat::DAY_ONLY => "$dayOfTheMonth $dayOfTheWeekLatin",
-            default => throw new \InvalidArgumentException("Invalid date format: $dateFmt"),
+            DateFormat::DAY_ONLY => "$dayOfTheMonth $dayOfTheWeekLatin"
         };
     }
 }

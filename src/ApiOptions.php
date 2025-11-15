@@ -8,6 +8,7 @@ use LiturgicalCalendar\Components\ApiOptions\Input\Ascension;
 use LiturgicalCalendar\Components\ApiOptions\Input\Epiphany;
 use LiturgicalCalendar\Components\ApiOptions\Input\CorpusChristi;
 use LiturgicalCalendar\Components\ApiOptions\Input\EternalHighPriest;
+use LiturgicalCalendar\Components\ApiOptions\Input\HolyDaysOfObligation;
 use LiturgicalCalendar\Components\ApiOptions\Input\Year;
 use LiturgicalCalendar\Components\ApiOptions\Input\YearType;
 use LiturgicalCalendar\Components\ApiOptions\Input\Locale;
@@ -22,23 +23,25 @@ use LiturgicalCalendar\Components\ApiOptions\PathType;
  * The form elements can be fully customized using the methods provided by the class.
  *
  * @see LiturgicalCalendar\Components\ApiOptions::__construct() Initializes the ApiOptions object with default or provided settings:
- *                                             - __$options__: An array of options, including 'locale', 'formLabel', 'wrapper', 'submit', 'after', and 'url'.
+ * - __$options__: An array of options, including `locale`, `formLabel`, `wrapper`, `submit`, `after`, and `url`.
  *
- *                                             The following properties are initialized on the object instance:
- *                                             - __formLabel__: A FormLabel object if the 'formLabel' key is present in the options array.
- *                                             - __wrapper__: A Wrapper object if the 'wrapper' key is present in the options array.
- *                                             - __submit__: A Submit object if the 'submit' key is present in the options array.
- *                                             - __epiphanyInput__: An Input object.
- *                                             - __ascensionInput__: An Input object.
- *                                             - __corpusChristiInput__: An Input object.
- *                                             - __eternalHighPriestInput__: An Input object.
- *                                             - __yearInput__: An Input object.
- *                                             - __yearTypeInput__: An Input object.
- *                                             - __localeInput__: An Input object.
- *                                             - __acceptHeaderInput__: An Input object.
+ * The following properties are initialized on the object instance:
+ * - __formLabel__: A {@see LiturgicalCalendar\Components\ApiOptions\FormLabel} object if the `formLabel` key is present in the options array.
+ * - __wrapper__: A {@see LiturgicalCalendar\Components\ApiOptions\Wrapper} object if the `wrapper` key is present in the options array.
+ * - __submit__: A {@see LiturgicalCalendar\Components\ApiOptions\Submit} object if the `submit` key is present in the options array.
+ * - __epiphanyInput__: A {@see LiturgicalCalendar\Components\ApiOptions\Input} object.
+ * - __ascensionInput__: An {@see LiturgicalCalendar\Components\ApiOptions\Input} object.
+ * - __corpusChristiInput__: An {@see LiturgicalCalendar\Components\ApiOptions\Input} object.
+ * - __eternalHighPriestInput__: An {@see LiturgicalCalendar\Components\ApiOptions\Input} object.
+ * - __yearInput__: An {@see LiturgicalCalendar\Components\ApiOptions\Input} object.
+ * - __yearTypeInput__: An {@see LiturgicalCalendar\Components\ApiOptions\Input} object.
+ * - __localeInput__: An {@see LiturgicalCalendar\Components\ApiOptions\Input} object.
+ * - __acceptHeaderInput__: An {@see LiturgicalCalendar\Components\ApiOptions\Input} object.
+ * - __holydaysOfObligationInput__: An {@see LiturgicalCalendar\Components\ApiOptions\Input} object.
  * @see LiturgicalCalendar\Components\ApiOptions::after() Sets the HTML to add after the form.
  * @see LiturgicalCalendar\Components\ApiOptions::getForm() Returns the HTML for the form.
  * @see LiturgicalCalendar\Components\ApiOptions::getLocale() Returns the locale used by the API options component.
+ * @method static string baseLocale()
  *
  * @package LiturgicalCalendar\Components
  * @author John Romano D'Orazio <priest@johnromanodorazio.com>
@@ -58,28 +61,39 @@ class ApiOptions
     public YearType $yearTypeInput;
     public Locale $localeInput;
     public AcceptHeader $acceptHeaderInput;
+    public HolyDaysOfObligation $holydaysOfObligationInput;
     public string $currentSetLocale       = '';
     public string $expectedTextDomainPath = '';
     public string $currentTextDomainPath  = '';
-    private static $apiUrl                = 'https://litcal.johnromanodorazio.com/api/dev';
+    private static string $apiUrl         = 'https://litcal.johnromanodorazio.com/api/dev';
 
     /**
-     * Constructor for ApiOptions class.
+     * Constructor for the ApiOptions class.
      *
      * Initializes the class properties based on the provided options array.
-     * If the 'formLabel', 'locale', 'wrapper', or 'submit' keys are present in the options array,
+     * If the `formLabel`, `locale`, `wrapper`, or `submit` keys are present in the options array,
      * sets the corresponding property values accordingly.
-     * If the 'formLabel' key is present, instantiates a new FormLabel object with the provided value.
-     * If the 'locale' key is present, canonicalizes the locale value and stores it in the static $locale property.
+     * If the `formLabel` key is present, instantiates a new {@see LiturgicalCalendar\Components\ApiOptions\FormLabel} object with the provided value.
+     * If the `locale` key is present, canonicalizes the locale value and stores it in the static $locale property.
      *
-     * If the 'submit' or 'wrapper' keys are present in the options array,
+     * If the `submit` or `wrapper` keys are present in the options array,
      * checks the boolean value associated with them and instantiates a new Submit or Wrapper object accordingly.
-     * The 'wrapper' key can be set to 'div' or 'form' to specify whether the wrapper should be a div or form element.
-     * It can also be set to an associative array with the 'class' key to set the class attribute of the wrapper element,
-     * the 'id' key to set the id attribute of the wrapper element, and the 'as' key to set the html tag of the wrapper element.
+     * The `wrapper` key can be set to `div` or `form` to specify whether the wrapper should be an HTML div or form element.
+     * It can also be set to an associative array with the `class` key to set the class attribute of the wrapper element,
+     * the `id` key to set the id attribute of the wrapper element, and the `as` key to set the HTML tag of the wrapper element.
      *
      * Prepares localization using the prepareL10n method.
-     * Initializes various input objects such as Epiphany, Ascension, CorpusChristi, EternalHighPriest, YearType, Locale, and AcceptHeader.
+     * Initializes various {@see LiturgicalCalendar\Components\ApiOptions\Input} objects such as:
+     * - {@see LiturgicalCalendar\Components\ApiOptions\Input\Epiphany}
+     * - {@see LiturgicalCalendar\Components\ApiOptions\Input\Ascension}
+     * - {@see LiturgicalCalendar\Components\ApiOptions\Input\CorpusChristi}
+     * - {@see LiturgicalCalendar\Components\ApiOptions\Input\EternalHighPriest}
+     * - {@see LiturgicalCalendar\Components\ApiOptions\Input\YearType}
+     * - {@see LiturgicalCalendar\Components\ApiOptions\Input\Locale}
+     * - {@see LiturgicalCalendar\Components\ApiOptions\Input\AcceptHeader}
+     * - {@see LiturgicalCalendar\Components\ApiOptions\Input\HolyDaysOfObligation}
+     *
+     * @param array<string,mixed>|null $options An array of options for the ApiOptions object.
      */
     public function __construct(?array $options = null)
     {
@@ -87,7 +101,7 @@ class ApiOptions
             foreach ($options as $key => $value) {
                 switch ($key) {
                     case 'locale':
-                        $value = null !== $value ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : 'en-US';
+                        $value        = null !== $value ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : 'en-US';
                         self::$locale = \Locale::canonicalize($value);
                         break;
                     case 'formLabel':
@@ -111,8 +125,8 @@ class ApiOptions
                         break;
                     case 'after':
                         if (is_string($value)) {
-                            $value = preg_replace('/<\?php.*?\?>/s', '', $value);
-                            $value = preg_replace('/<script.*?>.*?<\/script>/s', '', $value);
+                            $value      = preg_replace('/<\?php.*?\?>/s', '', $value);
+                            $value      = preg_replace('/<script.*?>.*?<\/script>/s', '', $value);
                             $this->$key = $value;
                         }
                         break;
@@ -132,14 +146,15 @@ class ApiOptions
 
         $this->prepareL10n();
 
-        $this->epiphanyInput          = new Epiphany();
-        $this->ascensionInput         = new Ascension();
-        $this->corpusChristiInput     = new CorpusChristi();
-        $this->eternalHighPriestInput = new EternalHighPriest();
-        $this->yearInput              = new Year();
-        $this->yearTypeInput          = new YearType();
-        $this->localeInput            = new Locale();
-        $this->acceptHeaderInput      = new AcceptHeader();
+        $this->epiphanyInput             = new Epiphany();
+        $this->ascensionInput            = new Ascension();
+        $this->corpusChristiInput        = new CorpusChristi();
+        $this->eternalHighPriestInput    = new EternalHighPriest();
+        $this->yearInput                 = new Year();
+        $this->yearTypeInput             = new YearType();
+        $this->localeInput               = new Locale();
+        $this->acceptHeaderInput         = new AcceptHeader();
+        $this->holydaysOfObligationInput = new HolydaysOfObligation();
     }
 
     /**
@@ -156,12 +171,13 @@ class ApiOptions
      * In this case, we create a magic value for ApiOptions::baseLocale().
      *
      * @param string $name The name of the static method or property.
+     * @param array<null> $arguments
      *
-     * @throws \Exception If the static property or method does not exist.
+     * @throws \Exception If `$name` is not a valid magic static property or method.
      *
      * @return mixed The value of the static property or the result of the static method.
      */
-    public static function __callStatic($name, $arguments)
+    public static function __callStatic(string $name, array $arguments): mixed
     {
         if ($name === 'baseLocale') {
             return \Locale::getPrimaryLanguage(self::$locale);
@@ -191,8 +207,8 @@ class ApiOptions
             self::$locale = 'en_US';
         }
         /** @disregard P1014 because self::$baseLocale is a magic variable retrieved with a magic getter */
-        $baseLocale = self::baseLocale();
-        $localeArray = [
+        $baseLocale                   = self::baseLocale();
+        $localeArray                  = [
             self::$locale . '.utf8',
             self::$locale . '.UTF-8',
             self::$locale,
@@ -203,9 +219,9 @@ class ApiOptions
             $baseLocale . '.UTF-8',
             $baseLocale
         ];
-        $this->currentSetLocale = setlocale(LC_ALL, $localeArray);
-        $this->expectedTextDomainPath = __DIR__ . "/ApiOptions/i18n";
-        $this->currentTextDomainPath = bindtextdomain("litcompphp", $this->expectedTextDomainPath);
+        $this->currentSetLocale       = setlocale(LC_ALL, $localeArray);
+        $this->expectedTextDomainPath = __DIR__ . '/ApiOptions/i18n';
+        $this->currentTextDomainPath  = bindtextdomain('litcompphp', $this->expectedTextDomainPath);
         if ($this->currentTextDomainPath !== $this->expectedTextDomainPath) {
             die("Failed to bind text domain, expected path: {$this->expectedTextDomainPath}, current path: {$this->currentTextDomainPath}");
         }
@@ -223,7 +239,8 @@ class ApiOptions
         return $this->epiphanyInput->get()
             . $this->ascensionInput->get()
             . $this->corpusChristiInput->get()
-            . $this->eternalHighPriestInput->get();
+            . $this->eternalHighPriestInput->get()
+            . $this->holydaysOfObligationInput->get();
     }
 
     /**
@@ -238,7 +255,7 @@ class ApiOptions
         return $this->localeInput->get()
                . $this->yearInput->get()
                . $this->yearTypeInput->get()
-               . ($this->acceptHeaderInput->isHidden() ? '' : $this->acceptHeaderInput->get());
+               . ( $this->acceptHeaderInput->isHidden() ? '' : $this->acceptHeaderInput->get() );
     }
 
     /**
@@ -249,8 +266,8 @@ class ApiOptions
      */
     public function after(string $html): void
     {
-        $html = preg_replace('/<\?php.*?\?>/s', '', $html);
-        $html = preg_replace('/<script.*?>.*?<\/script>/s', '', $html);
+        $html        = preg_replace('/<\?php.*?\?>/s', '', $html);
+        $html        = preg_replace('/<script.*?>.*?<\/script>/s', '', $html);
         $this->after = $html;
     }
 

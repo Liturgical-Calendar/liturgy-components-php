@@ -21,7 +21,7 @@ use IntlDateFormatter;
  */
 final class CorpusChristi extends Input
 {
-    public array $data           = [
+    public array $data = [
         'param' => 'corpus_christi'
     ];
 
@@ -57,33 +57,33 @@ final class CorpusChristi extends Input
 
         $labelClass = $this->labelClass !== null
             ? " class=\"{$this->labelClass}\""
-            : (self::$globalLabelClass !== null
+            : ( self::$globalLabelClass !== null
                 ? ' class="' . self::$globalLabelClass . '"'
-                : '');
+                : '' );
         $labelAfter = $this->labelAfter !== null ? ' ' . $this->labelAfter : '';
 
         $inputClass = $this->inputClass !== null
             ? " class=\"{$this->inputClass}\""
-            : (self::$globalInputClass !== null
+            : ( self::$globalInputClass !== null
                 ? ' class="' . self::$globalInputClass . '"'
-                : '');
+                : '' );
 
         $wrapperClass = $this->wrapperClass !== null
             ? " class=\"{$this->wrapperClass}\""
-            : (self::$globalWrapperClass !== null
+            : ( self::$globalWrapperClass !== null
                 ? ' class="' . self::$globalWrapperClass . '"'
-                : '');
-        $wrapper = $this->wrapper !== null
+                : '' );
+        $wrapper      = $this->wrapper !== null
             ? $this->wrapper
-            : (self::$globalWrapper !== null
+            : ( self::$globalWrapper !== null
                 ? self::$globalWrapper
-                : null);
+                : null );
 
         $disabled = $this->disabled ? ' disabled' : '';
 
-        $today = new DateTime();
+        $today        = new DateTime();
         $nextThursday = $today->modify('next Thursday');
-        $formatter = new IntlDateFormatter(
+        $formatter    = new IntlDateFormatter(
             ApiOptions::getLocale(),
             IntlDateFormatter::LONG,    // Use LONG format, which typically shows full month and day
             IntlDateFormatter::NONE,    // No time formatting
@@ -91,25 +91,25 @@ final class CorpusChristi extends Input
             null,
             'EEEE'
         );
-        $Thursday = $formatter->format($nextThursday);
-        $nextSunday = $today->modify('next Sunday');
-        $Sunday = $formatter->format($nextSunday);
+        $Thursday     = $formatter->format($nextThursday);
+        $nextSunday   = $today->modify('next Sunday');
+        $Sunday       = $formatter->format($nextSunday);
 
         $optionsArray = [
-            "" => "--",
+            ''         => '--',
             'THURSDAY' => $Thursday,
-            'SUNDAY' => $Sunday
+            'SUNDAY'   => $Sunday
         ];
-        $options = array_map(
-            fn(string $k, string $v) => "<option value=\"{$k}\"" . ($this->selectedValue === $k ? ' selected' : '') . ">{$v}</option>",
+        $options      = array_map(
+            fn(string $k, string $v) => "<option value=\"{$k}\"" . ( $this->selectedValue === $k ? ' selected' : '' ) . ">{$v}</option>",
             array_keys($optionsArray),
             array_values($optionsArray)
         );
-        $optionsHtml = implode('', $options);
+        $optionsHtml  = implode('', $options);
 
         $data = $this->getData();
-        $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
-        $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
+        $for  = $this->id !== '' ? " for=\"{$this->id}\"" : '';
+        $id   = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
 
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';

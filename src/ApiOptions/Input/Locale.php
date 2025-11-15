@@ -16,24 +16,29 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
  */
 class Locale extends Input
 {
-    public array $data           = [
+    /** @var array<string,string> */
+    public array $data = [
         'param' => 'locale'
     ];
 
     private static object $metadata;
-    private static array $apiLocales        = [];
+
+    /** @var string[] */
+    private static array $apiLocales = [];
+
+    /** @var array<string,string[]> */
     private static array $apiLocalesDisplay = [];
 
     /**
      * Fetches the list of locales from the Liturgical Calendar API and stores
-     * them in the self::$apiLocales static property.
+     * them in the {@see LiturgicalCalendar\Components\ApiOptions\Input\Locale::$apiLocales} static property.
      *
-     * If the ApiOptions::$locale property is set, it will also generate a
+     * If the {@see LiturgicalCalendar\Components\ApiOptions::$locale} property is set, it will also generate a
      * sorted list of locales with their display names in the given locale
-     * and store it in the self::$apiLocalesDisplay static property.
+     * and store it in the {@see LiturgicalCalendar\Components\ApiOptions\Input\Locale::$apiLocalesDisplay} static property.
      *
-     * If the list of locales has already been fetched, it will not fetch it
-     * again. Instead, it will return the stored list.
+     * If the list of locales has already been fetched, it will not fetch it again.
+     * Instead, it will return the stored list.
      *
      * @throws \Exception If there is an error fetching or decoding the list of
      *                     locales from the Liturgical Calendar API.
@@ -62,27 +67,27 @@ class Locale extends Input
 
         $labelClass = $this->labelClass !== null
             ? " class=\"{$this->labelClass}\""
-            : (self::$globalLabelClass !== null
+            : ( self::$globalLabelClass !== null
                 ? ' class="' . self::$globalLabelClass . '"'
-                : '');
+                : '' );
         $labelAfter = $this->labelAfter !== null ? ' ' . $this->labelAfter : '';
 
         $inputClass = $this->inputClass !== null
             ? " class=\"{$this->inputClass}\""
-            : (self::$globalInputClass !== null
+            : ( self::$globalInputClass !== null
                 ? ' class="' . self::$globalInputClass . '"'
-                : '');
+                : '' );
 
         $wrapperClass = $this->wrapperClass !== null
             ? " class=\"{$this->wrapperClass}\""
-            : (self::$globalWrapperClass !== null
+            : ( self::$globalWrapperClass !== null
                 ? ' class="' . self::$globalWrapperClass . '"'
-                : '');
-        $wrapper = $this->wrapper !== null
+                : '' );
+        $wrapper      = $this->wrapper !== null
             ? $this->wrapper
-            : (self::$globalWrapper !== null
+            : ( self::$globalWrapper !== null
                 ? self::$globalWrapper
-                : null);
+                : null );
 
         $disabled = $this->disabled ? ' disabled' : '';
 
@@ -95,16 +100,16 @@ class Locale extends Input
             }
         }
 
-        $options = array_map(
-            fn (string $k, string $v) => "<option value=\"{$k}\"" . ($k === $this->selectedValue ? ' selected' : '') . ">{$v}</option>",
+        $options     = array_map(
+            fn (string $k, string $v) => "<option value=\"{$k}\"" . ( $k === $this->selectedValue ? ' selected' : '' ) . ">{$v}</option>",
             array_keys(self::$apiLocalesDisplay[ApiOptions::getLocale()]),
             array_values(self::$apiLocalesDisplay[ApiOptions::getLocale()])
         );
         $optionsHtml = implode('', $options);
 
         $data = $this->getData();
-        $for = $this->id !== '' ? " for=\"{$this->id}\"" : '';
-        $id = $this->id !== '' ? " id=\"{$this->id}\"" : '';
+        $for  = $this->id !== '' ? " for=\"{$this->id}\"" : '';
+        $id   = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
 
         $html .= $wrapper !== null ? "<{$wrapper}{$wrapperClass}>" : '';
@@ -116,8 +121,8 @@ class Locale extends Input
 
     public function setOptionsForCalendar(?string $calendarType, ?string $calendarId): void
     {
+        $apiUrl = ApiOptions::getApiUrl();
         if (empty(self::$metadata)) {
-            $apiUrl = ApiOptions::getApiUrl();
             $metadataRaw = file_get_contents("{$apiUrl}/calendars");
             if ($metadataRaw === false) {
                 throw new \Exception("Failed to fetch locales from {$apiUrl}/calendars");
@@ -140,14 +145,14 @@ class Locale extends Input
                 throw new \Exception("Invalid `litcal_metadata.locales` property from {$apiUrl}/calendars, should exist and should be array: " . var_export(self::$metadata->locales, true));
             }
 
-            self::$apiLocales = self::$metadata->locales;
+            self::$apiLocales                                 = self::$metadata->locales;
             self::$apiLocalesDisplay[ApiOptions::getLocale()] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
                 $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
                 return $carry;
             }, []);
             asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
         } elseif (null === $calendarId || null === $calendarType) {
-            throw new \Exception("Invalid calendarType or calendarId");
+            throw new \Exception('Invalid calendarType or calendarId');
         } else {
             switch ($calendarType) {
                 case 'nation':
@@ -163,7 +168,7 @@ class Locale extends Input
                     if (false === property_exists($calendarMetadata[0], 'locales') || false === is_array($calendarMetadata[0]->locales)) {
                         throw new \Exception("Invalid `litcal_metadata.national_calendars[calendar_id={$calendarId}].locales` property from {$apiUrl}/calendars, should exist and should be array: " . var_export(self::$metadata->national_calendars[$calendarId]->locales, true));
                     }
-                    self::$apiLocales = $calendarMetadata[0]->locales;
+                    self::$apiLocales                                 = $calendarMetadata[0]->locales;
                     self::$apiLocalesDisplay[ApiOptions::getLocale()] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
                         $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
                         return $carry;
@@ -183,7 +188,7 @@ class Locale extends Input
                     if (false === property_exists($calendarMetadata[0], 'locales') || false === is_array($calendarMetadata[0]->locales)) {
                         throw new \Exception("Invalid `litcal_metadata.diocesan_calendars[calendar_id={$calendarId}].locales` property from {$apiUrl}/calendars, should exist and should be array: " . var_export(self::$metadata->diocesan_calendars[$calendarId]->locales, true));
                     }
-                    self::$apiLocales = $calendarMetadata[0]->locales;
+                    self::$apiLocales                                 = $calendarMetadata[0]->locales;
                     self::$apiLocalesDisplay[ApiOptions::getLocale()] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
                         $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
                         return $carry;

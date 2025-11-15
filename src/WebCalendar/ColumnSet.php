@@ -43,7 +43,7 @@ class ColumnSet
      *
      * @param Column $columnFlag The column flag to add.
      */
-    public function add(Column $columnFlag)
+    public function add(Column $columnFlag): void
     {
         $this->columnFlags |= $columnFlag->value;
     }
@@ -55,7 +55,7 @@ class ColumnSet
      *
      * @param Column $columnFlag The column flag to remove.
      */
-    public function remove(Column $columnFlag)
+    public function remove(Column $columnFlag): void
     {
         $this->columnFlags &= ~$columnFlag->value;
     }
@@ -67,7 +67,7 @@ class ColumnSet
      *
      * @param Column $columnFlag The column flag to toggle.
      */
-    public function toggle(Column $columnFlag)
+    public function toggle(Column $columnFlag): void
     {
         $this->columnFlags ^= $columnFlag->value;
     }
@@ -75,7 +75,7 @@ class ColumnSet
     /**
      * Resets the columnFlags property to Column::NONE, effectively removing all column flags.
      */
-    public function clear()
+    public function clear(): void
     {
         $this->columnFlags = Column::NONE->value;
     }
@@ -83,7 +83,7 @@ class ColumnSet
     /**
      * Sets all column flags by setting columnFlags to Column::ALL.
      */
-    public function setAll()
+    public function setAll(): void
     {
         $this->columnFlags = Column::ALL->value;
     }
@@ -95,7 +95,7 @@ class ColumnSet
      *
      * @param Column|int $columnFlag The column flag to set.
      */
-    public function set(Column|int $columnFlag)
+    public function set(Column|int $columnFlag): void
     {
         if (is_int($columnFlag)) {
             if (!Column::isValid($columnFlag)) {
@@ -116,7 +116,7 @@ class ColumnSet
      */
     public function has(Column $columnFlag): bool
     {
-        return ($columnFlag->value & $this->columnFlags) === $columnFlag->value;
+        return ( $columnFlag->value & $this->columnFlags ) === $columnFlag->value;
     }
 
     /**

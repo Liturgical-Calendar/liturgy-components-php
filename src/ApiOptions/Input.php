@@ -18,16 +18,18 @@ abstract class Input
     protected static ?string $globalWrapperClass = null;
     protected static ?string $globalLabelClass   = null;
     protected static ?string $globalInputClass   = null;
-    protected string $id            = '';
-    protected string $name          = '';
-    protected ?string $wrapper      = null;
-    protected ?string $wrapperClass = null;
-    protected ?string $inputClass   = null;
-    protected ?string $labelClass   = null;
-    protected ?string $labelAfter   = null;
-    protected array $data           = [];
-    protected bool $disabled        = false;
-    protected string $selectedValue = '';
+    protected string $id                         = '';
+    protected string $name                       = '';
+    protected ?string $wrapper                   = null;
+    protected ?string $wrapperClass              = null;
+    protected ?string $inputClass                = null;
+    protected ?string $labelClass                = null;
+    protected ?string $labelAfter                = null;
+    /** @var array<string,string> */
+    protected array $data    = [];
+    protected bool $disabled = false;
+    /** @var string|int|string[] */
+    protected string|int|array $selectedValue = '';
 
     /**
      * Sets a global wrapper element for all input elements created by this class.
@@ -36,7 +38,7 @@ abstract class Input
      *
      * @param string $wrapper The wrapper element, currently only 'div' is supported.
      */
-    public static function setGlobalWrapper(string $wrapper)
+    public static function setGlobalWrapper(string $wrapper): void
     {
         if (false === in_array($wrapper, ['div', 'td'])) {
             throw new \Exception("Invalid wrapper: {$wrapper}, valid values are: div, td");
@@ -49,9 +51,9 @@ abstract class Input
      *
      * @param string $class The value of the class attribute.
      */
-    public static function setGlobalWrapperClass(string $class)
+    public static function setGlobalWrapperClass(string $class): void
     {
-        $class = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
+        $class                      = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
         static::$globalWrapperClass = $class;
     }
 
@@ -61,9 +63,9 @@ abstract class Input
      * @param string $class The value of the class attribute.
      * @return void
      */
-    public static function setGlobalLabelClass(string $class)
+    public static function setGlobalLabelClass(string $class): void
     {
-        $class = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
+        $class                    = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
         static::$globalLabelClass = $class;
     }
 
@@ -73,9 +75,9 @@ abstract class Input
      * @param string $class The value of the class attribute.
      * @return void
      */
-    public static function setGlobalInputClass(string $class)
+    public static function setGlobalInputClass(string $class): void
     {
-        $class = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
+        $class                    = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
         static::$globalInputClass = $class;
     }
 
@@ -83,7 +85,7 @@ abstract class Input
      * Sets the id attribute of the input element.
      *
      * @param string $id The value of the id attribute.
-     * @return $this
+     * @return Input
      */
     public function id(string $id): Input
     {
@@ -91,6 +93,15 @@ abstract class Input
         return $this;
     }
 
+    /**
+     * Sets the name attribute of the input element.
+     *
+     * The name attribute is required for all form controls and specifies the name of the form control.
+     * This name is sent to the server when the form is submitted.
+     *
+     * @param string $name The value of the name attribute.
+     * @return Input
+     */
     public function name(string $name): Input
     {
         $this->name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
@@ -104,11 +115,11 @@ abstract class Input
      *                      This can be any valid HTML class, such as a single
      *                      string or an array of strings.
      *
-     * @return $this The current instance for method chaining.
+     * @return Input The current instance for method chaining.
      */
     public function class(string $class): Input
     {
-        $class = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
+        $class            = htmlspecialchars($class, ENT_QUOTES, 'UTF-8');
         $this->inputClass = $class;
         return $this;
     }
@@ -120,11 +131,11 @@ abstract class Input
      *                            This can be any valid HTML class, such as a single
      *                            string or an array of strings.
      *
-     * @return $this The current instance for method chaining.
+     * @return Input The current instance for method chaining.
      */
     public function labelClass(string $labelClass): Input
     {
-        $labelClass = htmlspecialchars($labelClass, ENT_QUOTES, 'UTF-8');
+        $labelClass       = htmlspecialchars($labelClass, ENT_QUOTES, 'UTF-8');
         $this->labelClass = $labelClass;
         return $this;
     }
@@ -137,12 +148,12 @@ abstract class Input
      *
      * @param string $text The string to append to the label after the label text.
      *
-     * @return $this The instance of the class, for chaining.
+     * @return Input The instance of the class, for chaining.
      */
     public function labelAfter(string $text): Input
     {
-        $text = preg_replace('/<\?php.*?\?>/s', '', $text);
-        $text = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
+        $text             = preg_replace('/<\?php.*?\?>/s', '', $text);
+        $text             = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
         $this->labelAfter = $text;
         return $this;
     }
@@ -155,7 +166,7 @@ abstract class Input
      *                         The default value is `null`, which means no
      *                         wrapper element will be used.
      *
-     * @return $this
+     * @return Input The instance of the class, for chaining.
      */
     public function wrapper(string $wrapper): Input
     {
@@ -172,11 +183,11 @@ abstract class Input
      *
      * @param string $wrapperClass The class name for the wrapper element.
      *
-     * @return $this
+     * @return Input The instance of the class, for chaining.
      */
     public function wrapperClass(string $wrapperClass): Input
     {
-        $wrapperClass = htmlspecialchars($wrapperClass, ENT_QUOTES, 'UTF-8');
+        $wrapperClass       = htmlspecialchars($wrapperClass, ENT_QUOTES, 'UTF-8');
         $this->wrapperClass = $wrapperClass;
         return $this;
     }
@@ -188,7 +199,7 @@ abstract class Input
      * (without the 'data-' prefix) and the values are the corresponding attribute values.
      * These data attributes will be used to form the 'data-*' attributes in the HTML input element.
      *
-     * @param array $data An associative array representing data attributes for the input element.
+     * @param array<string,string> $data An associative array representing data attributes for the input element.
      *
      * @return Input Returns the current instance to allow method chaining.
      */
@@ -213,9 +224,26 @@ abstract class Input
         return $this;
     }
 
-    public function selectedValue(string $value): Input
+    /**
+     * Sets the selected value of the input element.
+     *
+     * This method sets the selected value of the input element to the given string or integer value.
+     * The selected value is used to pre-select an option in a select element, or to populate a text or number input element.
+     * If an array of strings is passed, it can be used to select multiple options in a select element.
+     *
+     * @param string|int|string[] $value The selected value of the input element.
+     *
+     * @return Input Returns the current instance to allow method chaining.
+     */
+    public function selectedValue(string|int|array $value): Input
     {
-        $this->selectedValue = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+        if (is_string($value)) {
+            $this->selectedValue = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+        } elseif (is_int($value)) {
+            $this->selectedValue = $value;
+        } elseif (is_array($value)) {
+            $this->selectedValue = array_map(fn(string $v) => htmlspecialchars($v, ENT_QUOTES, 'UTF-8'), $value);
+        }
         return $this;
     }
 

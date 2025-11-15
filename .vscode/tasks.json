@@ -16,7 +16,7 @@
                 "command": "${command:workbench.action.terminal.sendSequence}",
                 "args": [
                 {
-                    "text": "start ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}/${APP_DEFAULT_PATH}\n" // For Windows
+                    "text": "start ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}\n" // For Windows
                 }
                 ],
                 "problemMatcher": []
@@ -25,19 +25,22 @@
                 "command": "/bin/bash",
                 "args": [
                     "-c",
-                    "if grep -q microsoft /proc/version; then powershell.exe Start-Process ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}/${APP_DEFAULT_PATH}; else xdg-open ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}/${APP_DEFAULT_PATH}; fi"
+                    "if grep -q microsoft /proc/version; then powershell.exe Start-Process ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}; else xdg-open ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}; fi"
                   ],
                 "problemMatcher": []
             },
             "osx": {
-                "command": "open ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}/${APP_DEFAULT_PATH}", // For macOS
+                "command": "open ${APP_PROTOCOL}://${APP_HOST}:${APP_PORT}", // For macOS
                 "problemMatcher": []
             }
         },
         {
             "label": "php-server",
             "type": "shell",
-            "command": "php -S ${APP_HOST}:${APP_PORT} -t ${APP_DEFAULT_PATH}/",
+            "command": "php -S ${APP_HOST}:${APP_PORT} -t ${APP_DEFAULT_PATH}",
+            "options": {
+                "cwd": "${workspaceFolder}",
+            },
             "group": {
                 "kind": "build",
                 "isDefault": true
