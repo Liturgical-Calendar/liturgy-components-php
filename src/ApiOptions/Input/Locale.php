@@ -21,7 +21,7 @@ class Locale extends Input
         'param' => 'locale'
     ];
 
-    private static object $metadata;
+    private static \stdClass $metadata;
 
     /** @var string[] */
     private static array $apiLocales = [];
@@ -91,7 +91,7 @@ class Locale extends Input
 
         $disabled = $this->disabled ? ' disabled' : '';
 
-        if ($this->selectedValue !== '' && !array_key_exists($this->selectedValue, self::$apiLocalesDisplay[ApiOptions::getLocale()])) {
+        if (is_string($this->selectedValue) && $this->selectedValue !== '' && !array_key_exists($this->selectedValue, self::$apiLocalesDisplay[ApiOptions::getLocale()])) {
             $baseLocale = \Locale::getPrimaryLanguage($this->selectedValue);
             if (array_key_exists($baseLocale, self::$apiLocalesDisplay[ApiOptions::getLocale()])) {
                 $this->selectedValue = $baseLocale;
@@ -101,7 +101,7 @@ class Locale extends Input
         }
 
         $options     = array_map(
-            fn (string $k, string $v) => "<option value=\"{$k}\"" . ( $k === $this->selectedValue ? ' selected' : '' ) . ">{$v}</option>",
+            fn (string $k, string $v): string => "<option value=\"{$k}\"" . ( $k === $this->selectedValue ? ' selected' : '' ) . ">{$v}</option>",
             array_keys(self::$apiLocalesDisplay[ApiOptions::getLocale()]),
             array_values(self::$apiLocalesDisplay[ApiOptions::getLocale()])
         );
@@ -131,7 +131,7 @@ class Locale extends Input
             if (JSON_ERROR_NONE !== json_last_error()) {
                 throw new \Exception("Failed to decode locales from {$apiUrl}/calendars");
             }
-            if (false === property_exists($metadataJson, 'litcal_metadata') || false === is_object($metadataJson->litcal_metadata)) {
+            if (false === property_exists($metadataJson, 'litcal_metadata') || false === $metadataJson->litcal_metadata instanceof \stdClass) {
                 throw new \Exception("Invalid `litcal_metadata` property from {$apiUrl}/calendars, should exist and should be object: " . var_export($metadataJson->litcal_metadata, true));
             }
             self::$metadata = $metadataJson->litcal_metadata;

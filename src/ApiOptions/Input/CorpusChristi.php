@@ -91,9 +91,9 @@ final class CorpusChristi extends Input
             null,
             'EEEE'
         );
-        $Thursday     = $formatter->format($nextThursday);
+        $Thursday     = $formatter->format($nextThursday) ?: 'Thursday';
         $nextSunday   = $today->modify('next Sunday');
-        $Sunday       = $formatter->format($nextSunday);
+        $Sunday       = $formatter->format($nextSunday) ?: 'Sunday';
 
         $optionsArray = [
             ''         => '--',
@@ -101,7 +101,7 @@ final class CorpusChristi extends Input
             'SUNDAY'   => $Sunday
         ];
         $options      = array_map(
-            fn(string $k, string $v) => "<option value=\"{$k}\"" . ( $this->selectedValue === $k ? ' selected' : '' ) . ">{$v}</option>",
+            fn(string $k, string $v): string => "<option value=\"{$k}\"" . ( $this->selectedValue === $k ? ' selected' : '' ) . ">{$v}</option>",
             array_keys($optionsArray),
             array_values($optionsArray)
         );

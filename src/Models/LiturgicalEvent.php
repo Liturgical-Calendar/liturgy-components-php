@@ -1,6 +1,6 @@
 <?php
 
-namespace LiturgicalCalendar\Components\WebCalendar;
+namespace LiturgicalCalendar\Components\Models;
 
 /**
  * Similar to the Liturgical Event class used in the Liturgical Calendar API,

@@ -207,8 +207,8 @@ class ApiOptions
             self::$locale = 'en_US';
         }
         /** @disregard P1014 because self::$baseLocale is a magic variable retrieved with a magic getter */
-        $baseLocale                   = self::baseLocale();
-        $localeArray                  = [
+        $baseLocale       = self::baseLocale();
+        $localeArray      = [
             self::$locale . '.utf8',
             self::$locale . '.UTF-8',
             self::$locale,
@@ -219,11 +219,17 @@ class ApiOptions
             $baseLocale . '.UTF-8',
             $baseLocale
         ];
-        $this->currentSetLocale       = setlocale(LC_ALL, $localeArray);
+        $currentSetLocale = setlocale(LC_ALL, $localeArray);
+        if (false === $currentSetLocale) {
+            throw new \Exception('Failed to set locale to one of the following: ' . implode(', ', $localeArray));
+        }
+        $this->currentSetLocale       = $currentSetLocale;
         $this->expectedTextDomainPath = __DIR__ . '/ApiOptions/i18n';
-        $this->currentTextDomainPath  = bindtextdomain('litcompphp', $this->expectedTextDomainPath);
-        if ($this->currentTextDomainPath !== $this->expectedTextDomainPath) {
-            die("Failed to bind text domain, expected path: {$this->expectedTextDomainPath}, current path: {$this->currentTextDomainPath}");
+        $bound                        = bindtextdomain('litcompphp', $this->expectedTextDomainPath);
+        if (false === $bound || $bound !== $this->expectedTextDomainPath) {
+            die("Failed to bind text domain, expected path: {$this->expectedTextDomainPath}, current path: {$bound}");
+        } else {
+            $this->currentTextDomainPath = $bound;
         }
     }
 

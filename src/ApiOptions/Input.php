@@ -242,7 +242,7 @@ abstract class Input
         } elseif (is_int($value)) {
             $this->selectedValue = $value;
         } elseif (is_array($value)) {
-            $this->selectedValue = array_map(fn(string $v) => htmlspecialchars($v, ENT_QUOTES, 'UTF-8'), $value);
+            $this->selectedValue = array_map(fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8'), $value);
         }
         return $this;
     }

@@ -86,15 +86,22 @@ final class Epiphany extends Input
         if (ApiOptions::baseLocale() === 'en') {
             $Jan6 = $date->format('F jS');
         } else {
-            $formatter          = new IntlDateFormatter(
+            $formatter = new IntlDateFormatter(
                 ApiOptions::getLocale(),
                 IntlDateFormatter::LONG,    // Use LONG format, which typically shows full month and day
                 IntlDateFormatter::NONE     // No time formatting
             );
-            $pattern            = $formatter->getPattern();
+
+            $pattern = $formatter->getPattern();
+            if (false === $pattern) {
+                throw new \Exception('Failed to get pattern from formatter');
+            }
             $patternWithoutYear = preg_replace('/,? y/', '', $pattern);
+            if (false === is_string($patternWithoutYear)) {
+                throw new \Exception('Failed to remove year from pattern for formatter');
+            }
             $formatter->setPattern($patternWithoutYear);
-            $Jan6 = $formatter->format($date);
+            $Jan6 = $formatter->format($date) ?: $date->format('F jS');
         }
         $SundayJan2Jan8 = dgettext('litcompphp', 'Sunday between January 2nd and 8th');
 
@@ -104,7 +111,7 @@ final class Epiphany extends Input
             'SUNDAY_JAN2_JAN8' => $SundayJan2Jan8
         ];
         $options      = array_map(
-            fn (string $k, string $v) => "<option value=\"{$k}\"" . ( $this->selectedValue === $k ? ' selected' : '' ) . ">{$v}</option>",
+            fn (string $k, string $v): string => "<option value=\"{$k}\"" . ( $this->selectedValue === $k ? ' selected' : '' ) . ">{$v}</option>",
             array_keys($optionsArray),
             array_values($optionsArray)
         );

@@ -2,7 +2,8 @@
 
 namespace LiturgicalCalendar\Components;
 
-use LiturgicalCalendar\Components\WebCalendar\LiturgicalEvent;
+use LiturgicalCalendar\Components\Models\LiturgicalCalendar as LiturgicalCalendarModel;
+use LiturgicalCalendar\Components\Models\LiturgicalEvent;
 use LiturgicalCalendar\Components\WebCalendar\Grouping;
 use LiturgicalCalendar\Components\WebCalendar\ColorAs;
 use LiturgicalCalendar\Components\WebCalendar\Column;
@@ -41,68 +42,22 @@ use LiturgicalCalendar\Components\WebCalendar\LatinInterface;
  * - {@see \LiturgicalCalendar\Components\WebCalendar::buildTable()} Returns an HTML string containing a table of the liturgical events.
  * - {@see \LiturgicalCalendar\Components\WebCalendar::daysCreated()} Returns the number of days created in the table.
  *
- * @phpstan-import-type LiturgicalEventArray from \LiturgicalCalendar\Components\WebCalendar\LiturgicalEvent
- *
- * @phpstan-import-type LiturgicalEventObject from \LiturgicalCalendar\Components\WebCalendar\LiturgicalEvent
- *
- * @phpstan-import-type HolyDaysOfObligationArray from CalendarSelect
- *
- * @phpstan-import-type HolyDaysOfObligationObject from CalendarSelect
- *
- * @phpstan-type LiturgicalCalendarSettingsArray array{
- *   year:int,
- *   epiphany:string,
- *   ascension:string,
- *   corpus_christi:string,
- *   eternal_high_priest:bool,
- *   locale:string,
- *   year_type:string,
- *   return_type:string,
- *   holydays_of_obligation:HolyDaysOfObligationArray
- * }
- *
- * @phpstan-type LiturgicalCalendarSettingsObject object{
- *   year:int,
- *   epiphany:string,
- *   ascension:string,
- *   corpus_christi:string,
- *   eternal_high_priest:bool,
- *   locale:string,
- *   year_type:string,
- *   return_type:string,
- *   holydays_of_obligation:HolyDaysOfObligationObject
- * }
- *
- * @phpstan-type LiturgicalCalendarArray array{
- *   litcal:LiturgicalEventArray[],
- *   settings:LiturgicalCalendarSettingsArray,
- *   metadata:array<string,string|int|string[]|array<string,string>>,
- *   messages:string[]
- * }
- *
- * @phpstan-type LiturgicalCalendarObject object{
- *   litcal:LiturgicalEventObject[],
- *   settings:LiturgicalCalendarSettingsObject,
- *   metadata:\stdClass,
- *   messages:string[]
- * }
- *
  */
 class WebCalendar
 {
-    private string $locale                  = 'en-US';
-    private string $baseLocale              = 'en';
-    private ?string $currentSetLocale       = null;
-    private ?string $globalLocale           = null;
-    private ?string $currentTextDomainPath  = null;
-    private ?string $expectedTextDomainPath = null;
-    private ?object $LiturgicalCalendar     = null;
-    private ?string $class                  = null;
-    private ?string $id                     = null;
-    private int $daysCreated                = 0;
-    private Grouping $firstColumnGrouping   = Grouping::BY_MONTH;
-    private ColorAs $eventColor             = ColorAs::INDICATOR;
-    private ColorAs $seasonColor            = ColorAs::BACKGROUND;
+    private string $locale                               = 'en-US';
+    private string $baseLocale                           = 'en';
+    private ?string $currentSetLocale                    = null;
+    private ?string $globalLocale                        = null;
+    private ?string $currentTextDomainPath               = null;
+    private ?string $expectedTextDomainPath              = null;
+    private ?LiturgicalCalendarModel $LiturgicalCalendar = null;
+    private ?string $class                               = null;
+    private ?string $id                                  = null;
+    private int $daysCreated                             = 0;
+    private Grouping $firstColumnGrouping                = Grouping::BY_MONTH;
+    private ColorAs $eventColor                          = ColorAs::INDICATOR;
+    private ColorAs $seasonColor                         = ColorAs::BACKGROUND;
     private ColumnSet $seasonColorColumns;
     private ColumnSet $eventColorColumns;
     private ColumnOrder $columnOrder       = ColumnOrder::EVENT_DETAILS_FIRST;
@@ -127,53 +82,28 @@ class WebCalendar
         '',
         'I',
         'II',
-        'III', 'IV'
+        'III',
+        'IV'
     ];
 
     /**
      * Constructs a new WebCalendar object.
      *
-     * This constructor initializes the WebCalendar instance by validating
-     * the provided Liturgical Calendar object or array, which must contain specific properties or keys.
-     * If the provided Liturgical Calendar is an array, it will cast it to an object.
-     * It ensures that 'litcal', 'settings', 'metadata', 'messages', and
-     * 'locale' properties exist in the provided object (or resulting object if an array was passed).
-     * Each item in the 'litcal' object is converted to a LiturgicalEvent object.
+     * This constructor initializes the WebCalendar instance with a Liturgical Calendar.
+     * It accepts a stdClass object (typically from json_decode) or an associative array containing
+     * the liturgical calendar data with the following structure:
+     * - litcal: array of liturgical event objects
+     * - settings: object/array with calendar settings (year, epiphany, ascension, etc.)
+     * - metadata: stdClass with calendar metadata
+     * - messages: array of strings with any messages from the API
      *
-     * @phpstan-param LiturgicalCalendarArray|LiturgicalCalendarObject $LiturgicalCalendar The object or associative array containing the
-     *  Liturgical Calendar data with required properties or keys.
+     * @param \stdClass|array<string,mixed> $LiturgicalCalendar A stdClass or associative array containing the Liturgical Calendar data.
      *
      * @throws \Exception If any of the required properties or keys are missing from the object or array.
      */
-    public function __construct(object|array $LiturgicalCalendar)
+    public function __construct(\stdClass|array $LiturgicalCalendar)
     {
-        if (is_array($LiturgicalCalendar)) {
-            $LiturgicalCalendar = json_decode(json_encode($LiturgicalCalendar));
-        }
-
-        if (false === property_exists($LiturgicalCalendar, 'litcal')) {
-            throw new \Exception("The Liturgical Calendar object or array must contain the property or key 'litcal'.");
-        }
-        if (false === property_exists($LiturgicalCalendar, 'settings')) {
-            throw new \Exception("The Liturgical Calendar object or array must contain the property or key 'settings'.");
-        }
-        if (false === property_exists($LiturgicalCalendar, 'metadata')) {
-            throw new \Exception("The Liturgical Calendar object or array must contain the property or key 'metadata'.");
-        }
-        if (false === property_exists($LiturgicalCalendar, 'messages')) {
-            throw new \Exception("The Liturgical Calendar object or array must contain the property or key 'messages'.");
-        }
-        if (false === property_exists($LiturgicalCalendar->settings, 'locale')) {
-            throw new \Exception("The Liturgical Calendar 'settings' object or array must contain the property or key 'locale'.");
-        }
-
-        foreach ($LiturgicalCalendar->litcal as $idx => $value) {
-            $LiturgicalCalendar->litcal[$idx] = new LiturgicalEvent($value);
-        }
-
-        //header('Content-Type: application/json');
-        //die(json_encode($LiturgicalCalendar));
-        $this->LiturgicalCalendar = $LiturgicalCalendar;
+        $this->LiturgicalCalendar = LiturgicalCalendarModel::fromArrayOrObject($LiturgicalCalendar);
         $this->seasonColorColumns = new ColumnSet(Column::LITURGICAL_SEASON->value | Column::MONTH->value | Column::DATE->value | Column::PSALTER_WEEK->value);
         $this->eventColorColumns  = new ColumnSet(Column::EVENT->value | Column::GRADE->value);
         $this->dom                = new \DomDocument();
@@ -464,7 +394,8 @@ class WebCalendar
      */
     private function setLocale(string $locale): void
     {
-        $this->globalLocale           = setlocale(LC_ALL, '0');
+        $currentGlobal                = setlocale(LC_ALL, '0');
+        $this->globalLocale           = $currentGlobal === false ? null : $currentGlobal;
         $this->locale                 = $locale;
         $this->baseLocale             = \Locale::getPrimaryLanguage($locale);
         $localeArray                  = [
@@ -478,9 +409,11 @@ class WebCalendar
             $this->baseLocale . '.UTF-8',
             $this->baseLocale
         ];
-        $this->currentSetLocale       = setlocale(LC_ALL, $localeArray);
+        $newLocale                    = setlocale(LC_ALL, $localeArray);
+        $this->currentSetLocale       = $newLocale === false ? null : $newLocale;
         $this->expectedTextDomainPath = __DIR__ . '/WebCalendar/i18n';
-        $this->currentTextDomainPath  = bindtextdomain('webcalendar', $this->expectedTextDomainPath);
+        $currentTextDomain            = bindtextdomain('webcalendar', $this->expectedTextDomainPath);
+        $this->currentTextDomainPath  = $currentTextDomain === false ? null : $currentTextDomain;
         if ($this->currentTextDomainPath !== $this->expectedTextDomainPath) {
             die("Failed to bind text domain, expected path: {$this->expectedTextDomainPath}, current path: {$this->currentTextDomainPath}");
         }
@@ -511,6 +444,12 @@ class WebCalendar
         if ($nextEventIdx < count($EventsObject)) {
             $nextEvent = $EventsObject[$nextEventIdx];
             // date->format('U'): Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT) aka timestamp
+            if (!( $nextEvent->date instanceof \DateTimeInterface )) {
+                throw new \Exception('Expected nextEvent->date to be a DateTimeInterface instance, got ' . gettype($nextEvent->date));
+            }
+            if (!( $currentEvent->date instanceof \DateTimeInterface )) {
+                throw new \Exception('Expected currentEvent->date to be a DateTimeInterface instance, got ' . gettype($currentEvent->date));
+            }
             if ($nextEvent->date->format('U') === $currentEvent->date->format('U')) {
                 $cd++;
                 $this->countSameDayEvents($nextEventIdx, $cd);
@@ -532,6 +471,12 @@ class WebCalendar
         if ($nextEventIdx < count($EventsObject)) {
             $nextEvent = $EventsObject[$nextEventIdx];
             // date->format('n'): Numeric representation of a month, without leading zeros, 1-12
+            if (!( $nextEvent->date instanceof \DateTimeInterface )) {
+                throw new \Exception('Expected nextEvent->date to be a DateTimeInterface instance, got ' . gettype($nextEvent->date));
+            }
+            if (!( $currentEvent->date instanceof \DateTimeInterface )) {
+                throw new \Exception('Expected currentEvent->date to be a DateTimeInterface instance, got ' . gettype($currentEvent->date));
+            }
             if ($nextEvent->date->format('n') === $currentEvent->date->format('n')) {
                 $cm++;
                 $this->countSameMonthEvents($nextEventIdx, $cm);
@@ -599,33 +544,34 @@ class WebCalendar
      */
     private function determineSeason(LiturgicalEvent $litevent): string
     {
-        if ($litevent->date >= $this->LiturgicalCalendar->litcal->AshWednesday->date && $litevent->date < $this->LiturgicalCalendar->litcal->HolyThurs->date) {
+        if ($litevent->date >= $this->LiturgicalCalendar->AshWednesday->date && $litevent->date < $this->LiturgicalCalendar->HolyThurs->date) {
             return 'LENT';
         }
-        if ($litevent->date >= $this->LiturgicalCalendar->litcal->HolyThurs->date && $litevent->date < $this->LiturgicalCalendar->litcal->Easter->date) {
+        if ($litevent->date >= $this->LiturgicalCalendar->HolyThurs->date && $litevent->date < $this->LiturgicalCalendar->Easter->date) {
             return 'EASTER_TRIDUUM';
         }
-        if ($litevent->date >= $this->LiturgicalCalendar->litcal->Easter->date && $litevent->date < $this->LiturgicalCalendar->litcal->Pentecost->date) {
+        if ($litevent->date >= $this->LiturgicalCalendar->Easter->date && $litevent->date < $this->LiturgicalCalendar->Pentecost->date) {
             return 'EASTER';
         }
-        if ($litevent->date >= $this->LiturgicalCalendar->litcal->Advent1->date && $litevent->date < $this->LiturgicalCalendar->litcal->Christmas->date) {
+        if ($litevent->date >= $this->LiturgicalCalendar->Advent1->date && $litevent->date < $this->LiturgicalCalendar->Christmas->date) {
             return 'ADVENT';
         }
-        if ($litevent->date > $this->LiturgicalCalendar->litcal->BaptismLord->date && $litevent->date < $this->LiturgicalCalendar->litcal->AshWednesday->date) {
+        if ($litevent->date > $this->LiturgicalCalendar->BaptismLord->date && $litevent->date < $this->LiturgicalCalendar->AshWednesday->date) {
             return 'ORDINARY_TIME';
         }
         // We won't have Advent1 if we have requested a LITURGICAL year_type (it will be less than BaptismLord not greater)
         // So to correctly determine ORDINARY_TIME we should check if the date is less than or equal to Saturday of the 34th week of Ordinary Time
         // Seeing that there may be a Memorial on this day, the only way to get this date is by checking the Saturday following Christ the King
-        $Saturday34thWeekOrdTime = clone $this->LiturgicalCalendar->litcal->ChristKing->date;
-        $Saturday34thWeekOrdTime->modify('next Saturday');
-        if ($litevent->date > $this->LiturgicalCalendar->litcal->Pentecost->date && $litevent->date <= $Saturday34thWeekOrdTime) {
+        $Saturday34thWeekOrdTime = clone $this->LiturgicalCalendar->ChristKing->date;
+        $modifyResult            = $Saturday34thWeekOrdTime->modify('next Saturday');
+        if ($modifyResult !== false && $litevent->date > $this->LiturgicalCalendar->Pentecost->date && $litevent->date <= $Saturday34thWeekOrdTime) {
             return 'ORDINARY_TIME';
         }
         // When we have requested a LITURGICAL year_type, Advent1_vigil will be a lone event at the start of the calendar.
         // Since we don't have the other events of that day (which would fall under ORDINARY_TIME), we should return ADVENT
-        if ($this->LiturgicalCalendar->settings->year_type === 'LITURGICAL') {
-            if ($litevent->date == $this->LiturgicalCalendar->litcal->Advent1_vigil->date) {
+        if ($this->LiturgicalCalendar->settings->yearType === 'LITURGICAL') {
+            // @phpstan-ignore property.notFound (litcal has dynamic properties for named events)
+            if ($litevent->date == $this->LiturgicalCalendar->Advent1_vigil->date) {
                 return 'ADVENT';
             }
         }
@@ -779,22 +725,36 @@ class WebCalendar
                     $firstColRowSpan++;
                     $monthHeaderRow  = $this->dom->createElement('tr');
                     $monthHeaderCell = $this->dom->createElement('td');
+                    if ($monthHeaderCell === false) {
+                        throw new \Exception('Failed to create td element');
+                    }
                     $monthHeaderCell->setAttribute('colspan', '3');
                     $monthHeaderCell->setAttribute('class', 'monthHeader');
-                    $monthHeaderCell->appendChild($this->dom->createTextNode($monthFmt->format($litevent->date)));
+                    $monthFormatted = $monthFmt->format($litevent->date);
+                    if ($monthFormatted === false) {
+                        throw new \Exception('Failed to format month');
+                    }
+                    $monthHeaderCell->appendChild($this->dom->createTextNode($monthFormatted));
                 }
                 $firstColCell = $this->dom->createElement('td');
                 $firstColCell->setAttribute('rowspan', "$firstColRowSpan");
                 $firstColCell->setAttribute('class', 'rotate month');
                 $this->handleSeasonColorForColumn($seasonColor, $firstColCell, Column::MONTH);
                 $this->handleEventColorForColumn($litevent->color, $firstColCell, Column::MONTH);
+                $monthFormattedForText = $monthFmt->format($litevent->date);
+                if ($monthFormattedForText === false) {
+                    throw new \Exception('Failed to format month');
+                }
                 $textNode = $this->baseLocale === 'la'
                     ? strtoupper($this->latinInterface->monthLatinFull((int) $litevent->date->format('n')))
-                    : strtoupper($monthFmt->format($litevent->date));
+                    : strtoupper($monthFormattedForText);
                 $div      = $this->dom->createElement('div');
                 $div->appendChild($this->dom->createTextNode($textNode));
                 $firstColCell->appendChild($div);
                 if ($this->monthHeader) {
+                    if ($monthHeaderRow === false) {
+                        throw new \Exception('Failed to create tr element');
+                    }
                     $monthHeaderRow->appendChild($firstColCell);
                     $monthHeaderRow->appendChild($monthHeaderCell);
                 } else {
@@ -819,9 +779,19 @@ class WebCalendar
                     $firstColCell->setAttribute('rowspan', "$firstColRowSpan");
                     $monthHeaderRow  = $this->dom->createElement('tr');
                     $monthHeaderCell = $this->dom->createElement('td');
+                    if ($monthHeaderCell === false) {
+                        throw new \Exception('Failed to create td element');
+                    }
                     $monthHeaderCell->setAttribute('colspan', '3');
                     $monthHeaderCell->setAttribute('class', 'monthHeader');
-                    $monthHeaderCell->appendChild($this->dom->createTextNode($monthFmt->format($litevent->date)));
+                    $monthFormatted2 = $monthFmt->format($litevent->date);
+                    if ($monthFormatted2 === false) {
+                        throw new \Exception('Failed to format month');
+                    }
+                    $monthHeaderCell->appendChild($this->dom->createTextNode($monthFormatted2));
+                    if ($monthHeaderRow === false) {
+                        throw new \Exception('Failed to create tr element');
+                    }
                     $monthHeaderRow->appendChild($firstColCell);
                     $monthHeaderRow->appendChild($monthHeaderCell);
                 } else {
@@ -834,9 +804,19 @@ class WebCalendar
                 $this->lastSeasonCell->setAttribute('rowspan', "$firstColCellRowSpanPlusOne");
                 $monthHeaderRow  = $this->dom->createElement('tr');
                 $monthHeaderCell = $this->dom->createElement('td');
+                if ($monthHeaderCell === false) {
+                    throw new \Exception('Failed to create td element');
+                }
                 $monthHeaderCell->setAttribute('colspan', '3');
                 $monthHeaderCell->setAttribute('class', 'monthHeader');
-                $monthHeaderCell->appendChild($this->dom->createTextNode($monthFmt->format($litevent->date)));
+                $monthFormatted3 = $monthFmt->format($litevent->date);
+                if ($monthFormatted3 === false) {
+                    throw new \Exception('Failed to format month');
+                }
+                $monthHeaderCell->appendChild($this->dom->createTextNode($monthFormatted3));
+                if ($monthHeaderRow === false) {
+                    throw new \Exception('Failed to create tr element');
+                }
                 $monthHeaderRow->appendChild($monthHeaderCell);
             }
             $newMonth  = false;
@@ -850,7 +830,11 @@ class WebCalendar
                 $dateString = $this->latinInterface->formatDate($this->dateFormat, $litevent->date);
                 break;
             default:
-                $dateString = $dateFmt->format($litevent->date);
+                $dateFormatted = $dateFmt->format($litevent->date);
+                if ($dateFormatted === false) {
+                    throw new \Exception('Failed to format date');
+                }
+                $dateString = $dateFormatted;
         }
 
         // We only need to "create" the dateEntry cell on first iteration of events within the same day (0 === $ev),
@@ -923,7 +907,7 @@ class WebCalendar
             $this->handleEventColorForColumn($litevent->color, $psalterWeekCell, Column::PSALTER_WEEK);
             $psalterWeekCell->appendChild($this->dom->createTextNode($romNumPsalterWeek));
             $psalterWeekCellRowspan = $cw + 1;
-            if (null !== $monthHeaderRow) {
+            if (null !== $monthHeaderRow && $monthHeaderRow !== false) {
                 $psalterWeekCellRowspan++;
                 $psalterWeekCell->setAttribute('rowspan', "$psalterWeekCellRowspan");
                 $monthHeaderRow->appendChild($psalterWeekCell);
@@ -933,7 +917,7 @@ class WebCalendar
             }
             $newPsalterWeek = false;
         }
-        if (null !== $monthHeaderRow) {
+        if (null !== $monthHeaderRow && $monthHeaderRow !== false) {
             return [$monthHeaderRow, $tr];
         }
         return [$tr];
@@ -974,15 +958,15 @@ class WebCalendar
 
         if (false === $this->removeCaption) {
             $caption = $this->dom->createElement('caption');
-            if (property_exists($this->LiturgicalCalendar->settings, 'diocesan_calendar')) {
+            if ($this->LiturgicalCalendar->settings->diocesanCalendar !== null) {
                 $captionText = sprintf(
                     /**translators: 1. name of the diocese, 2. year */
                     dgettext('webcalendar', 'Liturgical Calendar for the %1$s - %2$s'),
                     $this->LiturgicalCalendar->metadata->diocese_name,
                     $this->LiturgicalCalendar->settings->year
                 );
-            } elseif (property_exists($this->LiturgicalCalendar->settings, 'national_calendar')) {
-                $nation      = \Locale::getDisplayRegion('-' . $this->LiturgicalCalendar->settings->national_calendar, $this->locale);
+            } elseif ($this->LiturgicalCalendar->settings->nationalCalendar !== null) {
+                $nation      = \Locale::getDisplayRegion('-' . $this->LiturgicalCalendar->settings->nationalCalendar, $this->locale);
                 $captionText = sprintf(
                     /**translators: 1. name of the nation, 2. year */
                     dgettext('webcalendar', 'Liturgical Calendar for %1$s - %2$s'),
@@ -1065,6 +1049,9 @@ class WebCalendar
         // Cannot use foreach here because we are manually manipulating the value of $eventIdx within the loop!
         for ($eventIdx = 0; $eventIdx < $eventsCount; $eventIdx++) {
             $litevent = $this->LiturgicalCalendar->litcal[$eventIdx];
+            if (!( $litevent->date instanceof \DateTimeInterface )) {
+                throw new \Exception('Expected litevent->date to be a DateTimeInterface instance, got ' . gettype($litevent->date));
+            }
             $this->daysCreated++;
 
             // Check if we are at the start of a new month, and if so count how many events we have in that same month,
@@ -1145,7 +1132,11 @@ class WebCalendar
             }
         }
         $this->resetGlobalLocale();
-        return $this->dom->saveHTML();
+        $html = $this->dom->saveHTML();
+        if ($html === false) {
+            throw new \Exception('Failed to generate HTML from DOM');
+        }
+        return $html;
     }
 
     /**
