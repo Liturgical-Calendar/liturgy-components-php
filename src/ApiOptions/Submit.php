@@ -108,7 +108,7 @@ class Submit
      */
     public function get(?ApiOptions $callingClass): string
     {
-        if (false === is_a($callingClass, ApiOptions::class, false)) {
+        if ($callingClass === null) {
             throw new \Exception('This method can only be called by an ApiOptions class instance');
         }
         if ($this->as === 'input') {

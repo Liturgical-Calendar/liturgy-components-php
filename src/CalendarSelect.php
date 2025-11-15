@@ -104,6 +104,11 @@ class CalendarSelect
             $this->setUrl(self::METADATA_URL);
         }
 
+        // Ensure calendar index is loaded
+        if (self::$calendarIndex === null) {
+            throw new \Exception('Failed to load calendar index metadata');
+        }
+
         if (isset($options['class'])) {
             $this->class = htmlspecialchars($options['class'], ENT_QUOTES, 'UTF-8');
         }
@@ -200,11 +205,14 @@ class CalendarSelect
      */
     public function locale(string $locale): self
     {
-        $locale = \Locale::canonicalize($locale);
-        if (!self::isValidLocale($locale)) {
-            throw new \Exception("Invalid locale: {$locale}");
+        $canonicalized = \Locale::canonicalize($locale);
+        if ($canonicalized === null) {
+            throw new \Exception("Failed to canonicalize locale: {$locale}");
         }
-        $this->locale = $locale;
+        if (!self::isValidLocale($canonicalized)) {
+            throw new \Exception("Invalid locale: {$canonicalized}");
+        }
+        $this->locale = $canonicalized;
         return $this;
     }
 
@@ -284,6 +292,9 @@ class CalendarSelect
      */
     public function nationFilter(string $nation): self
     {
+        if (self::$calendarIndex === null) {
+            throw new \Exception('Calendar index not loaded');
+        }
         if (false === in_array($nation, self::$calendarIndex->nationalCalendarsKeys, true)) {
             throw new \Exception("Invalid nation: {$nation}, valid values are: " . implode(', ', self::$calendarIndex->nationalCalendarsKeys));
         }
@@ -400,7 +411,8 @@ class CalendarSelect
     {
         // If we haven't cached the metadata yet, or the request url has changed, fetch it from the API
         if ($this->metadataUrl !== self::METADATA_URL || self::$calendarIndex === null) {
-            $metadataRaw = file_get_contents($this->metadataUrl);
+            $url         = $this->metadataUrl ?? self::METADATA_URL;
+            $metadataRaw = file_get_contents($url);
             if ($metadataRaw === false) {
                 throw new \Exception("Error fetching metadata from {$this->metadataUrl}");
             }
@@ -450,6 +462,9 @@ class CalendarSelect
      */
     private function addNationalCalendarWithDioceses(string $nation): void
     {
+        if (self::$calendarIndex === null) {
+            throw new \Exception('Calendar index not loaded');
+        }
         $nationalCalendar = array_values(array_filter(self::$calendarIndex->nationalCalendars, fn(NationalCalendar $item) => $item->calendarId === $nation));
         array_push($this->nationalCalendarsWithDioceses, $nationalCalendar[0]);
         $this->dioceseOptions[$nation] = [];
@@ -507,7 +522,14 @@ class CalendarSelect
      */
     private function buildAllOptions(): void
     {
+        if (self::$calendarIndex === null) {
+            throw new \Exception('Calendar index not loaded');
+        }
+
         $col = \Collator::create($this->locale);
+        if ($col === null) {
+            throw new \Exception('Failed to create Collator for locale: ' . $this->locale);
+        }
         $col->setStrength(\Collator::PRIMARY); // only compare base characters; not accents, lower/upper-case, ...
 
         foreach (self::$calendarIndex->diocesanCalendars as $diocesanCalendar) {
@@ -517,6 +539,8 @@ class CalendarSelect
             }
             $this->addDioceseOption($diocesanCalendar);
         }
+        // PHPStan null check (already validated at method start)
+        assert(self::$calendarIndex !== null);
         $sortedNationalCalendars = self::$calendarIndex->nationalCalendars;
         usort($sortedNationalCalendars, function (NationalCalendar $a, NationalCalendar $b) use ($col): int {
             $displayA = \Locale::getDisplayRegion('-' . $a->calendarId, $this->locale);
@@ -642,6 +666,9 @@ class CalendarSelect
      */
     public static function isValidDioceseForNation(string $diocese_id, string $nation): bool
     {
+        if (self::$calendarIndex === null) {
+            return false;
+        }
         $nationalCalendarMetadata = array_values(array_filter(self::$calendarIndex->nationalCalendars, fn(NationalCalendar $item) => $item->calendarId === $nation));
         if (count($nationalCalendarMetadata) === 0) {
             return false;

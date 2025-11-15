@@ -125,8 +125,14 @@ class ApiOptions
                         break;
                     case 'after':
                         if (is_string($value)) {
-                            $value      = preg_replace('/<\?php.*?\?>/s', '', $value);
-                            $value      = preg_replace('/<script.*?>.*?<\/script>/s', '', $value);
+                            $value = preg_replace('/<\?php.*?\?>/s', '', $value);
+                            if ($value === null) {
+                                throw new \Exception('Failed to clean PHP tags from after content');
+                            }
+                            $value = preg_replace('/<script.*?>.*?<\/script>/s', '', $value);
+                            if ($value === null) {
+                                throw new \Exception('Failed to clean script tags from after content');
+                            }
                             $this->$key = $value;
                         }
                         break;
@@ -180,7 +186,8 @@ class ApiOptions
     public static function __callStatic(string $name, array $arguments): mixed
     {
         if ($name === 'baseLocale') {
-            return \Locale::getPrimaryLanguage(self::$locale);
+            $locale = self::$locale ?? 'en';
+            return \Locale::getPrimaryLanguage($locale);
         }
         throw new \Exception("Static property {$name} does not exist");
     }
@@ -272,8 +279,14 @@ class ApiOptions
      */
     public function after(string $html): void
     {
-        $html        = preg_replace('/<\?php.*?\?>/s', '', $html);
-        $html        = preg_replace('/<script.*?>.*?<\/script>/s', '', $html);
+        $html = preg_replace('/<\?php.*?\?>/s', '', $html);
+        if ($html === null) {
+            throw new \Exception('Failed to clean PHP tags from after content');
+        }
+        $html = preg_replace('/<script.*?>.*?<\/script>/s', '', $html);
+        if ($html === null) {
+            throw new \Exception('Failed to clean script tags from after content');
+        }
         $this->after = $html;
     }
 

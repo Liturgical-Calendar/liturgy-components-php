@@ -152,8 +152,14 @@ abstract class Input
      */
     public function labelAfter(string $text): Input
     {
-        $text             = preg_replace('/<\?php.*?\?>/s', '', $text);
-        $text             = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
+        $text = preg_replace('/<\?php.*?\?>/s', '', $text);
+        if ($text === null) {
+            throw new \Exception('Failed to clean PHP tags from label text');
+        }
+        $text = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
+        if ($text === null) {
+            throw new \Exception('Failed to clean script tags from label text');
+        }
         $this->labelAfter = $text;
         return $this;
     }

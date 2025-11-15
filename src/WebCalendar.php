@@ -45,19 +45,19 @@ use LiturgicalCalendar\Components\WebCalendar\LatinInterface;
  */
 class WebCalendar
 {
-    private string $locale                               = 'en-US';
-    private string $baseLocale                           = 'en';
-    private ?string $currentSetLocale                    = null;
-    private ?string $globalLocale                        = null;
-    private ?string $currentTextDomainPath               = null;
-    private ?string $expectedTextDomainPath              = null;
-    private ?LiturgicalCalendarModel $LiturgicalCalendar = null;
-    private ?string $class                               = null;
-    private ?string $id                                  = null;
-    private int $daysCreated                             = 0;
-    private Grouping $firstColumnGrouping                = Grouping::BY_MONTH;
-    private ColorAs $eventColor                          = ColorAs::INDICATOR;
-    private ColorAs $seasonColor                         = ColorAs::BACKGROUND;
+    private string $locale                  = 'en-US';
+    private string $baseLocale              = 'en';
+    private ?string $currentSetLocale       = null;
+    private ?string $globalLocale           = null;
+    private ?string $currentTextDomainPath  = null;
+    private ?string $expectedTextDomainPath = null;
+    private LiturgicalCalendarModel $LiturgicalCalendar;
+    private ?string $class                = null;
+    private ?string $id                   = null;
+    private int $daysCreated              = 0;
+    private Grouping $firstColumnGrouping = Grouping::BY_MONTH;
+    private ColorAs $eventColor           = ColorAs::INDICATOR;
+    private ColorAs $seasonColor          = ColorAs::BACKGROUND;
     private ColumnSet $seasonColorColumns;
     private ColumnSet $eventColorColumns;
     private ColumnOrder $columnOrder       = ColumnOrder::EVENT_DETAILS_FIRST;
@@ -397,7 +397,8 @@ class WebCalendar
         $currentGlobal                = setlocale(LC_ALL, '0');
         $this->globalLocale           = $currentGlobal === false ? null : $currentGlobal;
         $this->locale                 = $locale;
-        $this->baseLocale             = \Locale::getPrimaryLanguage($locale);
+        $primaryLanguage              = \Locale::getPrimaryLanguage($locale);
+        $this->baseLocale             = $primaryLanguage ?? 'en';
         $localeArray                  = [
             $this->locale . '.utf8',
             $this->locale . '.UTF-8',
@@ -541,37 +542,53 @@ class WebCalendar
      * Given a LiturgicalEvent object, determines which liturgical season it falls into.
      * @param LiturgicalEvent $litevent The liturgical event to determine the liturgical season for
      * @return string The liturgical season of the given event
+     * @throws \Exception If required liturgical events are not found in the calendar
      */
     private function determineSeason(LiturgicalEvent $litevent): string
     {
-        if ($litevent->date >= $this->LiturgicalCalendar->AshWednesday->date && $litevent->date < $this->LiturgicalCalendar->HolyThurs->date) {
+        $ashWednesday = $this->LiturgicalCalendar->AshWednesday;
+        $holyThurs    = $this->LiturgicalCalendar->HolyThurs;
+        $easter       = $this->LiturgicalCalendar->Easter;
+        $pentecost    = $this->LiturgicalCalendar->Pentecost;
+        $advent1      = $this->LiturgicalCalendar->Advent1;
+        $christmas    = $this->LiturgicalCalendar->Christmas;
+        $baptismLord  = $this->LiturgicalCalendar->BaptismLord;
+        $christKing   = $this->LiturgicalCalendar->ChristKing;
+
+        if ($ashWednesday === null || $holyThurs === null || $easter === null || $pentecost === null) {
+            throw new \Exception('Required liturgical events (AshWednesday, HolyThurs, Easter, Pentecost) not found in calendar');
+        }
+
+        if ($litevent->date >= $ashWednesday->date && $litevent->date < $holyThurs->date) {
             return 'LENT';
         }
-        if ($litevent->date >= $this->LiturgicalCalendar->HolyThurs->date && $litevent->date < $this->LiturgicalCalendar->Easter->date) {
+        if ($litevent->date >= $holyThurs->date && $litevent->date < $easter->date) {
             return 'EASTER_TRIDUUM';
         }
-        if ($litevent->date >= $this->LiturgicalCalendar->Easter->date && $litevent->date < $this->LiturgicalCalendar->Pentecost->date) {
+        if ($litevent->date >= $easter->date && $litevent->date < $pentecost->date) {
             return 'EASTER';
         }
-        if ($litevent->date >= $this->LiturgicalCalendar->Advent1->date && $litevent->date < $this->LiturgicalCalendar->Christmas->date) {
+        if ($advent1 !== null && $christmas !== null && $litevent->date >= $advent1->date && $litevent->date < $christmas->date) {
             return 'ADVENT';
         }
-        if ($litevent->date > $this->LiturgicalCalendar->BaptismLord->date && $litevent->date < $this->LiturgicalCalendar->AshWednesday->date) {
+        if ($baptismLord !== null && $litevent->date > $baptismLord->date && $litevent->date < $ashWednesday->date) {
             return 'ORDINARY_TIME';
         }
         // We won't have Advent1 if we have requested a LITURGICAL year_type (it will be less than BaptismLord not greater)
         // So to correctly determine ORDINARY_TIME we should check if the date is less than or equal to Saturday of the 34th week of Ordinary Time
         // Seeing that there may be a Memorial on this day, the only way to get this date is by checking the Saturday following Christ the King
-        $Saturday34thWeekOrdTime = clone $this->LiturgicalCalendar->ChristKing->date;
-        $modifyResult            = $Saturday34thWeekOrdTime->modify('next Saturday');
-        if ($modifyResult !== false && $litevent->date > $this->LiturgicalCalendar->Pentecost->date && $litevent->date <= $Saturday34thWeekOrdTime) {
-            return 'ORDINARY_TIME';
+        if ($christKing !== null) {
+            $Saturday34thWeekOrdTime = clone $christKing->date;
+            $modifyResult            = $Saturday34thWeekOrdTime->modify('next Saturday');
+            if ($modifyResult !== false && $litevent->date > $pentecost->date && $litevent->date <= $Saturday34thWeekOrdTime) {
+                return 'ORDINARY_TIME';
+            }
         }
         // When we have requested a LITURGICAL year_type, Advent1_vigil will be a lone event at the start of the calendar.
         // Since we don't have the other events of that day (which would fall under ORDINARY_TIME), we should return ADVENT
         if ($this->LiturgicalCalendar->settings->yearType === 'LITURGICAL') {
-            // @phpstan-ignore property.notFound (litcal has dynamic properties for named events)
-            if ($litevent->date == $this->LiturgicalCalendar->Advent1_vigil->date) {
+            $advent1Vigil = $this->LiturgicalCalendar->Advent1_vigil;
+            if ($advent1Vigil !== null && $litevent->date == $advent1Vigil->date) {
                 return 'ADVENT';
             }
         }
@@ -695,6 +712,9 @@ class WebCalendar
         ?int $ev
     ): array {
         $monthFmt = \IntlDateFormatter::create($this->locale, \IntlDateFormatter::FULL, \IntlDateFormatter::NONE, 'UTC', \IntlDateFormatter::GREGORIAN, 'MMMM');
+        if ($monthFmt === null) {
+            throw new \Exception('Failed to create IntlDateFormatter for month formatting');
+        }
         switch ($this->dateFormat) {
             case DateFormat::FULL:
                 $dateFmt = \IntlDateFormatter::create($this->locale, \IntlDateFormatter::FULL, \IntlDateFormatter::NONE, 'UTC', \IntlDateFormatter::GREGORIAN);
@@ -711,6 +731,9 @@ class WebCalendar
             case DateFormat::DAY_ONLY:
                 $dateFmt = \IntlDateFormatter::create($this->locale, \IntlDateFormatter::FULL, \IntlDateFormatter::NONE, 'UTC', \IntlDateFormatter::GREGORIAN, 'd EEEE');
                 break;
+        }
+        if ($dateFmt === null) {
+            throw new \Exception('Failed to create IntlDateFormatter for date formatting');
         }
         $seasonColor    = $this->getSeasonColor($litevent);
         $monthHeaderRow = null;
@@ -752,8 +775,8 @@ class WebCalendar
                 $div->appendChild($this->dom->createTextNode($textNode));
                 $firstColCell->appendChild($div);
                 if ($this->monthHeader) {
-                    if ($monthHeaderRow === false) {
-                        throw new \Exception('Failed to create tr element');
+                    if ($monthHeaderRow === false || $monthHeaderRow === null || $monthHeaderCell === null) {
+                        throw new \Exception('Failed to create tr or td element');
                     }
                     $monthHeaderRow->appendChild($firstColCell);
                     $monthHeaderRow->appendChild($monthHeaderCell);
@@ -789,7 +812,7 @@ class WebCalendar
                         throw new \Exception('Failed to format month');
                     }
                     $monthHeaderCell->appendChild($this->dom->createTextNode($monthFormatted2));
-                    if ($monthHeaderRow === false) {
+                    if ($monthHeaderRow === false || $monthHeaderRow === null) {
                         throw new \Exception('Failed to create tr element');
                     }
                     $monthHeaderRow->appendChild($firstColCell);
@@ -798,7 +821,7 @@ class WebCalendar
                     $tr->appendChild($firstColCell);
                 }
             }
-            if (false === $newSeason && $newMonth && $this->monthHeader && $this->firstColumnGrouping === Grouping::BY_LITURGICAL_SEASON) {
+            if (false === $newSeason && $newMonth && $this->monthHeader && $this->firstColumnGrouping === Grouping::BY_LITURGICAL_SEASON && $this->lastSeasonCell !== null) {
                 $firstColCellRowSpan        = $this->lastSeasonCell->getAttribute('rowspan');
                 $firstColCellRowSpanPlusOne = (int) $firstColCellRowSpan + 1;
                 $this->lastSeasonCell->setAttribute('rowspan', "$firstColCellRowSpanPlusOne");
@@ -892,7 +915,7 @@ class WebCalendar
         }
 
         // Fifth column contains the Psalter week if Psalter week grouping is enabled
-        if ($this->psalterWeekGrouping && false === $newPsalterWeek && null !== $monthHeaderRow) {
+        if ($this->psalterWeekGrouping && false === $newPsalterWeek && null !== $monthHeaderRow && $this->lastPsalterWeekCell !== null) {
             $psalterWeekCellRowSpan        = $this->lastPsalterWeekCell->getAttribute('rowspan');
             $psalterWeekCellRowSpanPlusOne = (int) $psalterWeekCellRowSpan + 1;
             $this->lastPsalterWeekCell->setAttribute('rowspan', "$psalterWeekCellRowSpanPlusOne");

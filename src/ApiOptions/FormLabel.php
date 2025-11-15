@@ -117,8 +117,14 @@ class FormLabel
      */
     public function text(string $text): self
     {
-        $text       = preg_replace('/<\?php.*?\?>/s', '', $text);
-        $text       = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
+        $text = preg_replace('/<\?php.*?\?>/s', '', $text);
+        if ($text === null) {
+            throw new \Exception('Failed to clean PHP tags from label text');
+        }
+        $text = preg_replace('/<script.*?>.*?<\/script>/s', '', $text);
+        if ($text === null) {
+            throw new \Exception('Failed to clean script tags from label text');
+        }
         $this->text = $text;
         return $this;
     }
@@ -145,7 +151,7 @@ class FormLabel
      */
     public function get(?ApiOptions $callingClass): string
     {
-        if (false === is_a($callingClass, ApiOptions::class, false)) {
+        if ($callingClass === null) {
             throw new \Exception('This method can only be called by an ApiOptions class instance');
         }
         return "<{$this->as}{$this->class}{$this->id}{$this->for}>{$this->text}</{$this->as}>";

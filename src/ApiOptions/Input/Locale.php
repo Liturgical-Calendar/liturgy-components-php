@@ -93,7 +93,7 @@ class Locale extends Input
 
         if (is_string($this->selectedValue) && $this->selectedValue !== '' && !array_key_exists($this->selectedValue, self::$apiLocalesDisplay[ApiOptions::getLocale()])) {
             $baseLocale = \Locale::getPrimaryLanguage($this->selectedValue);
-            if (array_key_exists($baseLocale, self::$apiLocalesDisplay[ApiOptions::getLocale()])) {
+            if ($baseLocale !== null && array_key_exists($baseLocale, self::$apiLocalesDisplay[ApiOptions::getLocale()])) {
                 $this->selectedValue = $baseLocale;
             } else {
                 $this->selectedValue = array_keys(self::$apiLocalesDisplay[ApiOptions::getLocale()])[0];

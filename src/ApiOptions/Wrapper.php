@@ -110,7 +110,7 @@ class Wrapper
      */
     public function get(string $contents, ?ApiOptions $callingClass): string
     {
-        if (false === is_a($callingClass, ApiOptions::class, false)) {
+        if ($callingClass === null) {
             throw new \Exception('This method can only be called by an ApiOptions class instance');
         }
         return "<{$this->as}{$this->class}{$this->id}>{$contents}</{$this->as}>";

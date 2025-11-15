@@ -17,6 +17,7 @@ use LiturgicalCalendar\Components\Models\LiturgicalEvent;
  * @property-read LiturgicalEvent|null $Easter
  * @property-read LiturgicalEvent|null $Pentecost
  * @property-read LiturgicalEvent|null $Advent1
+ * @property-read LiturgicalEvent|null $Advent1_vigil
  * @property-read LiturgicalEvent|null $Christmas
  * @property-read LiturgicalEvent|null $BaptismLord
  * @property-read LiturgicalEvent|null $ChristKing
