@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-15 18:43+0000\n"
+"POT-Creation-Date: 2025-11-15 19:22+0000\n"
 "PO-Revision-Date: 2025-06-22 23:50+0000\n"
 "Last-Translator: OpenAI <noreply-mt-openai@weblate.org>\n"
 "Language-Team: Polish <https://translate.johnromanodorazio.com/projects/"
@@ -25,43 +25,43 @@ msgid "or"
 msgstr "lub"
 
 #. translators: 1. name of the diocese, 2. year
-#: src/WebCalendar.php:987
+#: src/WebCalendar.php:997
 #, php-format
 msgid "Liturgical Calendar for the %1$s - %2$s"
 msgstr "Kalendarz liturgiczny na %1$s - %2$s"
 
 #. translators: 1. name of the nation, 2. year
-#: src/WebCalendar.php:995
+#: src/WebCalendar.php:1005
 #, php-format
 msgid "Liturgical Calendar for %1$s - %2$s"
 msgstr "Kalendarz liturgiczny dla %1$s - %2$s"
 
-#: src/WebCalendar.php:1001
+#: src/WebCalendar.php:1011
 #, php-format
 msgid "General Roman Calendar - %1$s"
 msgstr "Ogólny kalendarz rzymski - %1$s"
 
-#: src/WebCalendar.php:1016
+#: src/WebCalendar.php:1026
 msgid "Month"
 msgstr "Miesiąc"
 
 #. translators: 'Season' refers to the liturgical season.
-#: src/WebCalendar.php:1019
+#: src/WebCalendar.php:1029
 msgid "Season"
 msgstr "Okres liturgiczny"
 
-#: src/WebCalendar.php:1025
+#: src/WebCalendar.php:1035
 msgid "Date"
 msgstr "Data"
 
-#: src/WebCalendar.php:1029
+#: src/WebCalendar.php:1039
 msgid "Celebration"
 msgstr "Obchód"
 
-#: src/WebCalendar.php:1032
+#: src/WebCalendar.php:1042
 msgid "Liturgical Grade"
 msgstr "Stopień liturgiczny"
 
-#: src/WebCalendar.php:1048
+#: src/WebCalendar.php:1058
 msgid "Psalter"
 msgstr "Psałterz"
