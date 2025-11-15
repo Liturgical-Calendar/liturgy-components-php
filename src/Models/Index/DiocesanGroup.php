@@ -20,6 +20,39 @@ class DiocesanGroup
     }
 
     /**
+     * Helper method to safely cast mixed values to string
+     *
+     * @param array<string,mixed> $data The source array
+     * @param string $key The key to retrieve
+     * @param string $default The default value if key doesn't exist
+     * @return string
+     */
+    private static function getString(array $data, string $key, string $default = ''): string
+    {
+        $value = $data[$key] ?? $default;
+        if (!is_string($value)) {
+            throw new \InvalidArgumentException("Expected string for key '{$key}', got " . gettype($value));
+        }
+        return $value;
+    }
+
+    /**
+     * Helper method to safely cast mixed values to array
+     *
+     * @param array<string,mixed> $data The source array
+     * @param string $key The key to retrieve
+     * @return array<int|string, mixed>
+     */
+    private static function getArray(array $data, string $key): array
+    {
+        $value = $data[$key] ?? [];
+        if (!is_array($value)) {
+            throw new \InvalidArgumentException("Expected array for key '{$key}', got " . gettype($value));
+        }
+        return $value;
+    }
+
+    /**
      * Create an instance from an associative array
      *
      * @param array<string,mixed> $data The diocesan group data
@@ -27,9 +60,12 @@ class DiocesanGroup
      */
     public static function fromArray(array $data): self
     {
+        $dioceses = self::getArray($data, 'dioceses');
+        /** @var array<string> $dioceses */
+
         return new self(
-            groupName: $data['group_name'],
-            dioceses: $data['dioceses']
+            groupName: self::getString($data, 'group_name'),
+            dioceses: $dioceses
         );
     }
 

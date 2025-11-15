@@ -28,6 +28,40 @@ class NationalCalendarSettings
     }
 
     /**
+     * Helper method to safely cast mixed values to string
+     *
+     * @param array<string,mixed> $data The source array
+     * @param string $key The key to retrieve
+     * @param string $default The default value if key doesn't exist
+     * @return string
+     */
+    private static function getString(array $data, string $key, string $default = ''): string
+    {
+        $value = $data[$key] ?? $default;
+        if (!is_string($value)) {
+            throw new \InvalidArgumentException("Expected string for key '{$key}', got " . gettype($value));
+        }
+        return $value;
+    }
+
+    /**
+     * Helper method to safely cast mixed values to bool
+     *
+     * @param array<string,mixed> $data The source array
+     * @param string $key The key to retrieve
+     * @param bool $default The default value if key doesn't exist
+     * @return bool
+     */
+    private static function getBool(array $data, string $key, bool $default = false): bool
+    {
+        $value = $data[$key] ?? $default;
+        if (is_bool($value)) {
+            return $value;
+        }
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
      * Create an instance from an associative array
      *
      * @param array<string,mixed> $data The national calendar settings data
@@ -35,12 +69,18 @@ class NationalCalendarSettings
      */
     public static function fromArray(array $data): self
     {
+        $holydaysData = $data['holydays_of_obligation'] ?? null;
+        if (!is_array($holydaysData)) {
+            throw new \InvalidArgumentException("Expected array for 'holydays_of_obligation', got " . gettype($holydaysData));
+        }
+        /** @var array<string,mixed> $holydaysData */
+
         return new self(
-            epiphany: $data['epiphany'],
-            ascension: $data['ascension'],
-            corpusChristi: $data['corpus_christi'],
-            eternalHighPriest: $data['eternal_high_priest'],
-            holydaysOfObligation: HolyDaysOfObligation::fromArray($data['holydays_of_obligation'])
+            epiphany: self::getString($data, 'epiphany'),
+            ascension: self::getString($data, 'ascension'),
+            corpusChristi: self::getString($data, 'corpus_christi'),
+            eternalHighPriest: self::getBool($data, 'eternal_high_priest'),
+            holydaysOfObligation: HolyDaysOfObligation::fromArray($holydaysData)
         );
     }
 

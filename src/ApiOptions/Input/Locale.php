@@ -131,8 +131,8 @@ class Locale extends Input
             if (JSON_ERROR_NONE !== json_last_error()) {
                 throw new \Exception("Failed to decode locales from {$apiUrl}/calendars");
             }
-            if (false === property_exists($metadataJson, 'litcal_metadata') || false === $metadataJson->litcal_metadata instanceof \stdClass) {
-                throw new \Exception("Invalid `litcal_metadata` property from {$apiUrl}/calendars, should exist and should be object: " . var_export($metadataJson->litcal_metadata, true));
+            if (!is_object($metadataJson) || false === property_exists($metadataJson, 'litcal_metadata') || false === $metadataJson->litcal_metadata instanceof \stdClass) {
+                throw new \Exception("Invalid `litcal_metadata` property from {$apiUrl}/calendars, should exist and should be object");
             }
             self::$metadata = $metadataJson->litcal_metadata;
         }
@@ -142,10 +142,12 @@ class Locale extends Input
                 false === property_exists(self::$metadata, 'locales')
                 || false === is_array(self::$metadata->locales)
             ) {
-                throw new \Exception("Invalid `litcal_metadata.locales` property from {$apiUrl}/calendars, should exist and should be array: " . var_export(self::$metadata->locales, true));
+                throw new \Exception("Invalid `litcal_metadata.locales` property from {$apiUrl}/calendars, should exist and should be array");
             }
 
-            self::$apiLocales                                 = self::$metadata->locales;
+            $locales = self::$metadata->locales;
+            /** @var array<string> $locales */
+            self::$apiLocales                                 = $locales;
             self::$apiLocalesDisplay[ApiOptions::getLocale()] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
                 $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
                 return $carry;
@@ -157,18 +159,25 @@ class Locale extends Input
             switch ($calendarType) {
                 case 'nation':
                     if (false === property_exists(self::$metadata, 'national_calendars') || false === is_array(self::$metadata->national_calendars)) {
-                        throw new \Exception("Invalid `litcal_metadata.national_calendars` property from {$apiUrl}/calendars, should exist and should be array: " . var_export(self::$metadata->national_calendars, true));
+                        throw new \Exception("Invalid `litcal_metadata.national_calendars` property from {$apiUrl}/calendars, should exist and should be array");
                     }
-                    $calendarMetadata = array_values(array_filter(self::$metadata->national_calendars, function ($calendar) use ($calendarId) {
+                    $calendarMetadata = array_values(array_filter(self::$metadata->national_calendars, function (mixed $calendar) use ($calendarId) {
+                        if (!is_object($calendar) || !property_exists($calendar, 'calendar_id')) {
+                            return false;
+                        }
                         return $calendar->calendar_id === $calendarId;
                     }));
                     if (empty($calendarMetadata)) {
                         throw new \Exception("Invalid calendarId: {$calendarId}");
                     }
-                    if (false === property_exists($calendarMetadata[0], 'locales') || false === is_array($calendarMetadata[0]->locales)) {
-                        throw new \Exception("Invalid `litcal_metadata.national_calendars[calendar_id={$calendarId}].locales` property from {$apiUrl}/calendars, should exist and should be array: " . var_export(self::$metadata->national_calendars[$calendarId]->locales, true));
+                    $calendar = $calendarMetadata[0];
+                    /** @var object{calendar_id: string, locales: array<string>} $calendar */
+                    if (false === property_exists($calendar, 'locales') || false === is_array($calendar->locales)) {
+                        throw new \Exception("Invalid `litcal_metadata.national_calendars[calendar_id={$calendarId}].locales` property from {$apiUrl}/calendars, should exist and should be array");
                     }
-                    self::$apiLocales                                 = $calendarMetadata[0]->locales;
+                    $locales = $calendar->locales;
+                    /** @var array<string> $locales */
+                    self::$apiLocales                                 = $locales;
                     self::$apiLocalesDisplay[ApiOptions::getLocale()] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
                         $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
                         return $carry;
@@ -177,18 +186,25 @@ class Locale extends Input
                     break;
                 case 'diocese':
                     if (false === property_exists(self::$metadata, 'diocesan_calendars') || false === is_array(self::$metadata->diocesan_calendars)) {
-                        throw new \Exception("Invalid `litcal_metadata.diocesan_calendars` property from {$apiUrl}/calendars, should exist and should be array: " . var_export(self::$metadata->diocesan_calendars, true));
+                        throw new \Exception("Invalid `litcal_metadata.diocesan_calendars` property from {$apiUrl}/calendars, should exist and should be array");
                     }
-                    $calendarMetadata = array_values(array_filter(self::$metadata->diocesan_calendars, function ($calendar) use ($calendarId) {
+                    $calendarMetadata = array_values(array_filter(self::$metadata->diocesan_calendars, function (mixed $calendar) use ($calendarId) {
+                        if (!is_object($calendar) || !property_exists($calendar, 'calendar_id')) {
+                            return false;
+                        }
                         return $calendar->calendar_id === $calendarId;
                     }));
                     if (empty($calendarMetadata)) {
                         throw new \Exception("Invalid calendarId: {$calendarId}");
                     }
-                    if (false === property_exists($calendarMetadata[0], 'locales') || false === is_array($calendarMetadata[0]->locales)) {
-                        throw new \Exception("Invalid `litcal_metadata.diocesan_calendars[calendar_id={$calendarId}].locales` property from {$apiUrl}/calendars, should exist and should be array: " . var_export(self::$metadata->diocesan_calendars[$calendarId]->locales, true));
+                    $calendar = $calendarMetadata[0];
+                    /** @var object{calendar_id: string, locales: array<string>} $calendar */
+                    if (false === property_exists($calendar, 'locales') || false === is_array($calendar->locales)) {
+                        throw new \Exception("Invalid `litcal_metadata.diocesan_calendars[calendar_id={$calendarId}].locales` property from {$apiUrl}/calendars, should exist and should be array");
                     }
-                    self::$apiLocales                                 = $calendarMetadata[0]->locales;
+                    $locales = $calendar->locales;
+                    /** @var array<string> $locales */
+                    self::$apiLocales                                 = $locales;
                     self::$apiLocalesDisplay[ApiOptions::getLocale()] = array_reduce(self::$apiLocales, function (array $carry, string $item) {
                         $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
                         return $carry;

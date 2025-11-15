@@ -56,6 +56,10 @@ class LiturgicalCalendar
         /** @var array<mixed> $litcalData */
         $litcalData = property_exists($data, 'litcal') ? $data->litcal : [];
         foreach ($litcalData as $event) {
+            if (!is_array($event) && !is_object($event)) {
+                throw new \InvalidArgumentException('Expected array or object for liturgical event, got ' . gettype($event));
+            }
+            /** @var array{event_idx: int, event_key: string, name: string, date: string, color: array<string>, color_lcl: array<string>, type: string, grade: int, grade_lcl: string, grade_abbr: string, grade_display: string, common: array<string>, common_lcl: string, liturgical_year: string, liturgical_season: string, liturgical_season_lcl: string, psalter_week: int, is_vigil_mass?: bool, is_vigil_for?: string}|object{event_idx: int, event_key: string, name: string, date: string, color: array<string>, color_lcl: array<string>, type: string, grade: int, grade_lcl: string, grade_abbr: string, grade_display: string, common: array<string>, common_lcl: string, liturgical_year: string, liturgical_season: string, liturgical_season_lcl: string, psalter_week: int, is_vigil_mass?: bool, is_vigil_for?: string} $event */
             $liturgicalEvents[] = new LiturgicalEvent($event);
         }
 

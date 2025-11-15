@@ -52,6 +52,23 @@ class HolyDaysOfObligation
     }
 
     /**
+     * Helper method to safely cast mixed values to bool
+     *
+     * @param array<string,mixed> $data The source array
+     * @param string $key The key to retrieve
+     * @param bool $default The default value if key doesn't exist
+     * @return bool
+     */
+    private static function getBool(array $data, string $key, bool $default = false): bool
+    {
+        $value = $data[$key] ?? $default;
+        if (is_bool($value)) {
+            return $value;
+        }
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
      * Create an instance from an associative array
      *
      * @param array<string,mixed> $data The holy days of obligation data
@@ -61,18 +78,19 @@ class HolyDaysOfObligation
     {
 
         $additionalHolyDays = array_diff_key($data, array_flip(self::STANDARD_KEYS));
+        /** @var array<string,bool> $additionalHolyDays */
 
         return new self(
-            Christmas: $data['Christmas'] ?? false,
-            Epiphany: $data['Epiphany'] ?? false,
-            Ascension: $data['Ascension'] ?? false,
-            CorpusChristi: $data['CorpusChristi'] ?? false,
-            MaryMotherOfGod: $data['MaryMotherOfGod'] ?? false,
-            ImmaculateConception: $data['ImmaculateConception'] ?? false,
-            Assumption: $data['Assumption'] ?? false,
-            StJoseph: $data['StJoseph'] ?? false,
-            StsPeterPaulAp: $data['StsPeterPaulAp'] ?? false,
-            AllSaints: $data['AllSaints'] ?? false,
+            Christmas: self::getBool($data, 'Christmas'),
+            Epiphany: self::getBool($data, 'Epiphany'),
+            Ascension: self::getBool($data, 'Ascension'),
+            CorpusChristi: self::getBool($data, 'CorpusChristi'),
+            MaryMotherOfGod: self::getBool($data, 'MaryMotherOfGod'),
+            ImmaculateConception: self::getBool($data, 'ImmaculateConception'),
+            Assumption: self::getBool($data, 'Assumption'),
+            StJoseph: self::getBool($data, 'StJoseph'),
+            StsPeterPaulAp: self::getBool($data, 'StsPeterPaulAp'),
+            AllSaints: self::getBool($data, 'AllSaints'),
             additionalHolyDays: $additionalHolyDays
         );
     }

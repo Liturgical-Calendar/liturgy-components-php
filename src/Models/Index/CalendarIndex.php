@@ -34,6 +34,22 @@ class CalendarIndex
     }
 
     /**
+     * Helper method to safely cast mixed values to array
+     *
+     * @param array<string,mixed> $data The source array
+     * @param string $key The key to retrieve
+     * @return array<int|string, mixed>
+     */
+    private static function getArray(array $data, string $key): array
+    {
+        $value = $data[$key] ?? [];
+        if (!is_array($value)) {
+            throw new \InvalidArgumentException("Expected array for key '{$key}', got " . gettype($value));
+        }
+        return $value;
+    }
+
+    /**
      * Create an instance from an associative array
      *
      * Expected array structure:
@@ -51,35 +67,75 @@ class CalendarIndex
      */
     public static function fromArray(array $data): self
     {
-        $nationalCalendars = array_map(
-            fn(array $item) => NationalCalendar::fromArray($item),
-            $data['national_calendars']
+        $nationalCalendarsData = self::getArray($data, 'national_calendars');
+        $nationalCalendars     = array_map(
+            function ($item) {
+                if (!is_array($item)) {
+                    throw new \InvalidArgumentException('Expected array item in national_calendars');
+                }
+                /** @var array<string,mixed> $item */
+                return NationalCalendar::fromArray($item);
+            },
+            $nationalCalendarsData
         );
 
-        $diocesanCalendars = array_map(
-            fn(array $item) => DiocesanCalendar::fromArray($item),
-            $data['diocesan_calendars']
+        $diocesanCalendarsData = self::getArray($data, 'diocesan_calendars');
+        $diocesanCalendars     = array_map(
+            function ($item) {
+                if (!is_array($item)) {
+                    throw new \InvalidArgumentException('Expected array item in diocesan_calendars');
+                }
+                /** @var array<string,mixed> $item */
+                return DiocesanCalendar::fromArray($item);
+            },
+            $diocesanCalendarsData
         );
 
-        $diocesanGroups = array_map(
-            fn(array $item) => DiocesanGroup::fromArray($item),
-            $data['diocesan_groups']
+        $diocesanGroupsData = self::getArray($data, 'diocesan_groups');
+        $diocesanGroups     = array_map(
+            function ($item) {
+                if (!is_array($item)) {
+                    throw new \InvalidArgumentException('Expected array item in diocesan_groups');
+                }
+                /** @var array<string,mixed> $item */
+                return DiocesanGroup::fromArray($item);
+            },
+            $diocesanGroupsData
         );
 
-        $widerRegions = array_map(
-            fn(array $item) => WiderRegion::fromArray($item),
-            $data['wider_regions']
+        $widerRegionsData = self::getArray($data, 'wider_regions');
+        $widerRegions     = array_map(
+            function ($item) {
+                if (!is_array($item)) {
+                    throw new \InvalidArgumentException('Expected array item in wider_regions');
+                }
+                /** @var array<string,mixed> $item */
+                return WiderRegion::fromArray($item);
+            },
+            $widerRegionsData
         );
+
+        $nationalCalendarsKeys = self::getArray($data, 'national_calendars_keys');
+        /** @var array<string> $nationalCalendarsKeys */
+
+        $diocesanCalendarsKeys = self::getArray($data, 'diocesan_calendars_keys');
+        /** @var array<string> $diocesanCalendarsKeys */
+
+        $widerRegionsKeys = self::getArray($data, 'wider_regions_keys');
+        /** @var array<string> $widerRegionsKeys */
+
+        $locales = self::getArray($data, 'locales');
+        /** @var array<string> $locales */
 
         return new self(
             nationalCalendars: $nationalCalendars,
-            nationalCalendarsKeys: $data['national_calendars_keys'],
+            nationalCalendarsKeys: $nationalCalendarsKeys,
             diocesanCalendars: $diocesanCalendars,
-            diocesanCalendarsKeys: $data['diocesan_calendars_keys'],
+            diocesanCalendarsKeys: $diocesanCalendarsKeys,
             diocesanGroups: $diocesanGroups,
             widerRegions: $widerRegions,
-            widerRegionsKeys: $data['wider_regions_keys'],
-            locales: $data['locales']
+            widerRegionsKeys: $widerRegionsKeys,
+            locales: $locales
         );
     }
 

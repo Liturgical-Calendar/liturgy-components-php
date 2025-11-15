@@ -28,6 +28,77 @@ class NationalCalendar
     }
 
     /**
+     * Helper method to safely cast mixed values to string
+     *
+     * @param array<string,mixed> $data The source array
+     * @param string $key The key to retrieve
+     * @param string $default The default value if key doesn't exist
+     * @return string
+     */
+    private static function getString(array $data, string $key, string $default = ''): string
+    {
+        $value = $data[$key] ?? $default;
+        if (!is_string($value)) {
+            throw new \InvalidArgumentException("Expected string for key '{$key}', got " . gettype($value));
+        }
+        return $value;
+    }
+
+    /**
+     * Helper method to safely cast mixed values to nullable string
+     *
+     * @param array<string,mixed> $data The source array
+     * @param string $key The key to retrieve
+     * @return string|null
+     */
+    private static function getNullableString(array $data, string $key): ?string
+    {
+        if (!array_key_exists($key, $data) || $data[$key] === null) {
+            return null;
+        }
+        $value = $data[$key];
+        if (!is_string($value)) {
+            throw new \InvalidArgumentException("Expected string for key '{$key}', got " . gettype($value));
+        }
+        return $value;
+    }
+
+    /**
+     * Helper method to safely cast mixed values to array
+     *
+     * @param array<string,mixed> $data The source array
+     * @param string $key The key to retrieve
+     * @return array<int|string, mixed>
+     */
+    private static function getArray(array $data, string $key): array
+    {
+        $value = $data[$key] ?? [];
+        if (!is_array($value)) {
+            throw new \InvalidArgumentException("Expected array for key '{$key}', got " . gettype($value));
+        }
+        return $value;
+    }
+
+    /**
+     * Helper method to safely cast mixed values to nullable array
+     *
+     * @param array<string,mixed> $data The source array
+     * @param string $key The key to retrieve
+     * @return array<int|string, mixed>|null
+     */
+    private static function getNullableArray(array $data, string $key): ?array
+    {
+        if (!array_key_exists($key, $data) || $data[$key] === null) {
+            return null;
+        }
+        $value = $data[$key];
+        if (!is_array($value)) {
+            throw new \InvalidArgumentException("Expected array for key '{$key}', got " . gettype($value));
+        }
+        return $value;
+    }
+
+    /**
      * Create an instance from an associative array
      *
      * @param array<string,mixed> $data The national calendar data
@@ -35,13 +106,28 @@ class NationalCalendar
      */
     public static function fromArray(array $data): self
     {
+        $settings = $data['settings'] ?? null;
+        if (!is_array($settings)) {
+            throw new \InvalidArgumentException("Expected array for 'settings', got " . gettype($settings));
+        }
+        /** @var array<string,mixed> $settings */
+
+        $locales = self::getArray($data, 'locales');
+        /** @var array<string> $locales */
+
+        $missals = self::getArray($data, 'missals');
+        /** @var array<string> $missals */
+
+        $dioceses = self::getNullableArray($data, 'dioceses');
+        /** @var array<string>|null $dioceses */
+
         return new self(
-            calendarId: $data['calendar_id'],
-            locales: $data['locales'],
-            missals: $data['missals'],
-            settings: NationalCalendarSettings::fromArray($data['settings']),
-            widerRegion: $data['wider_region'] ?? null,
-            dioceses: $data['dioceses'] ?? null
+            calendarId: self::getString($data, 'calendar_id'),
+            locales: $locales,
+            missals: $missals,
+            settings: NationalCalendarSettings::fromArray($settings),
+            widerRegion: self::getNullableString($data, 'wider_region'),
+            dioceses: $dioceses
         );
     }
 

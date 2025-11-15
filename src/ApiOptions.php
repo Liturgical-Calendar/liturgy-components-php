@@ -101,6 +101,9 @@ class ApiOptions
             foreach ($options as $key => $value) {
                 switch ($key) {
                     case 'locale':
+                        if (!is_string($value) && $value !== null) {
+                            throw new \InvalidArgumentException('Expected string for locale, got ' . gettype($value));
+                        }
                         $value        = null !== $value ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : 'en-US';
                         self::$locale = \Locale::canonicalize($value);
                         break;
@@ -108,6 +111,7 @@ class ApiOptions
                         if (is_bool($value) && $value === true) {
                             $this->$key = new FormLabel();
                         } elseif (is_string($value) || is_array($value)) {
+                            /** @var array{as?: string, text?: string, class?: string, id?: string}|string $value */
                             $this->$key = new FormLabel($value);
                         }
                         break;
