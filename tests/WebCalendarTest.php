@@ -1,4 +1,5 @@
 <?php
+
 use PHPUnit\Framework\TestCase;
 use LiturgicalCalendar\Components\WebCalendar;
 
@@ -15,7 +16,7 @@ class WebCalendarTest extends TestCase
     public function testBuildTable()
     {
         $webCalendar = new WebCalendar(json_decode(self::$apiResult));
-        $table = $webCalendar->buildTable();
+        $table       = $webCalendar->buildTable();
         $this->assertStringContainsString('<table>', $table);
     }
 

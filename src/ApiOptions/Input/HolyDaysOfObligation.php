@@ -15,6 +15,11 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
  */
 final class HolyDaysOfObligation extends Input
 {
+    /** @var array<string,string> */
+    public array $data = [
+        'param' => 'holydays_of_obligation'
+    ];
+
     private bool $hidden         = false;
     private const HOLY_DAYS_VALS = [
         'Christmas'            => 'Christmas',

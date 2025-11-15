@@ -4,6 +4,13 @@ namespace LiturgicalCalendar\Components\ApiOptions\Input;
 
 use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
+use LiturgicalCalendar\Components\Http\HttpClientInterface;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Http\LoggingHttpClient;
+use LiturgicalCalendar\Components\Http\CachingHttpClient;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+use Psr\SimpleCache\CacheInterface;
 
 /**
  * Class Locale
@@ -29,6 +36,8 @@ class Locale extends Input
     /** @var array<string,string[]> */
     private static array $apiLocalesDisplay = [];
 
+    private static ?HttpClientInterface $httpClient = null;
+
     /**
      * Fetches the list of locales from the Liturgical Calendar API and stores
      * them in the {@see LiturgicalCalendar\Components\ApiOptions\Input\Locale::$apiLocales} static property.
@@ -43,8 +52,40 @@ class Locale extends Input
      * @throws \Exception If there is an error fetching or decoding the list of
      *                     locales from the Liturgical Calendar API.
      */
-    public function __construct()
-    {
+    /**
+     * @param HttpClientInterface|null $httpClient Optional HTTP client for API requests. If null, uses auto-discovery.
+     * @param LoggerInterface|null $logger Optional PSR-3 logger for HTTP request/response logging.
+     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching.
+     * @param int $cacheTtl Cache TTL in seconds (default: 24 hours for locale data).
+     */
+    public function __construct(
+        ?HttpClientInterface $httpClient = null,
+        ?LoggerInterface $logger = null,
+        ?CacheInterface $cache = null,
+        int $cacheTtl = 86400
+    ) {
+        // Initialize static HTTP client if not already set
+        if (self::$httpClient === null) {
+            $baseClient = $httpClient ?? HttpClientFactory::create();
+
+            // Wrap with caching if cache provided
+            if ($cache !== null) {
+                $baseClient = new CachingHttpClient(
+                    $baseClient,
+                    $cache,
+                    $cacheTtl,
+                    $logger ?? new NullLogger()
+                );
+            }
+
+            // Wrap with logging if logger provided
+            if ($logger !== null) {
+                self::$httpClient = new LoggingHttpClient($baseClient, $logger);
+            } else {
+                self::$httpClient = $baseClient;
+            }
+        }
+
         $this->setOptionsForCalendar(null, null);
         $this->name('locale');
         $this->id('locale');
@@ -123,10 +164,23 @@ class Locale extends Input
     {
         $apiUrl = ApiOptions::getApiUrl();
         if (empty(self::$metadata)) {
-            $metadataRaw = file_get_contents("{$apiUrl}/calendars");
-            if ($metadataRaw === false) {
-                throw new \Exception("Failed to fetch locales from {$apiUrl}/calendars");
+            $url = "{$apiUrl}/calendars";
+
+            // Ensure HTTP client is initialized
+            if (self::$httpClient === null) {
+                self::$httpClient = HttpClientFactory::create();
             }
+
+            $response = self::$httpClient->get($url);
+
+            if ($response->getStatusCode() !== 200) {
+                throw new \Exception(
+                    "Failed to fetch locales from {$url}. " .
+                    "HTTP Status: {$response->getStatusCode()}"
+                );
+            }
+
+            $metadataRaw  = $response->getBody()->getContents();
             $metadataJson = json_decode($metadataRaw);
             if (JSON_ERROR_NONE !== json_last_error()) {
                 throw new \Exception("Failed to decode locales from {$apiUrl}/calendars");

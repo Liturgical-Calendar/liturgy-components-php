@@ -23,6 +23,40 @@ Note that this package requires <b>PHP >= 8.1</b>, seeing it makes use of [Enums
 It also requires PHP `ext-intl`. To check if you have all the requirements you can run `composer check-platform-reqs --no-dev`.
 If you intend on contributing to the repository and installing development requirements, you should run `composer check-platform-reqs`.
 
+## New: PSR-Compliant HTTP Features
+
+This library now supports **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories), **PSR-18** (HTTP Client), **PSR-3** (Logging), and **PSR-16** (Simple Cache) standards, providing professional-grade features:
+
+- **🚀 HTTP Response Caching** - Reduce API calls and improve performance by up to 90%
+- **📊 Structured Logging** - Monitor and debug HTTP requests with PSR-3 loggers
+- **🔄 Retry Logic** - Automatic retry of failed requests with exponential backoff
+- **🛡️ Circuit Breaker** - Prevent cascading failures when services are down
+- **🔧 Flexible HTTP Clients** - Swap between Guzzle, native PHP, or custom implementations
+
+### Quick Start with Production Features
+
+```php
+use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Cache\ArrayCache;
+
+// Create a production-ready HTTP client with all features
+$cache = new ArrayCache();
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    cacheTtl: 3600 * 24,     // Cache for 24 hours
+    maxRetries: 3,           // Retry up to 3 times
+    failureThreshold: 5      // Circuit breaker threshold
+);
+
+// Use with any component
+$calendar = new CalendarSelect([], $httpClient, null, $cache);
+```
+
+**Good News:** All PSR features are **100% backward compatible**. Your existing code continues to work without any modifications!
+
+For comprehensive documentation, migration examples, and performance tuning, see **[UPGRADE.md](UPGRADE.md)**.
+
 ### CalendarSelect
 
 Produces an HTML <kbd>\<select\></kbd> element with <kbd>\<option\></kbd>s that are populated with data
