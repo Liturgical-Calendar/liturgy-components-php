@@ -460,7 +460,7 @@ if (isset($_POST) && !empty($_POST)) {
         </div>
 
         <!-- Request Details & Calendar Output -->
-        <?php if (isset($requestData) && !empty($requestData)): ?>
+        <?php if (isset($requestData) && !empty($requestData)) : ?>
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card shadow-sm">
@@ -475,11 +475,11 @@ if (isset($_POST) && !empty($_POST)) {
                             <h6 class="text-muted">Request URL:</h6>
                             <code class="d-block p-2 bg-light rounded"><?php echo htmlspecialchars($requestUrl); ?></code>
                         </div>
-                        <?php if (!empty($requestData)): ?>
+                        <?php if (!empty($requestData)) : ?>
                         <div class="mb-3">
                             <h6 class="text-muted">Request Data:</h6>
                             <div class="row">
-                                <?php foreach ($requestData as $key => $value): ?>
+                                <?php foreach ($requestData as $key => $value) : ?>
                                 <div class="col-md-4 mb-2">
                                     <span class="badge bg-secondary"><?php echo htmlspecialchars($key); ?>:</span>
                                     <span class="ms-2"><?php echo htmlspecialchars($value === null || empty($value) ? 'null' : $value); ?></span>
@@ -488,11 +488,11 @@ if (isset($_POST) && !empty($_POST)) {
                             </div>
                         </div>
                         <?php endif; ?>
-                        <?php if (!empty($requestHeaders)): ?>
+                        <?php if (!empty($requestHeaders)) : ?>
                         <div>
                             <h6 class="text-muted">Request Headers:</h6>
                             <div class="row">
-                                <?php foreach ($requestHeaders as $header): ?>
+                                <?php foreach ($requestHeaders as $header) : ?>
                                 <div class="col-md-6 mb-2">
                                     <code class="d-block p-2 bg-light rounded"><?php echo htmlspecialchars($header); ?></code>
                                 </div>
@@ -521,7 +521,7 @@ if (isset($_POST) && !empty($_POST)) {
                 </div>
             </div>
         </div>
-        <?php else: ?>
+        <?php else : ?>
         <div class="row">
             <div class="col-12">
                 <div class="alert alert-primary text-center" role="alert">
