@@ -776,15 +776,21 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 
 class CalendarSelectTest extends TestCase
 {
     public function testFetchMetadataSuccess(): void
     {
+        // Mock the PSR-7 stream
+        $mockStream = $this->createMock(StreamInterface::class);
+        $mockStream->method('getContents')
+            ->willReturn('{"litcal_metadata": {...}}');
+
+        // Mock the PSR-7 response
         $mockResponse = $this->createMock(ResponseInterface::class);
         $mockResponse->method('getStatusCode')->willReturn(200);
-        $mockResponse->method('getBody->getContents')
-            ->willReturn('{"litcal_metadata": {...}}');
+        $mockResponse->method('getBody')->willReturn($mockStream);
 
         $mockClient = $this->createMock(ClientInterface::class);
         $mockClient->method('sendRequest')->willReturn($mockResponse);
@@ -992,37 +998,21 @@ class CalendarSelect
 
 ### Phase 6: Caching Integration (Week 3-4)
 
-#### 6.1 Create Cache Abstraction
+#### 6.1 Cache Abstraction Strategy
 
-**Location:** `src/Cache/CacheInterface.php`
+**Implementation Decision:** Use PSR-16 directly without custom extensions
 
-```php
-<?php
-namespace LiturgicalCalendar\Components\Cache;
+The library uses `Psr\SimpleCache\CacheInterface` directly rather than creating a custom domain-specific cache interface. This design decision:
 
-use Psr\SimpleCache\CacheInterface as PsrCacheInterface;
+- **Maintains PSR compatibility**: Consumers can use any PSR-16 cache implementation
+- **Reduces complexity**: No custom cache interface to maintain
+- **Improves interoperability**: Works seamlessly with existing PSR-16 libraries (Symfony Cache, etc.)
+- **Keeps domain logic in decorators**: HTTP caching logic lives in `CachingHttpClient`, not in cache implementations
 
-/**
- * Extends PSR-16 with domain-specific cache methods
- */
-interface CacheInterface extends PsrCacheInterface
-{
-    /**
-     * Cache calendar metadata
-     */
-    public function cacheMetadata(string $url, array $metadata, int $ttl = 3600): bool;
-
-    /**
-     * Get cached calendar metadata
-     */
-    public function getMetadata(string $url): ?array;
-
-    /**
-     * Invalidate all calendar metadata cache
-     */
-    public function invalidateMetadata(): bool;
-}
-```
+The caching strategy is implemented through:
+1. **PSR-16 implementations**: ArrayCache (in-memory), or consumer-provided implementations
+2. **HTTP client decorator**: `CachingHttpClient` handles domain-specific caching logic
+3. **Factory methods**: `HttpClientFactory::createWithCaching()` for convenient setup
 
 #### 6.2 Caching HTTP Client Decorator
 
@@ -1040,9 +1030,30 @@ use Nyholm\Psr7\Response;
 
 /**
  * HTTP Client decorator that caches GET responses
+ *
+ * Uses PSR-16 Simple Cache interface to cache successful HTTP GET responses.
+ * POST requests are not cached.
+ *
+ * Cache keys are generated based on URL and semantically relevant headers only.
+ * Headers like User-Agent, X-Request-ID, etc. are excluded to maximize cache hits.
  */
 class CachingHttpClient implements HttpClientInterface
 {
+    /**
+     * Headers that affect the API response and should be part of the cache key.
+     *
+     * For Liturgical Calendar API:
+     * - Accept-Language: Determines the language/locale of the response
+     * - Accept: Determines the response format (json, xml, yaml, icalendar)
+     *
+     * Other headers (User-Agent, X-Request-ID, etc.) don't affect the response
+     * content and are excluded to improve cache hit rates.
+     */
+    private const CACHE_RELEVANT_HEADERS = [
+        'accept-language',
+        'accept',
+    ];
+
     public function __construct(
         private HttpClientInterface $client,
         private CacheInterface $cache,
@@ -1088,10 +1099,20 @@ class CachingHttpClient implements HttpClientInterface
 
     private function getCacheKey(string $url, array $headers): string
     {
-        // Create unique cache key based on URL and headers
+        // Filter headers to only include cache-relevant ones
+        $relevantHeaders = [];
+        foreach ($headers as $name => $value) {
+            if (in_array(strtolower($name), self::CACHE_RELEVANT_HEADERS, true)) {
+                $relevantHeaders[strtolower($name)] = $value;
+            }
+        }
+
+        // Sort headers by key for consistent cache keys
+        ksort($relevantHeaders);
+
         $keyData = [
             'url' => $url,
-            'headers' => $headers,
+            'headers' => $relevantHeaders,
         ];
 
         return 'http_' . hash('sha256', serialize($keyData));
