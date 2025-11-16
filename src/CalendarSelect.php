@@ -95,11 +95,44 @@ class CalendarSelect
      * - `label`: boolean, whether to include a label element, defaults to false
      * - `labelStr`: string, the string to use for the label element, defaults to 'Select a calendar'
      * - `allowNull`: boolean, whether to allow the null value in the select element, defaults to false
+     * - `cacheTtl`: int, cache TTL in seconds (default: 86400 = 24 hours)
+     *
+     * **Important: HTTP Client Decorator Behavior**
+     *
+     * The constructor will automatically wrap the provided HTTP client with additional decorators
+     * if `$cache` or `$logger` are provided:
+     * - If `$cache` is provided: wraps with CachingHttpClient
+     * - If `$logger` is provided: wraps with LoggingHttpClient
+     *
+     * **Warning:** If you provide a pre-decorated client (e.g., from HttpClientFactory::createProductionClient),
+     * DO NOT also pass `$cache` or `$logger` parameters, as this will cause double-wrapping and redundant
+     * behavior (e.g., double caching, duplicate log entries).
+     *
+     * **Usage Examples:**
+     *
+     * Simple usage (auto-discovery with caching and logging):
+     * ```php
+     * $calendarSelect = new CalendarSelect(
+     *     options: [],
+     *     cache: $cache,
+     *     logger: $logger
+     * );
+     * ```
+     *
+     * Using a pre-configured production client (DO NOT pass cache/logger):
+     * ```php
+     * $httpClient = HttpClientFactory::createProductionClient($cache, $logger);
+     * $calendarSelect = new CalendarSelect(
+     *     options: [],
+     *     httpClient: $httpClient
+     *     // Note: Do NOT pass cache/logger here - already in production client
+     * );
+     * ```
      *
      * @param array{locale?:string,url?:string,class?:string,id?:string,name?:string,nationFilter?:string,setOptions?:OptionsType,selectedOption?:string,label?:bool,labelStr?:string,allowNull?:bool,cacheTtl?:int} $options The options for the instance.
      * @param HttpClientInterface|null $httpClient Optional HTTP client for API requests. If null, uses auto-discovery.
-     * @param LoggerInterface|null $logger Optional PSR-3 logger for HTTP request/response logging.
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching.
+     * @param LoggerInterface|null $logger Optional PSR-3 logger (only use if $httpClient is NOT already decorated).
+     * @param CacheInterface|null $cache Optional PSR-16 cache (only use if $httpClient is NOT already decorated).
      */
     public function __construct(
         array $options = ['url' => self::METADATA_URL],
@@ -113,7 +146,12 @@ class CalendarSelect
         // Get cache TTL from options (default: 24 hours for metadata)
         $cacheTtl = $options['cacheTtl'] ?? ( 3600 * 24 );
 
+        // WARNING: The following wrapping only works correctly if $httpClient is NOT already decorated.
+        // If you're using HttpClientFactory::createProductionClient() or similar pre-decorated clients,
+        // you should NOT pass $cache or $logger parameters to avoid double-wrapping.
+
         // Wrap HTTP client with caching if cache provided
+        // This will ADD a caching layer on top of whatever client was provided
         if ($cache !== null) {
             $this->httpClient = new CachingHttpClient(
                 $this->httpClient,
@@ -124,6 +162,7 @@ class CalendarSelect
         }
 
         // Set logger if provided and wrap HTTP client with logging
+        // This will ADD a logging layer on top of whatever client was provided
         if ($logger !== null) {
             $this->setLogger($logger);
             // Wrap HTTP client with logging decorator
