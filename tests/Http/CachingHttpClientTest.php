@@ -228,6 +228,91 @@ class CachingHttpClientTest extends TestCase
         $this->assertContains('Response cached', $debugCalls);
     }
 
+    public function testIrrelevantHeadersDoNotAffectCacheKey(): void
+    {
+        $url          = 'https://example.com/api/data';
+        $responseBody = '{"test": "data"}';
+
+        $mockResponse = $this->createMockResponse(200, $responseBody);
+
+        // Expect the underlying client to be called only once
+        // despite different irrelevant headers on subsequent requests
+        $this->mockClient->expects($this->once())
+            ->method('get')
+            ->willReturn($mockResponse);
+
+        $cachingClient = new CachingHttpClient($this->mockClient, $this->cache, 3600, $this->mockLogger);
+
+        // First call with User-Agent header
+        $response1 = $cachingClient->get($url, ['User-Agent' => 'TestClient/1.0']);
+        $this->assertEquals(200, $response1->getStatusCode());
+
+        // Second call with different User-Agent - should hit cache
+        $response2 = $cachingClient->get($url, ['User-Agent' => 'TestClient/2.0']);
+        $this->assertEquals(200, $response2->getStatusCode());
+        $this->assertEquals($responseBody, $response2->getBody()->getContents());
+
+        // Third call with X-Request-ID - should also hit cache
+        $response3 = $cachingClient->get($url, ['X-Request-ID' => 'abc123']);
+        $this->assertEquals(200, $response3->getStatusCode());
+    }
+
+    public function testRelevantHeadersAffectCacheKey(): void
+    {
+        $url           = 'https://example.com/api/data';
+        $responseBody1 = '{"test": "data", "lang": "en"}';
+        $responseBody2 = '{"test": "data", "lang": "it"}';
+
+        $mockResponse1 = $this->createMockResponse(200, $responseBody1);
+        $mockResponse2 = $this->createMockResponse(200, $responseBody2);
+
+        // Expect the underlying client to be called twice
+        // because Accept-Language header differs
+        $this->mockClient->expects($this->exactly(2))
+            ->method('get')
+            ->willReturnOnConsecutiveCalls($mockResponse1, $mockResponse2);
+
+        $cachingClient = new CachingHttpClient($this->mockClient, $this->cache, 3600, $this->mockLogger);
+
+        // First call with English locale
+        $response1 = $cachingClient->get($url, ['Accept-Language' => 'en']);
+        $this->assertEquals(200, $response1->getStatusCode());
+        $this->assertEquals($responseBody1, $response1->getBody()->getContents());
+
+        // Second call with Italian locale - should miss cache
+        $response2 = $cachingClient->get($url, ['Accept-Language' => 'it']);
+        $this->assertEquals(200, $response2->getStatusCode());
+        $this->assertEquals($responseBody2, $response2->getBody()->getContents());
+    }
+
+    public function testAcceptHeaderAffectsCacheKey(): void
+    {
+        $url        = 'https://example.com/api/data';
+        $jsonBody   = '{"test": "data"}';
+        $xmlBody    = '<test>data</test>';
+
+        $mockResponse1 = $this->createMockResponse(200, $jsonBody);
+        $mockResponse2 = $this->createMockResponse(200, $xmlBody);
+
+        // Expect the underlying client to be called twice
+        // because Accept header differs
+        $this->mockClient->expects($this->exactly(2))
+            ->method('get')
+            ->willReturnOnConsecutiveCalls($mockResponse1, $mockResponse2);
+
+        $cachingClient = new CachingHttpClient($this->mockClient, $this->cache, 3600, $this->mockLogger);
+
+        // First call requesting JSON
+        $response1 = $cachingClient->get($url, ['Accept' => 'application/json']);
+        $this->assertEquals(200, $response1->getStatusCode());
+        $this->assertEquals($jsonBody, $response1->getBody()->getContents());
+
+        // Second call requesting XML - should miss cache
+        $response2 = $cachingClient->get($url, ['Accept' => 'application/xml']);
+        $this->assertEquals(200, $response2->getStatusCode());
+        $this->assertEquals($xmlBody, $response2->getBody()->getContents());
+    }
+
     /**
      * Helper method to create mock response
      */

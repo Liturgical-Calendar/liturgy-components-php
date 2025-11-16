@@ -14,10 +14,28 @@ use Nyholm\Psr7\Response;
  * Uses PSR-16 Simple Cache interface to cache successful HTTP GET responses.
  * POST requests are not cached.
  *
- * Cache keys are generated based on URL and headers to ensure uniqueness.
+ * Cache keys are generated based on URL and semantically relevant headers only.
+ * Headers like User-Agent, X-Request-ID, etc. are excluded to maximize cache hits.
  */
 class CachingHttpClient implements HttpClientInterface
 {
+    /**
+     * Headers that affect the API response and should be part of the cache key.
+     *
+     * For Liturgical Calendar API:
+     * - Accept-Language: Determines the language/locale of the response
+     * - Accept: Determines the response format (json, xml, yaml, icalendar)
+     *
+     * Other headers (User-Agent, X-Request-ID, etc.) don't affect the response
+     * content and are excluded to improve cache hit rates.
+     *
+     * @var string[]
+     */
+    private const CACHE_RELEVANT_HEADERS = [
+        'accept-language',
+        'accept',
+    ];
+
     public function __construct(
         private HttpClientInterface $client,
         private CacheInterface $cache,
@@ -77,18 +95,31 @@ class CachingHttpClient implements HttpClientInterface
     }
 
     /**
-     * Generate unique cache key based on URL and headers
+     * Generate unique cache key based on URL and relevant headers only
      *
-     * @param string $url
-     * @param array<string, string> $headers
-     * @return string
+     * Only includes headers that affect the response content (Accept-Language, Accept).
+     * Other headers like User-Agent, X-Request-ID, etc. are excluded to improve cache hit rates.
+     *
+     * @param string $url The request URL (includes path and query parameters)
+     * @param array<string, string> $headers Request headers
+     * @return string SHA-256 hash of URL and relevant headers
      */
     private function getCacheKey(string $url, array $headers): string
     {
-        // Create unique cache key based on URL and headers
+        // Filter headers to only include cache-relevant ones
+        $relevantHeaders = [];
+        foreach ($headers as $name => $value) {
+            if (in_array(strtolower($name), self::CACHE_RELEVANT_HEADERS, true)) {
+                $relevantHeaders[strtolower($name)] = $value;
+            }
+        }
+
+        // Sort headers by key for consistent cache keys
+        ksort($relevantHeaders);
+
         $keyData = [
             'url'     => $url,
-            'headers' => $headers,
+            'headers' => $relevantHeaders,
         ];
 
         return 'http_' . hash('sha256', serialize($keyData));
