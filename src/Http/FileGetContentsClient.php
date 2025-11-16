@@ -32,7 +32,7 @@ class FileGetContentsClient implements HttpClientInterface
         // This variable is populated by file_get_contents when using stream context
         // @phpstan-ignore-next-line - $http_response_header is a magic variable
         $responseHeaderLines = isset($http_response_header) ? $http_response_header : [];
-        $statusCode          = $this->parseStatusCode($responseHeaderLines);
+        $statusCode          = $this->parseStatusCode($responseHeaderLines, $url);
         $responseHeaders     = $this->parseHeaders($responseHeaderLines);
 
         return new Response($statusCode, $responseHeaders, $content);
@@ -64,7 +64,7 @@ class FileGetContentsClient implements HttpClientInterface
         // Parse response headers from $http_response_header magic variable
         // @phpstan-ignore-next-line - $http_response_header is a magic variable
         $responseHeaderLines = isset($http_response_header) ? $http_response_header : [];
-        $statusCode          = $this->parseStatusCode($responseHeaderLines);
+        $statusCode          = $this->parseStatusCode($responseHeaderLines, $url);
         $responseHeaders     = $this->parseHeaders($responseHeaderLines);
 
         return new Response($statusCode, $responseHeaders, $content);
@@ -134,12 +134,23 @@ class FileGetContentsClient implements HttpClientInterface
     /**
      * Parse HTTP status code from response headers
      *
-     * @param array<int,string> $headers
-     * @return int HTTP status code (defaults to 200)
+     * For HTTP/HTTPS URLs, strictly validates the status line and throws exceptions for malformed responses.
+     * For non-HTTP protocols (data://, file://, etc.), returns 200 as they don't provide HTTP headers.
+     *
+     * @param array<int,string> $headers Response header lines
+     * @param string $url The request URL (used to determine protocol strictness)
+     * @return int HTTP status code
+     * @throws HttpException When HTTP/HTTPS response has invalid or missing status line
      */
-    private function parseStatusCode(array $headers): int
+    private function parseStatusCode(array $headers, string $url): int
     {
+        $isHttpProtocol = preg_match('/^https?:\/\//i', $url);
+
         if (empty($headers)) {
+            if ($isHttpProtocol) {
+                throw new HttpException('No HTTP response headers received - unable to determine status code');
+            }
+            // Non-HTTP protocols (data://, file://, etc.) don't provide HTTP headers
             return 200;
         }
 
@@ -148,6 +159,11 @@ class FileGetContentsClient implements HttpClientInterface
             return (int) $matches[1];
         }
 
+        if ($isHttpProtocol) {
+            throw new HttpException("Invalid HTTP status line received: {$statusLine}");
+        }
+
+        // Non-HTTP protocols may have unexpected header format
         return 200;
     }
 
