@@ -175,14 +175,15 @@ class CircuitBreakerHttpClient implements HttpClientInterface
             ]);
 
             if ($this->successCount >= $this->successThreshold) {
+                // Preserve success count for logging before resetting
+                $successesAchieved = $this->successCount;
+
                 $this->state           = self::STATE_CLOSED;
                 $this->failureCount    = 0;
                 $this->successCount    = 0;
                 $this->lastFailureTime = null;
 
-                $this->logger->info('Circuit breaker CLOSED - service recovered', [
-                    'successes' => $this->successCount,
-                ]);
+                $this->logger->info('Circuit breaker CLOSED - service recovered', ['successes' => $successesAchieved]);
             }
         } elseif ($this->state === self::STATE_CLOSED) {
             // Reset failure count on success in CLOSED state
