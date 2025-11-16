@@ -185,4 +185,30 @@ class FileGetContentsClientTest extends TestCase
         $response = $this->client->post($url, $body, $headers);
         $this->assertInstanceOf(ResponseInterface::class, $response);
     }
+
+    public function testConstructorAcceptsCustomTimeout(): void
+    {
+        // Create client with custom timeout
+        $customClient = new FileGetContentsClient(timeout: 60);
+
+        $url = 'data://text/plain;base64,' . base64_encode('Test');
+        $response = $customClient->get($url);
+
+        // Client should work normally with custom timeout
+        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertEquals('Test', $response->getBody()->getContents());
+    }
+
+    public function testConstructorUsesDefaultTimeout(): void
+    {
+        // Create client without specifying timeout (should use default 30 seconds)
+        $defaultClient = new FileGetContentsClient();
+
+        $url = 'data://text/plain;base64,' . base64_encode('Test');
+        $response = $defaultClient->get($url);
+
+        // Client should work normally with default timeout
+        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertEquals('Test', $response->getBody()->getContents());
+    }
 }

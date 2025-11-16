@@ -15,6 +15,14 @@ use Nyholm\Psr7\Response;
 class FileGetContentsClient implements HttpClientInterface
 {
     /**
+     * @param int $timeout HTTP request timeout in seconds (default: 30)
+     */
+    public function __construct(
+        private int $timeout = 30
+    ) {
+    }
+
+    /**
      * {@inheritDoc}
      */
     public function get(string $url, array $headers = []): ResponseInterface
@@ -85,7 +93,7 @@ class FileGetContentsClient implements HttpClientInterface
                 'method'        => $method,
                 'header'        => $this->formatHeaders($headers),
                 'ignore_errors' => true,
-                'timeout'       => 30,
+                'timeout'       => $this->timeout,
             ]
         ];
 
