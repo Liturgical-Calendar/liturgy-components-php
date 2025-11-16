@@ -15,7 +15,7 @@ use Psr\Log\NullLogger;
 class RetryHttpClient implements HttpClientInterface
 {
     /** @var array<int> Default HTTP status codes to retry */
-    private const DEFAULT_RETRY_STATUS_CODES = [408, 429, 500, 502, 503, 504];
+    public const DEFAULT_RETRY_STATUS_CODES = [408, 429, 500, 502, 503, 504];
 
     /** @var array<int> */
     private array $retryStatusCodes;
@@ -25,7 +25,7 @@ class RetryHttpClient implements HttpClientInterface
      * @param int $maxRetries Maximum number of retry attempts (default: 3)
      * @param int $retryDelay Initial retry delay in milliseconds (default: 1000)
      * @param bool $useExponentialBackoff Whether to use exponential backoff (default: true)
-     * @param array<int> $retryStatusCodes HTTP status codes to retry (default: [408, 429, 500, 502, 503, 504])
+     * @param array<int> $retryStatusCodes HTTP status codes to retry (default: DEFAULT_RETRY_STATUS_CODES)
      * @param LoggerInterface $logger PSR-3 logger for retry events
      */
     public function __construct(

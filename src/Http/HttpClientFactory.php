@@ -186,7 +186,7 @@ class HttpClientFactory
      * @param int $maxRetries Maximum number of retry attempts (default: 3)
      * @param int $retryDelay Initial retry delay in milliseconds (default: 1000)
      * @param bool $useExponentialBackoff Whether to use exponential backoff (default: true)
-     * @param array<int> $retryStatusCodes HTTP status codes to retry (default: [408, 429, 500, 502, 503, 504])
+     * @param array<int>|null $retryStatusCodes HTTP status codes to retry (default: RetryHttpClient::DEFAULT_RETRY_STATUS_CODES)
      * @param LoggerInterface|null $logger Optional PSR-3 logger for retry events
      * @param ClientInterface|null $httpClient Optional PSR-18 client
      * @param RequestFactoryInterface|null $requestFactory Optional PSR-17 request factory
@@ -197,7 +197,7 @@ class HttpClientFactory
         int $maxRetries = 3,
         int $retryDelay = 1000,
         bool $useExponentialBackoff = true,
-        array $retryStatusCodes = [408, 429, 500, 502, 503, 504],
+        ?array $retryStatusCodes = null,
         ?LoggerInterface $logger = null,
         ?ClientInterface $httpClient = null,
         ?RequestFactoryInterface $requestFactory = null,
@@ -211,7 +211,7 @@ class HttpClientFactory
             $maxRetries,
             $retryDelay,
             $useExponentialBackoff,
-            $retryStatusCodes,
+            $retryStatusCodes ?? RetryHttpClient::DEFAULT_RETRY_STATUS_CODES,
             $logger
         );
 
@@ -308,7 +308,7 @@ class HttpClientFactory
             $maxRetries,
             1000, // initial delay
             true, // exponential backoff
-            [408, 429, 500, 502, 503, 504],
+            RetryHttpClient::DEFAULT_RETRY_STATUS_CODES,
             $logger
         );
 
