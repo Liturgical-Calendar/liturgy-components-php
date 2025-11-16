@@ -114,8 +114,8 @@ class ArrayCacheTest extends TestCase
         $this->assertEquals('value1', $this->cache->get('key1'));
         $this->assertEquals('value2', $this->cache->get('key2'));
 
-        // Sleep longer than TTL to ensure expiry (give extra buffer for slow systems)
-        sleep(4);
+        // Sleep longer than TTL to ensure expiry
+        sleep(3);
 
         // Both values should be expired
         $this->assertNull($this->cache->get('key1'));
