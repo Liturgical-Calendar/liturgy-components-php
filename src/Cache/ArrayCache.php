@@ -25,7 +25,7 @@ class ArrayCache implements CacheInterface
      */
     public function get(string $key, mixed $default = null): mixed
     {
-        if (!isset($this->cache[$key])) {
+        if (!array_key_exists($key, $this->cache)) {
             return $default;
         }
 
@@ -49,9 +49,14 @@ class ArrayCache implements CacheInterface
         $this->cache[$key] = $value;
 
         if ($ttl !== null) {
-            $seconds = $ttl instanceof \DateInterval
-                ? max(0, ( new \DateTime() )->add($ttl)->getTimestamp() - time())
-                : $ttl;
+            if ($ttl instanceof \DateInterval) {
+                $now    = new \DateTime();
+                $future = clone $now;
+                $future->add($ttl);
+                $seconds = max(0, $future->getTimestamp() - $now->getTimestamp());
+            } else {
+                $seconds = $ttl;
+            }
 
             $this->expiry[$key] = time() + $seconds;
         }
@@ -124,6 +129,17 @@ class ArrayCache implements CacheInterface
      */
     public function has(string $key): bool
     {
-        return $this->get($key) !== null;
+        // Check if key exists in cache
+        if (!array_key_exists($key, $this->cache)) {
+            return false;
+        }
+
+        // Check if key has expired
+        if (isset($this->expiry[$key]) && time() > $this->expiry[$key]) {
+            unset($this->cache[$key], $this->expiry[$key]);
+            return false;
+        }
+
+        return true;
     }
 }

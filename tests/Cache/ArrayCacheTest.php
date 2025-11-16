@@ -155,6 +155,19 @@ class ArrayCacheTest extends TestCase
         $this->assertFalse($this->cache->has('key'));
     }
 
+    public function testHasReturnsTrueForNullValue(): void
+    {
+        // Explicitly store null as a value
+        $this->cache->set('null_key', null);
+
+        // has() should return true even though the value is null
+        $this->assertTrue($this->cache->has('null_key'));
+
+        // get() should return null (the stored value, not the default)
+        $this->assertNull($this->cache->get('null_key'));
+        $this->assertNull($this->cache->get('null_key', 'default'));
+    }
+
     public function testStoresDifferentDataTypes(): void
     {
         // String
