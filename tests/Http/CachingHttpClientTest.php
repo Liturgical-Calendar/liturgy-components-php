@@ -206,12 +206,12 @@ class CachingHttpClientTest extends TestCase
             ->method('get')
             ->willReturn($mockResponse);
 
-        // Track debug log calls
+        // Track debug log calls (capture both message and context)
         $debugCalls = [];
         $this->mockLogger->expects($this->exactly(3))
             ->method('debug')
             ->willReturnCallback(function ($message, $context) use (&$debugCalls) {
-                $debugCalls[] = $message;
+                $debugCalls[] = ['message' => $message, 'context' => $context];
             });
 
         $cachingClient = new CachingHttpClient($this->mockClient, $this->cache, 3600, $this->mockLogger);
@@ -223,9 +223,10 @@ class CachingHttpClientTest extends TestCase
         $cachingClient->get($url);
 
         // Verify log messages
-        $this->assertContains('Cache miss', $debugCalls);
-        $this->assertContains('Cache hit', $debugCalls);
-        $this->assertContains('Response cached', $debugCalls);
+        $messages = array_column($debugCalls, 'message');
+        $this->assertContains('Cache miss', $messages);
+        $this->assertContains('Cache hit', $messages);
+        $this->assertContains('Response cached', $messages);
     }
 
     public function testIrrelevantHeadersDoNotAffectCacheKey(): void
