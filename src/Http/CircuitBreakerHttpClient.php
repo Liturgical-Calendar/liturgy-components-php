@@ -31,14 +31,17 @@ class CircuitBreakerHttpClient implements HttpClientInterface
      * @param int $recoveryTimeout Time in seconds before attempting recovery (default: 60)
      * @param int $successThreshold Number of successes in HALF_OPEN before closing circuit (default: 2)
      * @param LoggerInterface $logger PSR-3 logger for circuit breaker events
+     * @param callable(): int $timeProvider Function that returns current Unix timestamp (for testing)
      */
     public function __construct(
         private HttpClientInterface $client,
         private int $failureThreshold = 5,
         private int $recoveryTimeout = 60,
         private int $successThreshold = 2,
-        private LoggerInterface $logger = new NullLogger()
+        private LoggerInterface $logger = new NullLogger(),
+        private $timeProvider = null
     ) {
+        $this->timeProvider = $timeProvider ?? time(...);
     }
 
     /**
@@ -106,7 +109,7 @@ class CircuitBreakerHttpClient implements HttpClientInterface
     private function updateState(): void
     {
         if ($this->state === self::STATE_OPEN && $this->lastFailureTime !== null) {
-            $timeSinceLastFailure = time() - $this->lastFailureTime;
+            $timeSinceLastFailure = ( $this->timeProvider )() - $this->lastFailureTime;
 
             if ($timeSinceLastFailure >= $this->recoveryTimeout) {
                 $this->state        = self::STATE_HALF_OPEN;
@@ -161,7 +164,7 @@ class CircuitBreakerHttpClient implements HttpClientInterface
     private function onFailure(): void
     {
         $this->failureCount++;
-        $this->lastFailureTime = time();
+        $this->lastFailureTime = ( $this->timeProvider )();
 
         if ($this->state === self::STATE_HALF_OPEN) {
             // Failure in HALF_OPEN state reopens the circuit immediately

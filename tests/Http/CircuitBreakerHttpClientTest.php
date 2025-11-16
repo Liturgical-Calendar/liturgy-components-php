@@ -16,11 +16,30 @@ class CircuitBreakerHttpClientTest extends TestCase
 {
     private HttpClientInterface $mockClient;
     private LoggerInterface $mockLogger;
+    private int $currentTime = 1000000; // Arbitrary starting timestamp
 
     protected function setUp(): void
     {
         $this->mockClient = $this->createMock(HttpClientInterface::class);
         $this->mockLogger = $this->createMock(LoggerInterface::class);
+        $this->currentTime = 1000000; // Reset time for each test
+    }
+
+    /**
+     * Create a controllable time provider for testing
+     * @return callable(): int
+     */
+    private function createTimeProvider(): callable
+    {
+        return fn(): int => $this->currentTime;
+    }
+
+    /**
+     * Advance the mock time by the given number of seconds
+     */
+    private function advanceTime(int $seconds): void
+    {
+        $this->currentTime += $seconds;
     }
 
     public function testCircuitClosedOnSuccess(): void
@@ -123,7 +142,8 @@ class CircuitBreakerHttpClientTest extends TestCase
             5, // failure threshold
             1, // recovery timeout (1 second)
             2,
-            $this->mockLogger
+            $this->mockLogger,
+            $this->createTimeProvider()
         );
 
         // Open the circuit
@@ -137,8 +157,8 @@ class CircuitBreakerHttpClientTest extends TestCase
 
         $this->assertEquals('open', $circuitBreaker->getState());
 
-        // Wait for recovery timeout
-        sleep(2);
+        // Advance time past recovery timeout (no sleep needed!)
+        $this->advanceTime(2);
 
         // Next request should enter HALF_OPEN and succeed
         $response = $circuitBreaker->get($url);
@@ -167,7 +187,8 @@ class CircuitBreakerHttpClientTest extends TestCase
             5, // failure threshold
             1, // recovery timeout
             2, // success threshold
-            $this->mockLogger
+            $this->mockLogger,
+            $this->createTimeProvider()
         );
 
         // Open the circuit
@@ -179,8 +200,8 @@ class CircuitBreakerHttpClientTest extends TestCase
             }
         }
 
-        // Wait and make 2 successful requests
-        sleep(2);
+        // Advance time and make 2 successful requests
+        $this->advanceTime(2);
         $circuitBreaker->get($url);
         $circuitBreaker->get($url);
 
@@ -197,7 +218,14 @@ class CircuitBreakerHttpClientTest extends TestCase
             ->method('get')
             ->willThrowException(new HttpException('Network error'));
 
-        $circuitBreaker = new CircuitBreakerHttpClient($this->mockClient, 5, 1, 2, $this->mockLogger);
+        $circuitBreaker = new CircuitBreakerHttpClient(
+            $this->mockClient,
+            5,
+            1,
+            2,
+            $this->mockLogger,
+            $this->createTimeProvider()
+        );
 
         // Open the circuit
         for ($i = 0; $i < 5; $i++) {
@@ -208,8 +236,8 @@ class CircuitBreakerHttpClientTest extends TestCase
             }
         }
 
-        // Wait for half-open
-        sleep(2);
+        // Advance time to trigger half-open state
+        $this->advanceTime(2);
 
         // Failure in half-open should reopen circuit
         try {
@@ -328,7 +356,14 @@ class CircuitBreakerHttpClientTest extends TestCase
         $this->mockLogger->expects($this->atLeastOnce())
             ->method('info');
 
-        $circuitBreaker = new CircuitBreakerHttpClient($this->mockClient, 5, 1, 2, $this->mockLogger);
+        $circuitBreaker = new CircuitBreakerHttpClient(
+            $this->mockClient,
+            5,
+            1,
+            2,
+            $this->mockLogger,
+            $this->createTimeProvider()
+        );
 
         // Open circuit
         for ($i = 0; $i < 5; $i++) {
@@ -339,8 +374,8 @@ class CircuitBreakerHttpClientTest extends TestCase
             }
         }
 
-        // Wait and close circuit
-        sleep(2);
+        // Advance time and close circuit
+        $this->advanceTime(2);
         $circuitBreaker->get($url);
         $circuitBreaker->get($url);
     }
