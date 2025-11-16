@@ -18,6 +18,9 @@ use Psr\SimpleCache\CacheInterface;
  * Generates an HTML select element for selecting a locale in the Liturgical
  * Calendar API options form.
  *
+ * Note: Metadata fetched from the API is cached statically across all instances
+ * for performance. However, each instance maintains its own HTTP client configuration.
+ *
  * @see LiturgicalCalendar\Components\ApiOptions
  * @see LiturgicalCalendar\Components\ApiOptions\Input
  */
@@ -31,23 +34,14 @@ class Locale extends Input
     /** @var array<string,string[]> */
     private static array $apiLocalesDisplay = [];
 
-    private static ?HttpClientInterface $httpClient = null;
+    private HttpClientInterface $httpClient;
 
     /**
-     * Fetches the list of locales from the Liturgical Calendar API and stores
-     * them in the {@see LiturgicalCalendar\Components\ApiOptions\Input\Locale::$apiLocales} static property.
+     * Create a new Locale input element.
      *
-     * If the {@see LiturgicalCalendar\Components\ApiOptions::$locale} property is set, it will also generate a
-     * sorted list of locales with their display names in the given locale
-     * and store it in the {@see LiturgicalCalendar\Components\ApiOptions\Input\Locale::$apiLocalesDisplay} static property.
+     * Each instance maintains its own HTTP client configuration (with optional caching and logging).
+     * However, API metadata is cached statically across all instances for performance optimization.
      *
-     * If the list of locales has already been fetched, it will not fetch it again.
-     * Instead, it will return the stored list.
-     *
-     * @throws \Exception If there is an error fetching or decoding the list of
-     *                     locales from the Liturgical Calendar API.
-     */
-    /**
      * @param HttpClientInterface|null $httpClient Optional HTTP client for API requests. If null, uses auto-discovery.
      * @param LoggerInterface|null $logger Optional PSR-3 logger for HTTP request/response logging.
      * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching.
@@ -59,26 +53,24 @@ class Locale extends Input
         ?CacheInterface $cache = null,
         int $cacheTtl = 86400
     ) {
-        // Initialize static HTTP client if not already set
-        if (self::$httpClient === null) {
-            $baseClient = $httpClient ?? HttpClientFactory::create();
+        // Initialize instance HTTP client with provided configuration
+        $baseClient = $httpClient ?? HttpClientFactory::create();
 
-            // Wrap with caching if cache provided
-            if ($cache !== null) {
-                $baseClient = new CachingHttpClient(
-                    $baseClient,
-                    $cache,
-                    $cacheTtl,
-                    $logger ?? new NullLogger()
-                );
-            }
+        // Wrap with caching if cache provided
+        if ($cache !== null) {
+            $baseClient = new CachingHttpClient(
+                $baseClient,
+                $cache,
+                $cacheTtl,
+                $logger ?? new NullLogger()
+            );
+        }
 
-            // Wrap with logging if logger provided
-            if ($logger !== null) {
-                self::$httpClient = new LoggingHttpClient($baseClient, $logger);
-            } else {
-                self::$httpClient = $baseClient;
-            }
+        // Wrap with logging if logger provided
+        if ($logger !== null) {
+            $this->httpClient = new LoggingHttpClient($baseClient, $logger);
+        } else {
+            $this->httpClient = $baseClient;
         }
 
         $this->data(['param' => 'locale']);
@@ -156,18 +148,25 @@ class Locale extends Input
         return $html;
     }
 
+    /**
+     * Set locale options based on calendar type and ID.
+     *
+     * Fetches metadata from the API on first call and caches it statically.
+     * Subsequent calls (even from different instances) will use the cached metadata.
+     * Only the first instance's HTTP client will be used for the API request.
+     *
+     * @param string|null $calendarType The type of calendar ('nation', 'diocese', or null for general)
+     * @param string|null $calendarId The calendar ID (required if calendarType is specified)
+     * @throws \Exception If there is an error fetching or parsing API data
+     * @return void
+     */
     public function setOptionsForCalendar(?string $calendarType, ?string $calendarId): void
     {
         $apiUrl = ApiOptions::getApiUrl();
         if (self::$metadata === null) {
             $url = "{$apiUrl}/calendars";
 
-            // Ensure HTTP client is initialized
-            if (self::$httpClient === null) {
-                self::$httpClient = HttpClientFactory::create();
-            }
-
-            $response = self::$httpClient->get($url);
+            $response = $this->httpClient->get($url);
 
             if ($response->getStatusCode() !== 200) {
                 throw new \Exception(
