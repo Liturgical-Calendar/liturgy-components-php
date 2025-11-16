@@ -48,8 +48,8 @@ class FileGetContentsClient implements HttpClientInterface
             throw new HttpException('Failed to encode request body as JSON');
         }
 
-        // Auto-add Content-Type for JSON bodies if not specified
-        if (is_array($body) && !isset($headers['Content-Type'])) {
+        // Auto-add Content-Type for JSON bodies if not specified (case-insensitive check)
+        if (is_array($body) && !$this->hasHeader($headers, 'Content-Type')) {
             $headers['Content-Type'] = 'application/json';
         }
 
@@ -94,6 +94,26 @@ class FileGetContentsClient implements HttpClientInterface
         }
 
         return stream_context_create($options);
+    }
+
+    /**
+     * Check if a header exists (case-insensitive)
+     *
+     * HTTP header names are case-insensitive per RFC 7230.
+     *
+     * @param array<string,string> $headers
+     * @param string $headerName Header name to check
+     * @return bool True if header exists (case-insensitive)
+     */
+    private function hasHeader(array $headers, string $headerName): bool
+    {
+        $headerNameLower = strtolower($headerName);
+        foreach (array_keys($headers) as $name) {
+            if (strtolower($name) === $headerNameLower) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

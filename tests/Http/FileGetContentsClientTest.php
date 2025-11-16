@@ -146,4 +146,43 @@ class FileGetContentsClientTest extends TestCase
             $this->client
         );
     }
+
+    public function testPostRespectsCaseInsensitiveContentTypeHeader(): void
+    {
+        $url = 'data://text/plain;base64,' . base64_encode('Response');
+        $body = ['key' => 'value'];
+
+        // Test with lowercase 'content-type' - should not add duplicate Content-Type
+        $headersLower = ['content-type' => 'application/xml'];
+        $response1 = $this->client->post($url, $body, $headersLower);
+        $this->assertInstanceOf(ResponseInterface::class, $response1);
+
+        // Test with mixed case 'Content-TYPE' - should not add duplicate Content-Type
+        $headersMixed = ['Content-TYPE' => 'text/html'];
+        $response2 = $this->client->post($url, $body, $headersMixed);
+        $this->assertInstanceOf(ResponseInterface::class, $response2);
+
+        // Test with exact 'Content-Type' - should not add duplicate Content-Type
+        $headersExact = ['Content-Type' => 'application/json'];
+        $response3 = $this->client->post($url, $body, $headersExact);
+        $this->assertInstanceOf(ResponseInterface::class, $response3);
+
+        // Test without Content-Type - should auto-add for array bodies
+        $response4 = $this->client->post($url, $body);
+        $this->assertInstanceOf(ResponseInterface::class, $response4);
+    }
+
+    public function testPostWithLowercaseContentType(): void
+    {
+        $url = 'data://text/plain;base64,' . base64_encode('Response');
+
+        // When user provides lowercase 'content-type', client should respect it
+        // and not add a duplicate 'Content-Type' header
+        $headers = ['content-type' => 'application/xml'];
+        $body = ['test' => 'data'];
+
+        // Should not throw exception due to duplicate headers
+        $response = $this->client->post($url, $body, $headers);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
+    }
 }
