@@ -18,6 +18,7 @@ This is a PHP library providing reusable frontend components for the Liturgical 
 **CRITICAL**: All code must adhere to the phpcs.xml rules defined in this project.
 
 ### Core Standards
+
 - **Base Standard**: PSR-12 with modifications
 - **Array Syntax**: Use short array syntax `[]` (no `array()`)
 - **Indentation**: 4 spaces (not tabs)
@@ -29,11 +30,13 @@ This is a PHP library providing reusable frontend components for the Liturgical 
   - 1 space inside arbitrary parentheses
 
 ### Excluded PSR-12 Rules
+
 - Line length is NOT enforced
 - Control structure spacing after closing brace is relaxed
 - Function declaration argument spacing before equals is relaxed
 
 ### Markdown Standards
+
 - **CRITICAL**: All markdown files must adhere to the .markdownlint.yml rules defined in this project
 - Key rules include:
   - Maximum line length: 180 characters (excluding code blocks and tables)
@@ -42,6 +45,7 @@ This is a PHP library providing reusable frontend components for the Liturgical 
   - Inline HTML is allowed for specific elements (img, a, b, table, etc.)
 
 ### Before Committing
+
 Always run these commands to ensure code quality:
 
 ```bash
@@ -65,18 +69,18 @@ composer test:quick        # Run tests excluding slow tests
 ## Key Patterns
 
 1. **Chainable Methods**: Most component methods return `$this` for method chaining
-2. **Enum Usage**: Use typed enums for options (e.g., `PathType`, `ColorAs`, `Grouping`)
-3. **Locale Support**: Components support internationalization via PHP Intl extension
-4. **API Integration**: Components consume JSON responses from Liturgical Calendar API
+1. **Enum Usage**: Use typed enums for options (e.g., `PathType`, `ColorAs`, `Grouping`)
+1. **Locale Support**: Components support internationalization via PHP Intl extension
+1. **API Integration**: Components consume JSON responses from Liturgical Calendar API
 
 ## When Making Changes
 
 1. Maintain backward compatibility - this is a published Composer package
-2. Follow existing patterns for method naming and structure
-3. Update relevant tests when modifying component behavior
-4. Ensure phpcs compliance before committing
-5. Use type hints and return types (PHP 8.1+ features)
-6. Document public methods with clear docblocks
+1. Follow existing patterns for method naming and structure
+1. Update relevant tests when modifying component behavior
+1. Ensure phpcs compliance before committing
+1. Use type hints and return types (PHP 8.1+ features)
+1. Document public methods with clear docblocks
 
 ## Quality Assurance
 
