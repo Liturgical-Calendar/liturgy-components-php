@@ -27,7 +27,7 @@ class HttpClientFactoryTest extends TestCase
     {
         $client = HttpClientFactory::create(null, null, null);
 
-        // Should return FileGetContentsClient when no PSR dependencies provided
+        // Returns HttpClientInterface (may be PsrHttpClient via auto-discovery or FileGetContentsClient fallback)
         $this->assertInstanceOf(HttpClientInterface::class, $client);
     }
 
@@ -53,7 +53,7 @@ class HttpClientFactoryTest extends TestCase
         // Missing request and stream factories
         $client = HttpClientFactory::create($mockHttpClient, null, null);
 
-        // Should fall back because not all dependencies are provided
+        // Returns HttpClientInterface (may be PsrHttpClient via auto-discovery or FileGetContentsClient fallback)
         $this->assertInstanceOf(HttpClientInterface::class, $client);
     }
 
@@ -107,7 +107,7 @@ class HttpClientFactoryTest extends TestCase
 
         $client = HttpClientFactory::create($mockHttpClient);
 
-        // Should use fallback when missing factories
+        // Returns HttpClientInterface (may be PsrHttpClient via auto-discovery or FileGetContentsClient fallback)
         $this->assertInstanceOf(HttpClientInterface::class, $client);
     }
 
@@ -136,7 +136,7 @@ class HttpClientFactoryTest extends TestCase
         // Null client, with request factory, null stream factory
         $client = HttpClientFactory::create(null, $mockRequestFactory, null);
 
-        // Should fall back because not all dependencies provided
+        // Returns HttpClientInterface (may be PsrHttpClient via auto-discovery or FileGetContentsClient fallback)
         $this->assertInstanceOf(HttpClientInterface::class, $client);
     }
 
