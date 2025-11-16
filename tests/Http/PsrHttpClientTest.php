@@ -323,37 +323,17 @@ class PsrHttpClientTest extends TestCase
 
     public function testPostThrowsHttpExceptionOnInvalidJson(): void
     {
-        // Create an array that will fail JSON encoding (e.g., with invalid UTF-8)
-        // Note: In PHP 8.1+, json_encode is more robust, so this test may need adjustment
+        $url = 'https://example.com/api/test';
+
+        // Create an array containing invalid UTF-8 sequence
+        // json_encode will return false for this data
+        $invalidBody = ['data' => "\xB1\x31"];
+
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage('Failed to encode request body as JSON');
 
-        $mockRequest = $this->createMock(RequestInterface::class);
-
-        $this->mockRequestFactory
-            ->method('createRequest')
-            ->willReturn($mockRequest);
-
-        // Mock json_encode failure by using a non-encodable resource
-        // Since we can't directly pass a resource, we'll test the error path differently
-        // This test verifies the exception is thrown when json_encode returns false
-
-        // Create a client with a custom implementation to test this specific case
-        $testClient = new class (
-            $this->mockHttpClient,
-            $this->mockRequestFactory,
-            $this->mockStreamFactory
-        ) extends PsrHttpClient {
-            public function testJsonEncodeFailure(): void
-            {
-                // Simulate json_encode returning false
-                $result = json_encode("\xB1\x31"); // Invalid UTF-8
-                if ($result === false) {
-                    throw new HttpException('Failed to encode request body as JSON');
-                }
-            }
-        };
-
-        $testClient->testJsonEncodeFailure();
+        // The exception should be thrown before any PSR objects are created,
+        // so we don't need to set up mocks for this test
+        $this->client->post($url, $invalidBody);
     }
 }
