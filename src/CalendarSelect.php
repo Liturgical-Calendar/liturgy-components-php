@@ -510,23 +510,23 @@ class CalendarSelect
             $metadataJSON = json_decode($metadataRaw, true);
 
             if (JSON_ERROR_NONE !== json_last_error()) {
-                throw new \Exception("Error decoding metadata from {$this->metadataUrl}: " . json_last_error_msg());
+                throw new \Exception("Error decoding metadata from {$url}: " . json_last_error_msg());
             }
             if (false === is_array($metadataJSON)) {
-                throw new \Exception("Invalid metadata from {$this->metadataUrl}");
+                throw new \Exception("Invalid metadata from {$url}");
             }
             if (false === array_key_exists('litcal_metadata', $metadataJSON)) {
-                throw new \Exception("Missing 'litcal_metadata' in metadata from {$this->metadataUrl}");
+                throw new \Exception("Missing 'litcal_metadata' in metadata from {$url}");
             }
             $litcalMetadata = $metadataJSON['litcal_metadata'];
             if (!is_array($litcalMetadata)) {
-                throw new \Exception("'litcal_metadata' must be an array in metadata from {$this->metadataUrl}");
+                throw new \Exception("'litcal_metadata' must be an array in metadata from {$url}");
             }
             if (false === array_key_exists('diocesan_calendars', $litcalMetadata)) {
-                throw new \Exception("Missing 'diocesan_calendars' in metadata from {$this->metadataUrl}");
+                throw new \Exception("Missing 'diocesan_calendars' in metadata from {$url}");
             }
             if (false === array_key_exists('national_calendars', $litcalMetadata)) {
-                throw new \Exception("Missing 'national_calendars' in metadata from {$this->metadataUrl}");
+                throw new \Exception("Missing 'national_calendars' in metadata from {$url}");
             }
             /** @var array<string,mixed> $litcalMetadata */
             self::$calendarIndex = CalendarIndex::fromArray($litcalMetadata);
