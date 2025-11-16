@@ -23,11 +23,6 @@ use Psr\SimpleCache\CacheInterface;
  */
 class Locale extends Input
 {
-    /** @var array<string,string> */
-    public array $data = [
-        'param' => 'locale'
-    ];
-
     private static ?\stdClass $metadata = null;
 
     /** @var string[] */
@@ -86,6 +81,7 @@ class Locale extends Input
             }
         }
 
+        $this->data(['param' => 'locale']);
         $this->setOptionsForCalendar(null, null);
         $this->name('locale');
         $this->id('locale');

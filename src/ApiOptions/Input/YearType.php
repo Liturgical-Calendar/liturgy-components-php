@@ -16,12 +16,9 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
  */
 final class YearType extends Input
 {
-    public array $data = [
-        'param' => 'year_type'
-    ];
-
     public function __construct()
     {
+        $this->data(['param' => 'year_type']);
         $this->name('year_type');
         $this->id('year_type');
     }

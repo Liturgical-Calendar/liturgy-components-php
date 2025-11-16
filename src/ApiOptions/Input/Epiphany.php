@@ -20,12 +20,9 @@ use IntlDateFormatter;
  */
 final class Epiphany extends Input
 {
-    public array $data = [
-        'param' => 'epiphany'
-    ];
-
     public function __construct()
     {
+        $this->data(['param' => 'epiphany']);
         $this->name('epiphany');
         $this->id('epiphany');
     }

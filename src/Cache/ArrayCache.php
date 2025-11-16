@@ -50,7 +50,7 @@ class ArrayCache implements CacheInterface
 
         if ($ttl !== null) {
             $seconds = $ttl instanceof \DateInterval
-                ? ( new \DateTime() )->add($ttl)->getTimestamp() - time()
+                ? max(0, ( new \DateTime() )->add($ttl)->getTimestamp() - time())
                 : $ttl;
 
             $this->expiry[$key] = time() + $seconds;
