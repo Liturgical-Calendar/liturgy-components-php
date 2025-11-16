@@ -18,11 +18,13 @@ This document outlines planned features and enhancements for the Liturgical Cale
 ### What We Have ✅
 
 **Components:**
+
 - `CalendarSelect` - Dropdown for selecting calendars (metadata requests only)
 - `ApiOptions` - Form inputs for API parameters
 - `WebCalendar` - Display component for calendar data
 
 **HTTP Infrastructure:**
+
 - PSR-7/17/18 compliant HTTP client
 - PSR-3 logging support
 - PSR-16 caching support
@@ -33,6 +35,7 @@ This document outlines planned features and enhancements for the Liturgical Cale
 ### What's Missing ❌
 
 **Calendar Data Fetching:**
+
 - No dedicated component for fetching calendar data from the API
 - Examples use raw curl (see `examples/webcalendar/index.php:186-193`)
 - POST request handling is manual and repetitive
@@ -40,6 +43,7 @@ This document outlines planned features and enhancements for the Liturgical Cale
 - No automatic response validation
 
 **Current Manual Approach** (from examples/webcalendar/index.php):
+
 ```php
 // Lines 186-193: Manual curl POST request
 $ch = curl_init();
@@ -53,6 +57,7 @@ curl_close($ch);
 ```
 
 **Problems with Current Approach:**
+
 - ❌ Uses raw curl instead of PSR-18 HTTP client
 - ❌ No caching of calendar data responses
 - ❌ No retry or circuit breaker protection
@@ -73,25 +78,28 @@ Create a `CalendarRequest` component that encapsulates all calendar data fetchin
 ### Design Goals
 
 1. **PSR-Compliant**: Use existing PSR-18 HTTP client infrastructure
-2. **Fluent API**: Chainable methods for building requests
-3. **Type-Safe**: Full PHPStan Level 10 compliance
-4. **Cacheable**: Automatic caching of responses
-5. **Observable**: Integrated logging
-6. **Reliable**: Built-in retry and circuit breaker support
-7. **Validated**: Automatic response validation
+1. **Fluent API**: Chainable methods for building requests
+1. **Type-Safe**: Full PHPStan Level 10 compliance
+1. **Cacheable**: Automatic caching of responses
+1. **Observable**: Integrated logging
+1. **Reliable**: Built-in retry and circuit breaker support
+1. **Validated**: Automatic response validation
 
 ### Important API Parameter Restrictions
 
 **Calendar-Specific Settings** - The following parameters are **only applicable to General Roman Calendar** requests:
+
 - `epiphany` - Epiphany celebration setting
 - `ascension` - Ascension celebration setting
 - `corpus_christi` - Corpus Christi celebration setting
 - `eternal_high_priest` - Eternal High Priest feast setting
 - `holydays_of_obligation` - Holy days of obligation configuration
 
-**Why?** National and diocesan calendars have these liturgical settings **predefined by the calendar itself** based on local church regulations and conferences of bishops. These parameters are ignored by the API when requesting national (`/calendar/nation/{id}`) or diocesan (`/calendar/diocese/{id}`) calendars.
+**Why?** National and diocesan calendars have these liturgical settings **predefined by the calendar itself** based on local church regulations and conferences of
+bishops. These parameters are ignored by the API when requesting national (`/calendar/nation/{id}`) or diocesan (`/calendar/diocese/{id}`) calendars.
 
 **Applicable Paths:**
+
 - ✅ `/calendar` - General Roman Calendar (current year)
 - ✅ `/calendar/{year}` - General Roman Calendar (specific year)
 - ❌ `/calendar/nation/{id}` - National calendar (settings predefined)
@@ -151,7 +159,9 @@ $calendar = $request->year(2024)
     ->get();
 ```
 
-**Important**: The `epiphany()`, `ascension()`, `corpusChristi()`, `eternalHighPriest()`, and `holydaysOfObligation()` methods are **only applicable to General Roman Calendar** requests (bare `/calendar` or `/calendar/{year}` paths). National and diocesan calendars have these settings predefined and will ignore these parameters if sent.
+**Important**: The `epiphany()`, `ascension()`, `corpusChristi()`, `eternalHighPriest()`, and `holydaysOfObligation()` methods are **only applicable to General Roman
+Calendar** requests (bare `/calendar` or `/calendar/{year}` paths). National and diocesan calendars have these settings predefined and will ignore these parameters
+if sent.
 
 ### Implementation Plan
 
@@ -636,7 +646,7 @@ class CalendarResponseBuilder
 }
 ```
 
-### Usage Examples
+### CalendarRequest Usage Examples
 
 #### Before (Manual curl)
 
@@ -669,32 +679,34 @@ $calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $httpClient);
 ### Benefits
 
 1. **✅ PSR-Compliant**: Uses existing HTTP client infrastructure
-2. **✅ Cached**: Automatic response caching (if cache provided)
-3. **✅ Logged**: All requests logged (if logger provided)
-4. **✅ Resilient**: Built-in retry and circuit breaker
-5. **✅ Validated**: Automatic response validation
-6. **✅ Type-Safe**: Full PHPStan compliance
-7. **✅ Fluent**: Easy-to-use chainable API
-8. **✅ Testable**: Easy to mock for unit tests
+1. **✅ Cached**: Automatic response caching (if cache provided)
+1. **✅ Logged**: All requests logged (if logger provided)
+1. **✅ Resilient**: Built-in retry and circuit breaker
+1. **✅ Validated**: Automatic response validation
+1. **✅ Type-Safe**: Full PHPStan compliance
+1. **✅ Fluent**: Easy-to-use chainable API
+1. **✅ Testable**: Easy to mock for unit tests
 
 ---
 
 ## Feature: Calendar Response Caching
 
-### Overview
+### Caching Overview
 
 Extend caching to include calendar data responses, not just metadata.
 
 ### Cache Strategy
 
 **Cache Keys:**
-```
+
+```text
 calendar:general:2024:en
 calendar:nation:US:2024:en
 calendar:diocese:DIOCESE001:2025:la
 ```
 
 **Cache TTLs:**
+
 - General Calendar: 24 hours (stable)
 - National Calendar: 12 hours (occasional updates)
 - Diocesan Calendar: 6 hours (more frequent updates)
@@ -702,6 +714,7 @@ calendar:diocese:DIOCESE001:2025:la
 - Past years: 7 days (unchanging)
 
 **Implementation:**
+
 ```php
 // Automatic caching in CalendarRequest
 private function getCacheKey(): string
@@ -742,7 +755,7 @@ private function getTtl(): int
 
 ## Feature: Batch Request Support
 
-### Overview
+### Batch Request Overview
 
 Support fetching multiple calendars in a single operation.
 
@@ -766,7 +779,7 @@ $usCalendar = $results['us2024'];
 $itCalendar = $results['it2024'];
 ```
 
-### Benefits
+### Batch Request Benefits
 
 - Fetch multiple calendars efficiently
 - Parallel requests (if using async HTTP client)
@@ -818,6 +831,7 @@ $commonEvents = $comparison->getCommonEvents();
 ## Implementation Timeline
 
 ### Phase 1: Core CalendarRequest (Week 1)
+
 - [ ] Create `CalendarRequest` component
 - [ ] Implement fluent API
 - [ ] Add response validation
@@ -826,24 +840,28 @@ $commonEvents = $comparison->getCommonEvents();
 - [ ] Update examples to use CalendarRequest
 
 ### Phase 2: Response Models (Week 2)
+
 - [ ] Create typed response models
 - [ ] Add helper methods for common queries
 - [ ] Add response filtering
 - [ ] Unit tests for models
 
 ### Phase 3: Caching & Optimization (Week 3)
+
 - [ ] Implement smart cache keys
 - [ ] Add TTL logic based on year
 - [ ] Add cache invalidation methods
 - [ ] Performance benchmarking
 
 ### Phase 4: Advanced Features (Week 4)
+
 - [ ] Batch request support
 - [ ] Response formatters (iCal, PDF)
 - [ ] Calendar comparison tools
 - [ ] Documentation updates
 
 ### Phase 5: Polish & Release
+
 - [ ] Update UPGRADE.md
 - [ ] Create comprehensive examples
 - [ ] Add to README
@@ -866,12 +884,14 @@ $commonEvents = $comparison->getCommonEvents();
 
 ### 1. Should CalendarRequest extend a base Request class?
 
-**Option A**: Standalone component
+#### Option A: Standalone component
+
 ```php
 class CalendarRequest { }
 ```
 
-**Option B**: Extend base ApiRequest
+#### Option B: Extend base ApiRequest
+
 ```php
 abstract class ApiRequest { }
 class CalendarRequest extends ApiRequest { }
@@ -889,6 +909,7 @@ class MetadataRequest extends ApiRequest { }
 ### 3. Should responses be cached by default?
 
 **Recommendation**: Yes, but only if cache is provided:
+
 ```php
 // No cache provided - no caching
 $req = new CalendarRequest();
@@ -914,4 +935,4 @@ $req = new CalendarRequest($httpClient, $logger, $cache);
 
 ---
 
-**Generated with Claude Code**
+## Generated with Claude Code
