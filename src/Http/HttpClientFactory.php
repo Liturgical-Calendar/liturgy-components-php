@@ -73,13 +73,19 @@ class HttpClientFactory
      * Recommended configuration using Guzzle for PSR-18 and Nyholm PSR-7 for factories.
      *
      * @return HttpClientInterface
-     * @throws \RuntimeException If Guzzle is not installed
+     * @throws \RuntimeException If Guzzle or Nyholm PSR-7 is not installed
      */
     public static function createWithGuzzle(): HttpClientInterface
     {
         if (!class_exists('\GuzzleHttp\Client')) {
             throw new \RuntimeException(
                 'Guzzle HTTP client not found. Install with: composer require guzzlehttp/guzzle'
+            );
+        }
+
+        if (!class_exists('\Nyholm\Psr7\Factory\Psr17Factory')) {
+            throw new \RuntimeException(
+                'Nyholm PSR-7 factory not found. Install with: composer require nyholm/psr7'
             );
         }
 
