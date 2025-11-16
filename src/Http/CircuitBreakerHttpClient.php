@@ -20,10 +20,16 @@ class CircuitBreakerHttpClient implements HttpClientInterface
     private const STATE_OPEN      = 'open';          // Failing fast
     private const STATE_HALF_OPEN = 'half_open'; // Testing recovery
 
+    /** @var array<int> Default HTTP status codes that should trip the circuit breaker */
+    private const DEFAULT_FAILURE_STATUS_CODES = [];
+
     private string $state         = self::STATE_CLOSED;
     private int $failureCount     = 0;
     private int $successCount     = 0;
     private ?int $lastFailureTime = null;
+
+    /** @var array<int> */
+    private array $failureStatusCodes;
 
     /**
      * @param HttpClientInterface $client Underlying HTTP client
@@ -32,6 +38,7 @@ class CircuitBreakerHttpClient implements HttpClientInterface
      * @param int $successThreshold Number of successes in HALF_OPEN before closing circuit (default: 2)
      * @param LoggerInterface $logger PSR-3 logger for circuit breaker events
      * @param callable(): int $timeProvider Function that returns current Unix timestamp (for testing)
+     * @param array<int> $failureStatusCodes HTTP status codes that should trip the circuit breaker (default: [] - only exceptions)
      */
     public function __construct(
         private HttpClientInterface $client,
@@ -39,9 +46,11 @@ class CircuitBreakerHttpClient implements HttpClientInterface
         private int $recoveryTimeout = 60,
         private int $successThreshold = 2,
         private LoggerInterface $logger = new NullLogger(),
-        private $timeProvider = null
+        private $timeProvider = null,
+        array $failureStatusCodes = self::DEFAULT_FAILURE_STATUS_CODES
     ) {
-        $this->timeProvider = $timeProvider ?? time(...);
+        $this->timeProvider       = $timeProvider ?? time(...);
+        $this->failureStatusCodes = $failureStatusCodes;
     }
 
     /**
@@ -64,6 +73,20 @@ class CircuitBreakerHttpClient implements HttpClientInterface
 
         try {
             $response = $this->client->get($url, $headers);
+
+            // Check if status code should be treated as a failure
+            $statusCode = $response->getStatusCode();
+            if (in_array($statusCode, $this->failureStatusCodes, true)) {
+                $this->logger->warning('Circuit breaker: failure status code detected', [
+                    'url'         => $url,
+                    'status_code' => $statusCode,
+                    'state'       => $this->state,
+                ]);
+                $this->onFailure();
+                // Still return the response to the caller
+                return $response;
+            }
+
             $this->onSuccess();
             return $response;
         } catch (HttpException $e) {
@@ -93,6 +116,20 @@ class CircuitBreakerHttpClient implements HttpClientInterface
 
         try {
             $response = $this->client->post($url, $body, $headers);
+
+            // Check if status code should be treated as a failure
+            $statusCode = $response->getStatusCode();
+            if (in_array($statusCode, $this->failureStatusCodes, true)) {
+                $this->logger->warning('Circuit breaker: failure status code detected', [
+                    'url'         => $url,
+                    'status_code' => $statusCode,
+                    'state'       => $this->state,
+                ]);
+                $this->onFailure();
+                // Still return the response to the caller
+                return $response;
+            }
+
             $this->onSuccess();
             return $response;
         } catch (HttpException $e) {

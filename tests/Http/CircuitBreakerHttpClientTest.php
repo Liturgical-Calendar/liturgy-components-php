@@ -380,6 +380,127 @@ class CircuitBreakerHttpClientTest extends TestCase
         $circuitBreaker->get($url);
     }
 
+    public function testCircuitTripsOn5xxStatusCodes(): void
+    {
+        $url             = 'https://example.com/api/data';
+        $mockResponse503 = $this->createMockResponse(503);
+
+        // Configure circuit breaker to trip on 503 status codes
+        $circuitBreaker = new CircuitBreakerHttpClient(
+            $this->mockClient,
+            5,          // failure threshold
+            60,         // recovery timeout
+            2,          // success threshold
+            $this->mockLogger,
+            $this->createTimeProvider(),
+            [503]       // failure status codes
+        );
+
+        // Return 503 five times to open the circuit
+        $this->mockClient->expects($this->exactly(5))
+            ->method('get')
+            ->with($url, [])
+            ->willReturn($mockResponse503);
+
+        // Make 5 requests that return 503
+        for ($i = 0; $i < 5; $i++) {
+            $response = $circuitBreaker->get($url);
+            $this->assertEquals(503, $response->getStatusCode());
+        }
+
+        // Circuit should now be open
+        $this->assertEquals('open', $circuitBreaker->getState());
+
+        // Next request should be blocked (circuit open)
+        try {
+            $circuitBreaker->get($url);
+            $this->fail('Expected HttpException for open circuit');
+        } catch (HttpException $e) {
+            $this->assertStringContainsString('circuit breaker open', $e->getMessage());
+        }
+    }
+
+    public function testNon5xxStatusCodesDoNotTripCircuit(): void
+    {
+        $url             = 'https://example.com/api/data';
+        $mockResponse404 = $this->createMockResponse(404);
+
+        // Configure circuit breaker to trip on 5xx, but 404 shouldn't trip it
+        $circuitBreaker = new CircuitBreakerHttpClient(
+            $this->mockClient,
+            5,
+            60,
+            2,
+            $this->mockLogger,
+            $this->createTimeProvider(),
+            [500, 502, 503, 504]
+        );
+
+        // Return 404 five times
+        $this->mockClient->expects($this->exactly(5))
+            ->method('get')
+            ->with($url, [])
+            ->willReturn($mockResponse404);
+
+        // Make 5 requests that return 404
+        for ($i = 0; $i < 5; $i++) {
+            $response = $circuitBreaker->get($url);
+            $this->assertEquals(404, $response->getStatusCode());
+        }
+
+        // Circuit should still be closed (404 is not a configured failure code)
+        $this->assertEquals('closed', $circuitBreaker->getState());
+        $this->assertEquals(0, $circuitBreaker->getFailureCount());
+    }
+
+    public function testStatusCodeFailuresAndExceptionsAreBothCounted(): void
+    {
+        $url             = 'https://example.com/api/data';
+        $mockResponse503 = $this->createMockResponse(503);
+
+        // Mix of exceptions and 503 responses
+        $this->mockClient->expects($this->exactly(5))
+            ->method('get')
+            ->with($url, [])
+            ->willReturnOnConsecutiveCalls(
+                $this->throwException(new HttpException('Network error')),  // 1st failure (exception)
+                $this->throwException(new HttpException('Network error')),  // 2nd failure (exception)
+                $mockResponse503,                                            // 3rd failure (status code)
+                $mockResponse503,                                            // 4th failure (status code)
+                $mockResponse503                                             // 5th failure (status code)
+            );
+
+        $circuitBreaker = new CircuitBreakerHttpClient(
+            $this->mockClient,
+            5,
+            60,
+            2,
+            $this->mockLogger,
+            $this->createTimeProvider(),
+            [503]
+        );
+
+        // First two requests throw exceptions
+        for ($i = 0; $i < 2; $i++) {
+            try {
+                $circuitBreaker->get($url);
+                $this->fail('Expected HttpException');
+            } catch (HttpException $e) {
+                // Expected
+            }
+        }
+
+        // Next three requests return 503 (failure status code)
+        for ($i = 0; $i < 3; $i++) {
+            $response = $circuitBreaker->get($url);
+            $this->assertEquals(503, $response->getStatusCode());
+        }
+
+        // Circuit should be open after 5 total failures (2 exceptions + 3 status codes)
+        $this->assertEquals('open', $circuitBreaker->getState());
+        $this->assertEquals(5, $circuitBreaker->getFailureCount());
+    }
+
     /**
      * Helper to create mock response
      */
