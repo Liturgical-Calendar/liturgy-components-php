@@ -103,13 +103,26 @@ class RetryHttpClient implements HttpClientInterface
                     continue;
                 }
 
-                // Success or non-retryable status code
+                // Success or exhausted retries
                 if ($attempt > 0) {
-                    $this->logger->info("HTTP {$method} succeeded after {$attempt} retries", [
-                        'url'         => $url,
-                        'attempts'    => $attempt + 1,
-                        'status_code' => $statusCode,
-                    ]);
+                    // Check if we exhausted retries while still getting a retryable status code
+                    if (in_array($statusCode, $this->retryStatusCodes, true)) {
+                        $this->logger->warning(
+                            "HTTP {$method} exhausted retries, returning response with retryable status {$statusCode}",
+                            [
+                                'url'         => $url,
+                                'attempts'    => $attempt + 1,
+                                'status_code' => $statusCode,
+                                'max_retries' => $this->maxRetries,
+                            ]
+                        );
+                    } else {
+                        $this->logger->info("HTTP {$method} succeeded after {$attempt} retries", [
+                            'url'         => $url,
+                            'attempts'    => $attempt + 1,
+                            'status_code' => $statusCode,
+                        ]);
+                    }
                 }
 
                 return $response;

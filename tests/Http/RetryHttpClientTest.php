@@ -267,6 +267,52 @@ class RetryHttpClientTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
+    public function testExhaustedRetriesWithRetryableStatusCode(): void
+    {
+        $url             = 'https://example.com/api/data';
+        $mockResponse503 = $this->createMockResponse(503);
+
+        // All attempts return 503 (initial + 3 retries = 4 total)
+        $this->mockClient->expects($this->exactly(4))
+            ->method('get')
+            ->with($url, [])
+            ->willReturn($mockResponse503);
+
+        // Collect all warning messages to verify
+        $warningMessages = [];
+        $this->mockLogger->expects($this->exactly(4))
+            ->method('warning')
+            ->willReturnCallback(function ($message, $context) use (&$warningMessages) {
+                $warningMessages[] = $message;
+            });
+
+        // Should NOT log info "succeeded after" - instead should log warning about exhausted retries
+        $this->mockLogger->expects($this->never())
+            ->method('info');
+
+        $retryClient = new RetryHttpClient(
+            $this->mockClient,
+            3,          // maxRetries
+            10,         // retryDelay
+            false,      // no exponential backoff
+            [503],      // retry on 503
+            $this->mockLogger
+        );
+
+        // Should return the 503 response after exhausting retries
+        $response = $retryClient->get($url);
+        $this->assertEquals(503, $response->getStatusCode());
+
+        // Verify we got the expected warning messages
+        $this->assertCount(4, $warningMessages);
+        // First 3 should be retry warnings
+        $this->assertStringContainsString('returned retryable status 503', $warningMessages[0]);
+        $this->assertStringContainsString('returned retryable status 503', $warningMessages[1]);
+        $this->assertStringContainsString('returned retryable status 503', $warningMessages[2]);
+        // 4th should be the exhaustion warning
+        $this->assertStringContainsString('exhausted retries', $warningMessages[3]);
+    }
+
     /**
      * Helper to create mock response
      */
