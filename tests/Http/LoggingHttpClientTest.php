@@ -127,7 +127,8 @@ class LoggingHttpClientTest extends TestCase
             ->willReturnCallback(function ($message, $context) use ($url, $body) {
                 if ($message === 'HTTP POST request') {
                     $this->assertEquals($url, $context['url']);
-                    $this->assertEquals(count($body), $context['body_size']);
+                    // Body size should be JSON-encoded byte length for arrays
+                    $this->assertEquals(strlen(json_encode($body)), $context['body_size']);
                 } elseif ($message === 'HTTP POST response') {
                     $this->assertEquals($url, $context['url']);
                     $this->assertEquals(201, $context['status_code']);

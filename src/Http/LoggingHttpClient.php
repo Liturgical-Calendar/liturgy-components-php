@@ -67,10 +67,15 @@ class LoggingHttpClient implements HttpClientInterface
      */
     public function post(string $url, array|string $body, array $headers = []): ResponseInterface
     {
+        // Calculate body size in bytes for consistent metrics
+        $bodySize = is_string($body)
+            ? strlen($body)
+            : strlen(json_encode($body) ?: '[]');
+
         $this->logger->info('HTTP POST request', [
             'url'       => $url,
             'headers'   => $this->sanitizeHeaders($headers),
-            'body_size' => is_string($body) ? strlen($body) : count($body),
+            'body_size' => $bodySize,
         ]);
 
         $startTime = microtime(true);
