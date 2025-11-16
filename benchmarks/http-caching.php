@@ -68,6 +68,11 @@ for ($i = 1; $i <= ITERATIONS; $i++) {
     usleep(100000); // 100ms
 }
 
+if ($timesWithoutCache === []) {
+    echo "\nNo successful requests in Test 1; cannot compute averages.\n";
+    exit(1);
+}
+
 $avgTimeWithoutCache   = array_sum($timesWithoutCache) / count($timesWithoutCache);
 $avgMemoryWithoutCache = array_sum($memoryWithoutCache) / count($memoryWithoutCache);
 
@@ -115,6 +120,11 @@ for ($i = 1; $i <= ITERATIONS; $i++) {
     } catch (\Exception $e) {
         echo "  Request $i: ERROR - " . $e->getMessage() . "\n";
     }
+}
+
+if ($timesWithCache === []) {
+    echo "\nNo successful requests in Test 2; cannot compute averages.\n";
+    exit(1);
 }
 
 $avgTimeWithCache   = array_sum($timesWithCache) / count($timesWithCache);
