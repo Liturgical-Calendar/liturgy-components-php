@@ -1,6 +1,6 @@
 <?php
 
-namespace LiturgicalCalendar\Tests\Http;
+namespace LiturgicalCalendar\Components\Tests\Http;
 
 use LiturgicalCalendar\Components\Http\LoggingHttpClient;
 use LiturgicalCalendar\Components\Http\HttpClientInterface;
