@@ -36,7 +36,7 @@ if (class_exists('Monolog\Logger')) {
     // Log to PHP error log for simplicity (or use StreamHandler for file logging)
     $logger->pushHandler(new Monolog\Handler\ErrorLogHandler(
         Monolog\Handler\ErrorLogHandler::OPERATING_SYSTEM,
-        Monolog\Logger::WARNING
+        Monolog\Level::Warning
     ));
     // Uncomment below to log to file instead:
     // $logger->pushHandler(new Monolog\Handler\StreamHandler(__DIR__ . '/logs/litcal.log', Monolog\Logger::DEBUG));

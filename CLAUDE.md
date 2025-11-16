@@ -33,6 +33,14 @@ This is a PHP library providing reusable frontend components for the Liturgical 
 - Control structure spacing after closing brace is relaxed
 - Function declaration argument spacing before equals is relaxed
 
+### Markdown Standards
+- **CRITICAL**: All markdown files must adhere to the .markdownlint.yml rules defined in this project
+- Key rules include:
+  - Maximum line length: 180 characters (excluding code blocks and tables)
+  - Use fenced code blocks (triple backticks)
+  - Ordered lists use consistent numbering style
+  - Inline HTML is allowed for specific elements (img, a, b, table, etc.)
+
 ### Before Committing
 Always run these commands to ensure code quality:
 

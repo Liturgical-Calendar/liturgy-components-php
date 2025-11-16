@@ -80,6 +80,23 @@ Create a `CalendarRequest` component that encapsulates all calendar data fetchin
 6. **Reliable**: Built-in retry and circuit breaker support
 7. **Validated**: Automatic response validation
 
+### Important API Parameter Restrictions
+
+**Calendar-Specific Settings** - The following parameters are **only applicable to General Roman Calendar** requests:
+- `epiphany` - Epiphany celebration setting
+- `ascension` - Ascension celebration setting
+- `corpus_christi` - Corpus Christi celebration setting
+- `eternal_high_priest` - Eternal High Priest feast setting
+- `holydays_of_obligation` - Holy days of obligation configuration
+
+**Why?** National and diocesan calendars have these liturgical settings **predefined by the calendar itself** based on local church regulations and conferences of bishops. These parameters are ignored by the API when requesting national (`/calendar/nation/{id}`) or diocesan (`/calendar/diocese/{id}`) calendars.
+
+**Applicable Paths:**
+- ✅ `/calendar` - General Roman Calendar (current year)
+- ✅ `/calendar/{year}` - General Roman Calendar (specific year)
+- ❌ `/calendar/nation/{id}` - National calendar (settings predefined)
+- ❌ `/calendar/diocese/{id}` - Diocesan calendar (settings predefined)
+
 ### Proposed API
 
 #### Basic Usage
@@ -97,15 +114,17 @@ $calendar = $request->year(2024)
 #### Advanced Usage
 
 ```php
-// National calendar with all features
+// National calendar request
 $request = new CalendarRequest($httpClient, $logger, $cache);
 $calendar = $request->nation('US')
     ->year(2024)
     ->locale('en')
-    ->epiphany('SUNDAY_JAN2_JAN8')
-    ->ascension('SUNDAY')
     ->returnType('json') // or 'xml', 'yaml', 'ical'
     ->get();
+
+// Note: epiphany, ascension, corpus_christi, eternal_high_priest, and
+// holydays_of_obligation parameters are NOT applicable to national/diocesan
+// calendars as these settings are defined by the calendar itself
 ```
 
 #### Diocesan Calendar
@@ -117,16 +136,22 @@ $calendar = $request->diocese('DIOCESE001')
     ->get();
 ```
 
-#### With Custom Options
+#### General Roman Calendar with Custom Options
 
 ```php
+// These parameters ONLY work with General Roman Calendar (no nation/diocese)
 $calendar = $request->year(2024)
     ->yearType('LITURGICAL')
+    ->epiphany('SUNDAY_JAN2_JAN8')
+    ->ascension('SUNDAY')
+    ->corpusChristi('SUNDAY')
     ->eternalHighPriest(true)
     ->holydaysOfObligation(['EPIPHANY', 'ASCENSION'])
     ->acceptLanguage('en-US,en;q=0.9')
     ->get();
 ```
+
+**Important**: The `epiphany()`, `ascension()`, `corpusChristi()`, `eternalHighPriest()`, and `holydaysOfObligation()` methods are **only applicable to General Roman Calendar** requests (bare `/calendar` or `/calendar/{year}` paths). National and diocesan calendars have these settings predefined and will ignore these parameters if sent.
 
 ### Implementation Plan
 
@@ -246,6 +271,9 @@ class CalendarRequest
 
     /**
      * Set Epiphany setting
+     *
+     * NOTE: Only applicable to General Roman Calendar requests.
+     * National and diocesan calendars have this predefined.
      */
     public function epiphany(string $setting): self
     {
@@ -255,6 +283,9 @@ class CalendarRequest
 
     /**
      * Set Ascension setting
+     *
+     * NOTE: Only applicable to General Roman Calendar requests.
+     * National and diocesan calendars have this predefined.
      */
     public function ascension(string $setting): self
     {
@@ -264,6 +295,9 @@ class CalendarRequest
 
     /**
      * Set Corpus Christi setting
+     *
+     * NOTE: Only applicable to General Roman Calendar requests.
+     * National and diocesan calendars have this predefined.
      */
     public function corpusChristi(string $setting): self
     {
@@ -273,6 +307,9 @@ class CalendarRequest
 
     /**
      * Set Eternal High Priest setting
+     *
+     * NOTE: Only applicable to General Roman Calendar requests.
+     * National and diocesan calendars have this predefined.
      */
     public function eternalHighPriest(bool $enabled): self
     {
@@ -282,6 +319,9 @@ class CalendarRequest
 
     /**
      * Set holydays of obligation
+     *
+     * NOTE: Only applicable to General Roman Calendar requests.
+     * National and diocesan calendars have this predefined.
      */
     public function holydaysOfObligation(array $holydays): self
     {
@@ -400,6 +440,12 @@ class CalendarRequest
 
     /**
      * Build POST data
+     *
+     * NOTE: Parameters like epiphany, ascension, corpus_christi, eternal_high_priest,
+     * and holydays_of_obligation are only meaningful for General Roman Calendar requests.
+     * National and diocesan calendars ignore these as they have predefined settings.
+     * These will be included in POST data regardless, but the API will ignore them
+     * for national/diocesan calendar requests.
      */
     private function buildPostData(): array
     {

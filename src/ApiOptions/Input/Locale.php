@@ -28,7 +28,7 @@ class Locale extends Input
         'param' => 'locale'
     ];
 
-    private static \stdClass $metadata;
+    private static ?\stdClass $metadata = null;
 
     /** @var string[] */
     private static array $apiLocales = [];
@@ -163,7 +163,7 @@ class Locale extends Input
     public function setOptionsForCalendar(?string $calendarType, ?string $calendarId): void
     {
         $apiUrl = ApiOptions::getApiUrl();
-        if (empty(self::$metadata)) {
+        if (self::$metadata === null) {
             $url = "{$apiUrl}/calendars";
 
             // Ensure HTTP client is initialized
