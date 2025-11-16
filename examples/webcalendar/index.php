@@ -69,19 +69,22 @@ $httpClient = HttpClientFactory::createProductionClient(
 // Environment Configuration
 // ============================================================================
 
-$options = null;
+// Load environment variables if Dotenv is available
 if (class_exists('Dotenv\Dotenv')) {
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.production'], false);
     $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
     $dotenv->ifPresent(['API_PORT'])->isInteger();
     $dotenv->safeLoad();
-    if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'development') {
-        if (false === isset($_ENV['API_PROTOCOL']) || false === isset($_ENV['API_HOST']) || false === isset($_ENV['API_PORT'])) {
-            die('API_PROTOCOL, API_HOST and API_PORT must be defined in .env.development or similar dotenv when APP_ENV is development');
-        }
-        $options = ['url' => "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}:{$_ENV['API_PORT']}"];
-    }
 }
+
+// Set default environment variables for production (only if not already set)
+$_ENV['API_PROTOCOL'] = $_ENV['API_PROTOCOL'] ?? 'https';
+$_ENV['API_HOST']     = $_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com';
+$_ENV['API_PORT']     = $_ENV['API_PORT'] ?? '';
+
+// Build $options array from environment variables
+$apiPort = !empty($_ENV['API_PORT']) ? ":{$_ENV['API_PORT']}" : '';
+$options = ['url' => "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}{$apiPort}"];
 
 // ============================================================================
 // Initialize Components with HTTP Client, Cache, and Logger
@@ -91,12 +94,13 @@ $apiOptions = new ApiOptions($options);
 $apiOptions->acceptHeaderInput->hide();
 Input::setGlobalWrapper('td');
 
-// CalendarSelect with full middleware stack
-$calendarSelectNations = new CalendarSelect($options, $httpClient, null, $cache);
+// CalendarSelect with cached HTTP client
+// Note: Pass null for $cache since $httpClient is already decorated with caching
+$calendarSelectNations = new CalendarSelect($options, $httpClient, null, null);
 $calendarSelectNations->label(true)->labelText('nation')
     ->id('national_calendar')->name('national_calendar')->setOptions(OptionsType::NATIONS)->allowNull(true);
 
-$calendarSelectDioceses = new CalendarSelect($options, $httpClient, null, $cache);
+$calendarSelectDioceses = new CalendarSelect($options, $httpClient, null, null);
 $calendarSelectDioceses->label(true)->labelText('diocese')
     ->id('diocesan_calendar')->name('diocesan_calendar')->setOptions(OptionsType::DIOCESES)->allowNull(true);
 
@@ -189,7 +193,8 @@ if (isset($_POST) && !empty($_POST)) {
         $apiOptions->localeInput->setOptionsForCalendar('nation', $selectedNation);
     }
 
-    $requestUrl = "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}:{$_ENV['API_PORT']}/calendar{$requestPath}{$requestYear}";
+    // Build request URL using environment variables
+    $requestUrl = "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}{$apiPort}/calendar{$requestPath}{$requestYear}";
 
     // ========================================================================
     // Make HTTP POST Request using PSR-18 HTTP Client
