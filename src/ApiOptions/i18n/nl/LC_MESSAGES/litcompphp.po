@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-15 19:22+0000\n"
+"POT-Creation-Date: 2025-11-17 05:27+0000\n"
 "PO-Revision-Date: 2024-10-23 12:01+0000\n"
 "Last-Translator: Weblate Admin <admin@example.com>\n"
 "Language-Team: Dutch <https://translate.johnromanodorazio.com/projects/"
@@ -19,14 +19,14 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.6.1\n"
 
-#: src/ApiOptions/Input/Epiphany.php:106
+#: src/ApiOptions/Input/Epiphany.php:103
 msgid "Sunday between January 2nd and 8th"
 msgstr "Zondag tussen 2 en 8 januari"
 
-#: src/ApiOptions/Input/EternalHighPriest.php:80
+#: src/ApiOptions/Input/EternalHighPriest.php:76
 msgid "true"
 msgstr "waar"
 
-#: src/ApiOptions/Input/EternalHighPriest.php:81
+#: src/ApiOptions/Input/EternalHighPriest.php:77
 msgid "false"
 msgstr "onwaar"
