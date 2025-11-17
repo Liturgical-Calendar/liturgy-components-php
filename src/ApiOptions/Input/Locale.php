@@ -197,13 +197,7 @@ class Locale extends Input
             $locales = self::$metadata->locales;
             /** @var array<string> $locales */
             self::$apiLocales = $locales;
-            $localeDisplay    = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
-                $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
-                return $carry;
-            }, []);
-            /** @var array<string> $localeDisplay */
-            self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
-            asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
+            $this->generateLocaleDisplay();
         } elseif (null === $calendarId || null === $calendarType) {
             throw new \Exception('Invalid calendarType or calendarId');
         } else {
@@ -229,13 +223,7 @@ class Locale extends Input
                     $locales = $calendar->locales;
                     /** @var array<string> $locales */
                     self::$apiLocales = $locales;
-                    $localeDisplay    = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
-                        $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
-                        return $carry;
-                    }, []);
-                    /** @var array<string> $localeDisplay */
-                    self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
-                    asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
+                    $this->generateLocaleDisplay();
                     break;
                 case 'diocese':
                     if (false === property_exists(self::$metadata, 'diocesan_calendars') || false === is_array(self::$metadata->diocesan_calendars)) {
@@ -258,17 +246,31 @@ class Locale extends Input
                     $locales = $calendar->locales;
                     /** @var array<string> $locales */
                     self::$apiLocales = $locales;
-                    $localeDisplay    = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
-                        $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
-                        return $carry;
-                    }, []);
-                    /** @var array<string> $localeDisplay */
-                    self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
-                    asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
+                    $this->generateLocaleDisplay();
                     break;
                 default:
                     throw new \Exception("Invalid calendarType: {$calendarType}");
             }
         }
+    }
+
+    /**
+     * Generate locale display names for the current locale.
+     *
+     * Takes the locales stored in self::$apiLocales, generates display names
+     * using the current ApiOptions locale, and stores the sorted result in
+     * self::$apiLocalesDisplay.
+     *
+     * @return void
+     */
+    private function generateLocaleDisplay(): void
+    {
+        $localeDisplay = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
+            $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
+            return $carry;
+        }, []);
+        /** @var array<string> $localeDisplay */
+        self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
+        asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
     }
 }
