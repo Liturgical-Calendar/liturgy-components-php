@@ -142,6 +142,7 @@ class FileGetContentsClient implements HttpClientInterface
     /**
      * Parse HTTP status code from response headers
      *
+     * Supports all HTTP versions (HTTP/1.0, HTTP/1.1, HTTP/2, HTTP/3).
      * For HTTP/HTTPS URLs, strictly validates the status line and throws exceptions for malformed responses.
      * For non-HTTP protocols (data://, file://, etc.), returns 200 as they don't provide HTTP headers.
      *
@@ -163,7 +164,9 @@ class FileGetContentsClient implements HttpClientInterface
         }
 
         $statusLine = $headers[0];
-        if (preg_match('/HTTP\/\d\.\d\s+(\d+)/', $statusLine, $matches)) {
+        // Match HTTP versions: HTTP/1.0, HTTP/1.1, HTTP/2, HTTP/2.0, HTTP/3
+        // Pattern allows optional minor version to support both HTTP/1.1 and HTTP/2 formats
+        if (preg_match('/HTTP\/\d+(?:\.\d+)?\s+(\d+)/', $statusLine, $matches)) {
             return (int) $matches[1];
         }
 
