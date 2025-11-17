@@ -41,11 +41,13 @@ class FileGetContentsClientTest extends TestCase
 
     public function testGetWithInvalidUrlThrowsException(): void
     {
+        $invalidUrl = 'invalid-scheme://nonexistent.test/path';
+
         $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Failed to fetch URL: invalid-scheme://nonexistent.test/path');
+        $this->expectExceptionMessage("Failed to fetch URL: {$invalidUrl}");
 
         // Use a URL scheme that doesn't exist to force failure
-        $this->client->get('invalid-scheme://nonexistent.test/path');
+        $this->client->get($invalidUrl);
     }
 
     public function testPostReturnsResponseInterface(): void
@@ -78,11 +80,13 @@ class FileGetContentsClientTest extends TestCase
 
     public function testPostWithInvalidUrlThrowsException(): void
     {
+        $invalidUrl = 'invalid-scheme://nonexistent.test/path';
+
         $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Failed to post to URL: invalid-scheme://nonexistent.test/path');
+        $this->expectExceptionMessage("Failed to post to URL: {$invalidUrl}");
 
         // Use a URL scheme that doesn't exist to force failure
-        $this->client->post('invalid-scheme://nonexistent.test/path', 'data');
+        $this->client->post($invalidUrl, 'data');
     }
 
     public function testGetWithCustomHeaders(): void
@@ -149,22 +153,22 @@ class FileGetContentsClientTest extends TestCase
 
     public function testPostRespectsCaseInsensitiveContentTypeHeader(): void
     {
-        $url = 'data://text/plain;base64,' . base64_encode('Response');
+        $url  = 'data://text/plain;base64,' . base64_encode('Response');
         $body = ['key' => 'value'];
 
         // Test with lowercase 'content-type' - should not add duplicate Content-Type
         $headersLower = ['content-type' => 'application/xml'];
-        $response1 = $this->client->post($url, $body, $headersLower);
+        $response1    = $this->client->post($url, $body, $headersLower);
         $this->assertInstanceOf(ResponseInterface::class, $response1);
 
         // Test with mixed case 'Content-TYPE' - should not add duplicate Content-Type
         $headersMixed = ['Content-TYPE' => 'text/html'];
-        $response2 = $this->client->post($url, $body, $headersMixed);
+        $response2    = $this->client->post($url, $body, $headersMixed);
         $this->assertInstanceOf(ResponseInterface::class, $response2);
 
         // Test with exact 'Content-Type' - should not add duplicate Content-Type
         $headersExact = ['Content-Type' => 'application/json'];
-        $response3 = $this->client->post($url, $body, $headersExact);
+        $response3    = $this->client->post($url, $body, $headersExact);
         $this->assertInstanceOf(ResponseInterface::class, $response3);
 
         // Test without Content-Type - should auto-add for array bodies
@@ -179,7 +183,7 @@ class FileGetContentsClientTest extends TestCase
         // When user provides lowercase 'content-type', client should respect it
         // and not add a duplicate 'Content-Type' header
         $headers = ['content-type' => 'application/xml'];
-        $body = ['test' => 'data'];
+        $body    = ['test' => 'data'];
 
         // Should not throw exception due to duplicate headers
         $response = $this->client->post($url, $body, $headers);
@@ -191,7 +195,7 @@ class FileGetContentsClientTest extends TestCase
         // Create client with custom timeout
         $customClient = new FileGetContentsClient(timeout: 60);
 
-        $url = 'data://text/plain;base64,' . base64_encode('Test');
+        $url      = 'data://text/plain;base64,' . base64_encode('Test');
         $response = $customClient->get($url);
 
         // Client should work normally with custom timeout
@@ -204,7 +208,7 @@ class FileGetContentsClientTest extends TestCase
         // Create client without specifying timeout (should use default 30 seconds)
         $defaultClient = new FileGetContentsClient();
 
-        $url = 'data://text/plain;base64,' . base64_encode('Test');
+        $url      = 'data://text/plain;base64,' . base64_encode('Test');
         $response = $defaultClient->get($url);
 
         // Client should work normally with default timeout
