@@ -32,7 +32,7 @@ final class HolyDaysOfObligation extends Input
     public function __construct()
     {
         $this->data(['param' => 'holydays_of_obligation']);
-        $this->name('holydays_of_obligation');
+        $this->name('holydays_of_obligation[]');
         $this->id('holydays_of_obligation');
         $this->selectedValue(array_keys(self::HOLY_DAYS_VALS));
     }
