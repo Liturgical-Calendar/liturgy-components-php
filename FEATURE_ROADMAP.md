@@ -801,28 +801,74 @@ Extend caching to include calendar data responses, not just metadata.
 
 **Cache Keys:**
 
+Cache keys include all parameters that affect the calendar output:
+
 ```text
+# Basic requests
 calendar:general:2024:en
 calendar:nation:US:2024:en
 calendar:diocese:DIOCESE001:2025:la
+
+# With year_type parameter (applies to all calendar types)
+calendar:general:2024:en:yt:liturgical
+calendar:nation:IT:2024:it:yt:civil
+
+# General calendar with optional parameters (epiphany, ascension, etc.)
+# Parameters are hashed to keep cache key manageable
+calendar:general:2024:en:opts:a3f9c2e1
+calendar:general:2024:en:yt:liturgical:opts:b7d4e9f2
 ```
+
+**Cache Key Structure:**
+
+- `calendar` - Fixed prefix
+- `{type}` - Calendar type: 'general', 'nation', or 'diocese'
+- `{id}` - Calendar ID (for national/diocesan calendars)
+- `{year}` - Year or 'current'
+- `{locale}` - Locale code (e.g., 'en', 'it', 'la')
+- `yt:{year_type}` - Optional: year type parameter (if specified)
+- `opts:{hash}` - Optional: 8-char MD5 hash of general calendar parameters (epiphany, ascension, corpus_christi, eternal_high_priest, holydays_of_obligation)
+
+**Note:** National and diocesan calendars ignore optional parameters (they have predefined settings),
+so the `opts` segment only appears for general calendar requests.
 
 **Cache TTLs:**
 
-- General Calendar: 24 hours (stable)
-- National Calendar: 12 hours (occasional updates)
-- Diocesan Calendar: 6 hours (more frequent updates)
-- Current year: 1 hour (may change during year)
-- Past years: 7 days (unchanging)
+Cache duration is based on the calendar year relative to the current UTC time:
+
+- **Past years**: 30 days (2592000 seconds)
+  - Liturgical data for past years is unchanging
+  - Safe to cache for extended periods
+- **Current year**: 24 hours (86400 seconds)
+  - May be updated with new decrees during the year
+  - Decrees won't have effect within the same day, so daily refresh is sufficient
+- **Future years**: 7 days (604800 seconds)
+  - Data may be refined as the year approaches
+  - Weekly refresh balances freshness and performance
+
+Note: All TTL calculations use UTC time to avoid timezone and DST edge cases,
+ensuring consistent cache behavior regardless of server location or time changes.
 
 **Implementation:**
 
 ```php
 // Automatic caching in CalendarRequest
+/**
+ * Generate cache key for the calendar request.
+ *
+ * The cache key includes all parameters that affect the calendar output:
+ * - Calendar type and ID (nation/diocese/general)
+ * - Year and year_type (applies to all calendar types)
+ * - Locale
+ * - For general calendars: hash of optional parameters (epiphany, ascension, etc.)
+ *
+ * @return string Cache key
+ */
 private function getCacheKey(): string
 {
     $parts = ['calendar'];
 
+    // Calendar type and ID
     if ($this->calendarType && $this->calendarId) {
         $parts[] = $this->calendarType;
         $parts[] = $this->calendarId;
@@ -830,26 +876,78 @@ private function getCacheKey(): string
         $parts[] = 'general';
     }
 
+    // Year and locale
     $parts[] = $this->year ?? 'current';
     $parts[] = $this->locale ?? 'en';
+
+    // year_type applies to all calendar types
+    if ($this->yearType) {
+        $parts[] = 'yt:' . $this->yearType;
+    }
+
+    // For general calendar, include optional parameters that affect output
+    // These are ignored for national/diocesan calendars (they have predefined settings)
+    if (!$this->calendarType) {
+        $params = [];
+
+        if ($this->epiphany !== null) {
+            $params['epi'] = $this->epiphany;
+        }
+        if ($this->ascension !== null) {
+            $params['asc'] = $this->ascension;
+        }
+        if ($this->corpusChristi !== null) {
+            $params['cc'] = $this->corpusChristi;
+        }
+        if ($this->eternalHighPriest !== null) {
+            $params['ehp'] = $this->eternalHighPriest ? '1' : '0';
+        }
+        if (!empty($this->holydaysOfObligation)) {
+            // Sort for consistent hashing
+            $holydays = $this->holydaysOfObligation;
+            sort($holydays);
+            $params['hdo'] = implode(',', $holydays);
+        }
+
+        // Hash the parameters to keep cache key manageable
+        if (!empty($params)) {
+            $parts[] = 'opts:' . substr(md5(json_encode($params)), 0, 8);
+        }
+    }
 
     return implode(':', $parts);
 }
 
+/**
+ * Calculate cache TTL based on calendar year and current time.
+ *
+ * Uses UTC to avoid timezone/DST edge cases. Strategy:
+ * - Past years: 30 days - liturgical data is unchanging
+ * - Current year: 24 hours - decrees won't have effect within the same day
+ * - Future years: 7 days - data may be refined as the year approaches
+ *
+ * Note: Uses UTC to ensure consistent behavior across timezones and
+ * during DST transitions.
+ *
+ * @return int TTL in seconds
+ */
 private function getTtl(): int
 {
-    // Past years are unchanging - cache longer
-    if ($this->year && $this->year < date('Y')) {
-        return 604800; // 7 days
+    $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+    $currentYear = (int)$now->format('Y');
+
+    // Past years are unchanging - cache for 30 days
+    if ($this->year && $this->year < $currentYear) {
+        return 2592000; // 30 days
     }
 
-    // Current year - cache shorter
-    if (!$this->year || $this->year === (int)date('Y')) {
-        return 3600; // 1 hour
+    // Current year - cache for 24 hours (decrees won't have effect within the same day)
+    if (!$this->year || $this->year === $currentYear) {
+        return 86400; // 24 hours
     }
 
-    // Future years - medium cache
-    return 43200; // 12 hours
+    // Future years - cache for 7 days (data may be refined)
+    return 604800; // 7 days
 }
 ```
 
