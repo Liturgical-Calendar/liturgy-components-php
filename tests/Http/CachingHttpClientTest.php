@@ -3,6 +3,7 @@
 namespace LiturgicalCalendar\Components\Tests\Http;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 use LiturgicalCalendar\Components\Http\CachingHttpClient;
 use LiturgicalCalendar\Components\Http\HttpClientInterface;
 use LiturgicalCalendar\Components\Cache\ArrayCache;
@@ -16,9 +17,13 @@ use Psr\Log\LoggerInterface;
  */
 class CachingHttpClientTest extends TestCase
 {
-    private HttpClientInterface $mockClient;
+    /** @var MockObject&HttpClientInterface */
+    private $mockClient;
+
     private CacheInterface $cache;
-    private LoggerInterface $mockLogger;
+
+    /** @var MockObject&LoggerInterface */
+    private $mockLogger;
 
     protected function setUp(): void
     {
@@ -182,7 +187,7 @@ class CachingHttpClientTest extends TestCase
 
         $this->mockClient->expects($this->exactly(2))
             ->method('get')
-            ->willReturnCallback(function ($url) use ($url1, $url2, $mockResponse1, $mockResponse2) {
+            ->willReturnCallback(function (string $url) use ($url1, $mockResponse1, $mockResponse2): ResponseInterface {
                 return $url === $url1 ? $mockResponse1 : $mockResponse2;
             });
 
@@ -210,7 +215,7 @@ class CachingHttpClientTest extends TestCase
         $debugCalls = [];
         $this->mockLogger->expects($this->exactly(3))
             ->method('debug')
-            ->willReturnCallback(function ($message, $context) use (&$debugCalls) {
+            ->willReturnCallback(function (string $message, array $context) use (&$debugCalls): void {
                 $debugCalls[] = ['message' => $message, 'context' => $context];
             });
 
@@ -288,9 +293,9 @@ class CachingHttpClientTest extends TestCase
 
     public function testAcceptHeaderAffectsCacheKey(): void
     {
-        $url        = 'https://example.com/api/data';
-        $jsonBody   = '{"test": "data"}';
-        $xmlBody    = '<test>data</test>';
+        $url      = 'https://example.com/api/data';
+        $jsonBody = '{"test": "data"}';
+        $xmlBody  = '<test>data</test>';
 
         $mockResponse1 = $this->createMockResponse(200, $jsonBody);
         $mockResponse2 = $this->createMockResponse(200, $xmlBody);
@@ -314,13 +319,47 @@ class CachingHttpClientTest extends TestCase
         $this->assertEquals($xmlBody, $response2->getBody()->getContents());
     }
 
+    public function testNonSeekableStreamHandledGracefully(): void
+    {
+        $url          = 'https://example.com/api/data';
+        $responseBody = '{"test": "data"}';
+
+        // Create a non-seekable stream
+        $mockStream = $this->createMock(StreamInterface::class);
+        $mockStream->method('getContents')->willReturn($responseBody);
+        $mockStream->method('isSeekable')->willReturn(false);
+        // Verify rewind() is never called on non-seekable stream
+        $mockStream->expects($this->never())->method('rewind');
+
+        $mockResponse = $this->createMock(ResponseInterface::class);
+        $mockResponse->method('getStatusCode')->willReturn(200);
+        $mockResponse->method('getBody')->willReturn($mockStream);
+        $mockResponse->method('getHeaders')->willReturn([]);
+
+        $this->mockClient->expects($this->once())
+            ->method('get')
+            ->with($url, [])
+            ->willReturn($mockResponse);
+
+        $cachingClient = new CachingHttpClient($this->mockClient, $this->cache, 3600, $this->mockLogger);
+
+        // Should cache successfully without calling rewind()
+        $response = $cachingClient->get($url);
+        $this->assertEquals(200, $response->getStatusCode());
+
+        // Verify response was cached
+        $cachedResponse = $cachingClient->get($url);
+        $this->assertEquals(200, $cachedResponse->getStatusCode());
+    }
+
     /**
-     * Helper method to create mock response
+     * Helper method to create mock response with seekable stream
      */
     private function createMockResponse(int $statusCode, string $body): ResponseInterface
     {
         $mockStream = $this->createMock(StreamInterface::class);
         $mockStream->method('getContents')->willReturn($body);
+        $mockStream->method('isSeekable')->willReturn(true);
         // rewind() has void return type, so don't specify a return value
         $mockStream->method('rewind');
 

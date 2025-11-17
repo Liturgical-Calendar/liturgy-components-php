@@ -128,16 +128,23 @@ class CachingHttpClient implements HttpClientInterface
     /**
      * Cache the HTTP response
      *
+     * Reads the response body and caches it. If the stream is seekable,
+     * rewinds it so the original response remains consumable.
+     *
      * @param string $cacheKey
      * @param ResponseInterface $response
      * @return void
      */
     private function cacheResponse(string $cacheKey, ResponseInterface $response): void
     {
-        $body = $response->getBody()->getContents();
+        $stream = $response->getBody();
+        $body   = $stream->getContents();
 
-        // Reset stream position after reading
-        $response->getBody()->rewind();
+        // Reset stream position after reading (only if seekable)
+        // Non-seekable streams (e.g., php://input, streaming responses) cannot be rewound
+        if ($stream->isSeekable()) {
+            $stream->rewind();
+        }
 
         $cacheData = [
             'status'  => $response->getStatusCode(),
