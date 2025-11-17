@@ -206,16 +206,18 @@ class Locale extends Input
      * Set locale options based on calendar type and ID.
      *
      * Static Metadata Caching Behavior:
-     * - Checks if self::$metadata is null (cache miss)
-     * - If cache miss: fetches metadata from API using $this->httpClient
-     * - If cache hit: reuses cached metadata (no HTTP request made)
-     * - The cache is keyed implicitly by ApiOptions::getApiUrl()
-     * - This means the FIRST call across all instances will populate the cache
-     * - Subsequent calls (even from different instances with different HTTP clients) skip the fetch
+     * - Metadata is cached in a single process-wide static variable (self::$metadata)
+     * - The cache is NOT keyed by API URL - it is global for the entire PHP process
+     * - The FIRST call to this method will fetch metadata from ApiOptions::getApiUrl()
+     * - All subsequent calls (across all instances) will reuse the cached metadata
+     * - No additional HTTP requests will be made after the initial fetch
      *
-     * Important: Only the first instance's HTTP client configuration (logger, cache, timeouts)
-     * will be exercised for the metadata request. Subsequent instances will not make any HTTP
-     * requests, regardless of their HTTP client configuration.
+     * Important Limitations:
+     * - The API base URL (ApiOptions::getApiUrl()) must NOT change after the first metadata fetch
+     * - Only the first instance's HTTP client configuration (logger, cache, timeouts) will be used
+     * - Subsequent instances will use cached data regardless of their HTTP client configuration
+     * - If you need to support multiple API URLs in one process, the cache implementation
+     *   would need to be refactored to key by URL (see code comments for details)
      *
      * @param string|null $calendarType The type of calendar ('nation', 'diocese', or null for general)
      * @param string|null $calendarId The calendar ID (required if calendarType is specified)
@@ -320,9 +322,13 @@ class Locale extends Input
     /**
      * Generate locale display names for the current locale.
      *
-     * Takes the locales stored in self::$apiLocales, generates display names
-     * using the current ApiOptions locale, and stores the sorted result in
-     * self::$apiLocalesDisplay.
+     * Takes the locales stored in self::$apiLocales (populated by setOptionsForCalendar),
+     * generates display names using the current ApiOptions::getLocale(), and stores
+     * the sorted result in self::$apiLocalesDisplay.
+     *
+     * Note: self::$apiLocalesDisplay is keyed by locale to support different display
+     * languages, but self::$apiLocales and self::$metadata are global (not keyed by API URL).
+     * This means changing ApiOptions::getApiUrl() after the first metadata fetch is not supported.
      *
      * @return void
      */
