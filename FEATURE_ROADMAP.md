@@ -346,12 +346,33 @@ class CalendarRequest
      * as the API prioritizes the return_type parameter over the Accept header.
      * For other headers, custom values will be used as-is.
      *
-     * @param string $name Header name
-     * @param string $value Header value
+     * Security: Header names and values are validated to prevent CRLF injection attacks.
+     * Only alphanumeric characters, hyphens, and underscores are allowed in header names.
+     * Header values cannot contain CR or LF characters.
+     *
+     * @param string $name Header name (alphanumeric, hyphen, underscore only)
+     * @param string $value Header value (no CR/LF characters)
      * @return self
+     * @throws \InvalidArgumentException If header name or value is invalid
      */
     public function header(string $name, string $value): self
     {
+        // Validate header name: only letters, digits, hyphen, and underscore
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $name)) {
+            throw new \InvalidArgumentException(
+                "Invalid header name: '{$name}'. " .
+                "Header names must contain only letters, digits, hyphens, and underscores."
+            );
+        }
+
+        // Validate header value: reject CR/LF characters to prevent header injection
+        if (str_contains($value, "\r") || str_contains($value, "\n")) {
+            throw new \InvalidArgumentException(
+                "Invalid header value for '{$name}': " .
+                "Header values cannot contain CR or LF characters (possible header injection attempt)."
+            );
+        }
+
         $this->customHeaders[$name] = $value;
         return $this;
     }
@@ -363,7 +384,38 @@ class CalendarRequest
     {
         return $this->header('Accept-Language', $language);
     }
+```
 
+#### Header Validation Examples
+
+```php
+// ✅ Valid header names and values
+$request->header('X-Custom-Header', 'value');
+$request->header('Accept-Language', 'en-US');
+$request->header('Authorization', 'Bearer token123');
+$request->header('X_Custom_Header', 'value');  // Underscores allowed
+$request->header('X-API-Version', '2.0');
+
+// ❌ Invalid header names (throws InvalidArgumentException)
+$request->header('X-Custom Header', 'value');  // Space not allowed
+$request->header('X/Custom', 'value');          // Slash not allowed
+$request->header('X:Custom', 'value');          // Colon not allowed
+$request->header('', 'value');                  // Empty name not allowed
+
+// ❌ Invalid header values (throws InvalidArgumentException - CRLF injection prevention)
+$request->header('X-Custom', "value\r\nX-Injected: evil");  // CR/LF rejected
+$request->header('X-Custom', "value\nX-Injected: evil");    // LF rejected
+$request->header('X-Custom', "value\rX-Injected: evil");    // CR rejected
+
+// 🔒 Security: Header injection attempts are blocked
+try {
+    $request->header('X-Custom', "innocent\r\nX-Injected-Header: evil\r\nX-Another: bad");
+} catch (\InvalidArgumentException $e) {
+    // Exception thrown: "Header values cannot contain CR or LF characters"
+}
+```
+
+```php
     /**
      * Execute request and return calendar data
      *
