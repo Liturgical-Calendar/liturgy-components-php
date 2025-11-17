@@ -323,6 +323,60 @@ class RetryHttpClientTest extends TestCase
         $this->assertStringContainsString('exhausted retries', $warningMessages[3]);
     }
 
+    public function testNegativeMaxRetriesThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('maxRetries must be non-negative, got -1');
+
+        new RetryHttpClient(
+            $this->mockClient,
+            -1, // Negative maxRetries
+            1000,
+            false,
+            [],
+            $this->mockLogger
+        );
+    }
+
+    public function testNegativeRetryDelayThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('retryDelay must be non-negative, got -100');
+
+        new RetryHttpClient(
+            $this->mockClient,
+            3,
+            -100, // Negative retryDelay
+            false,
+            [],
+            $this->mockLogger
+        );
+    }
+
+    public function testZeroMaxRetriesIsValid(): void
+    {
+        $url          = 'https://example.com/api/data';
+        $mockResponse = $this->createMockResponse(200);
+
+        $this->mockClient->expects($this->once())
+            ->method('get')
+            ->with($url, [])
+            ->willReturn($mockResponse);
+
+        // maxRetries = 0 should be valid (no retries, just one attempt)
+        $retryClient = new RetryHttpClient(
+            $this->mockClient,
+            0, // Zero maxRetries is valid
+            1000,
+            false,
+            [],
+            $this->mockLogger
+        );
+
+        $response = $retryClient->get($url);
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
     /**
      * Helper to create mock response
      */
