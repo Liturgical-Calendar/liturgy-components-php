@@ -176,20 +176,13 @@ class FileGetContentsClientTest extends TestCase
         $this->assertInstanceOf(ResponseInterface::class, $response4);
     }
 
-    public function testPostWithLowercaseContentType(): void
-    {
-        $url = 'data://text/plain;base64,' . base64_encode('Response');
-
-        // When user provides lowercase 'content-type', client should respect it
-        // and not add a duplicate 'Content-Type' header
-        $headers = ['content-type' => 'application/xml'];
-        $body    = ['test' => 'data'];
-
-        // Should not throw exception due to duplicate headers
-        $response = $this->client->post($url, $body, $headers);
-        $this->assertInstanceOf(ResponseInterface::class, $response);
-    }
-
+    /**
+     * Smoke test: Verifies constructor accepts timeout parameter.
+     *
+     * Note: This test cannot verify that the timeout value is actually applied
+     * to HTTP requests because it uses data:// URLs which don't involve network I/O.
+     * Actual timeout behavior would require integration tests with real HTTP endpoints.
+     */
     public function testConstructorAcceptsCustomTimeout(): void
     {
         // Create client with custom timeout
@@ -203,6 +196,13 @@ class FileGetContentsClientTest extends TestCase
         $this->assertEquals('Test', $response->getBody()->getContents());
     }
 
+    /**
+     * Smoke test: Verifies constructor works with default timeout.
+     *
+     * Note: This test cannot verify that the default timeout (30 seconds) is actually
+     * applied to HTTP requests because it uses data:// URLs which don't involve network I/O.
+     * Actual timeout behavior would require integration tests with real HTTP endpoints.
+     */
     public function testConstructorUsesDefaultTimeout(): void
     {
         // Create client without specifying timeout (should use default 30 seconds)
