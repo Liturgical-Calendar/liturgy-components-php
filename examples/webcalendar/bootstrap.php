@@ -101,11 +101,12 @@ $apiOptions->yearTypeInput->wrapperClass('col col-md-3');
 $apiOptions->yearInput->wrapperClass('col col-md-3');
 
 // CalendarSelect with full middleware stack and Bootstrap classes
-$calendarSelectNations = new CalendarSelect($options, $httpClient, null, $cache);
+// Note: $httpClient already includes caching via createProductionClient(), so pass null for cache
+$calendarSelectNations = new CalendarSelect($options, $httpClient, null, null);
 $calendarSelectNations->label(true)->labelText('Nation')->class('form-select')
     ->id('national_calendar')->name('national_calendar')->setOptions(OptionsType::NATIONS)->allowNull(true);
 
-$calendarSelectDioceses = new CalendarSelect($options, $httpClient, null, $cache);
+$calendarSelectDioceses = new CalendarSelect($options, $httpClient, null, null);
 $calendarSelectDioceses->label(true)->labelText('Diocese')->class('form-select')
     ->id('diocesan_calendar')->name('diocesan_calendar')->setOptions(OptionsType::DIOCESES)->allowNull(true);
 
