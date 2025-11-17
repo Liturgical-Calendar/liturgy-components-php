@@ -166,4 +166,117 @@ class HttpClientFactoryTest extends TestCase
         $this->assertTrue($reflection2->hasMethod('get'));
         $this->assertTrue($reflection2->hasMethod('post'));
     }
+
+    // ============================================================================
+    // Middleware Helper Method Tests
+    // ============================================================================
+
+    public function testCreateWithLoggingReturnsHttpClientInterface(): void
+    {
+        $client = HttpClientFactory::createWithLogging();
+
+        $this->assertInstanceOf(HttpClientInterface::class, $client);
+    }
+
+    public function testCreateWithLoggingReturnsLoggingHttpClient(): void
+    {
+        $client = HttpClientFactory::createWithLogging();
+
+        // Outermost decorator should be LoggingHttpClient
+        $this->assertInstanceOf(\LiturgicalCalendar\Components\Http\LoggingHttpClient::class, $client);
+    }
+
+    public function testCreateWithCachingReturnsHttpClientInterface(): void
+    {
+        $client = HttpClientFactory::createWithCaching();
+
+        $this->assertInstanceOf(HttpClientInterface::class, $client);
+    }
+
+    public function testCreateWithCachingReturnsLoggingHttpClient(): void
+    {
+        $client = HttpClientFactory::createWithCaching();
+
+        // Outermost decorator should be LoggingHttpClient (wraps CachingHttpClient)
+        $this->assertInstanceOf(\LiturgicalCalendar\Components\Http\LoggingHttpClient::class, $client);
+    }
+
+    public function testCreateWithRetryReturnsHttpClientInterface(): void
+    {
+        $client = HttpClientFactory::createWithRetry();
+
+        $this->assertInstanceOf(HttpClientInterface::class, $client);
+    }
+
+    public function testCreateWithRetryReturnsLoggingHttpClient(): void
+    {
+        $client = HttpClientFactory::createWithRetry();
+
+        // Outermost decorator should be LoggingHttpClient (wraps RetryHttpClient)
+        $this->assertInstanceOf(\LiturgicalCalendar\Components\Http\LoggingHttpClient::class, $client);
+    }
+
+    public function testCreateWithCircuitBreakerReturnsHttpClientInterface(): void
+    {
+        $client = HttpClientFactory::createWithCircuitBreaker();
+
+        $this->assertInstanceOf(HttpClientInterface::class, $client);
+    }
+
+    public function testCreateWithCircuitBreakerReturnsLoggingHttpClient(): void
+    {
+        $client = HttpClientFactory::createWithCircuitBreaker();
+
+        // Outermost decorator should be LoggingHttpClient (wraps CircuitBreakerHttpClient)
+        $this->assertInstanceOf(\LiturgicalCalendar\Components\Http\LoggingHttpClient::class, $client);
+    }
+
+    public function testCreateProductionClientReturnsHttpClientInterface(): void
+    {
+        $client = HttpClientFactory::createProductionClient();
+
+        $this->assertInstanceOf(HttpClientInterface::class, $client);
+    }
+
+    public function testCreateProductionClientReturnsLoggingHttpClient(): void
+    {
+        $client = HttpClientFactory::createProductionClient();
+
+        // Outermost decorator should be LoggingHttpClient (wraps full middleware stack)
+        $this->assertInstanceOf(\LiturgicalCalendar\Components\Http\LoggingHttpClient::class, $client);
+    }
+
+    public function testMiddlewareMethodsAcceptCustomParameters(): void
+    {
+        $mockLogger = $this->createMock(\Psr\Log\LoggerInterface::class);
+        $mockCache  = $this->createMock(\Psr\SimpleCache\CacheInterface::class);
+
+        // All middleware methods should accept custom parameters without errors
+        $loggingClient        = HttpClientFactory::createWithLogging($mockLogger);
+        $cachingClient        = HttpClientFactory::createWithCaching($mockCache, 7200, $mockLogger);
+        $retryClient          = HttpClientFactory::createWithRetry(5, 2000, true, null, $mockLogger);
+        $circuitBreakerClient = HttpClientFactory::createWithCircuitBreaker(10, 30, 3, $mockLogger);
+        $productionClient     = HttpClientFactory::createProductionClient($mockCache, $mockLogger, 7200, 5, 10);
+
+        // All should return HttpClientInterface instances
+        $this->assertInstanceOf(HttpClientInterface::class, $loggingClient);
+        $this->assertInstanceOf(HttpClientInterface::class, $cachingClient);
+        $this->assertInstanceOf(HttpClientInterface::class, $retryClient);
+        $this->assertInstanceOf(HttpClientInterface::class, $circuitBreakerClient);
+        $this->assertInstanceOf(HttpClientInterface::class, $productionClient);
+    }
+
+    public function testMiddlewareMethodsReturnNewInstances(): void
+    {
+        // Multiple calls should return different instances
+        $client1 = HttpClientFactory::createWithLogging();
+        $client2 = HttpClientFactory::createWithLogging();
+
+        $this->assertNotSame($client1, $client2);
+
+        $client3 = HttpClientFactory::createProductionClient();
+        $client4 = HttpClientFactory::createProductionClient();
+
+        $this->assertNotSame($client3, $client4);
+    }
 }
