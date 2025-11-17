@@ -31,7 +31,7 @@ const ITERATIONS = 10;
 const API_URL    = 'https://litcal.johnromanodorazio.com/api/dev';
 
 echo "\n╔════════════════════════════════════════════════════════════════╗\n";
-echo "║  HTTP Response Caching Performance Benchmark                  ║\n";
+echo "║  HTTP Response Caching Performance Benchmark                   ║\n";
 echo "╚════════════════════════════════════════════════════════════════╝\n\n";
 
 echo "Configuration:\n";
@@ -97,7 +97,7 @@ echo '  Average Memory: ' . sprintf("%7.2f KB\n", $avgMemoryWithoutCache);
 // ============================================================================
 
 echo "\n┌────────────────────────────────────────────────────────────────┐\n";
-echo "│ Test 2: WITH Caching (ArrayCache)                             │\n";
+echo "│ Test 2: WITH Caching (ArrayCache)                              │\n";
 echo "└────────────────────────────────────────────────────────────────┘\n\n";
 
 $timesWithCache  = [];
