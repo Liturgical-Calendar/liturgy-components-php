@@ -3,6 +3,7 @@
 namespace LiturgicalCalendar\Components\Tests\Http;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 use LiturgicalCalendar\Components\Http\RetryHttpClient;
 use LiturgicalCalendar\Components\Http\HttpClientInterface;
 use LiturgicalCalendar\Components\Http\HttpException;
@@ -14,8 +15,11 @@ use Psr\Log\LoggerInterface;
  */
 class RetryHttpClientTest extends TestCase
 {
-    private HttpClientInterface $mockClient;
-    private LoggerInterface $mockLogger;
+    /** @var MockObject&HttpClientInterface */
+    private $mockClient;
+
+    /** @var MockObject&LoggerInterface */
+    private $mockLogger;
 
     protected function setUp(): void
     {
