@@ -126,16 +126,16 @@ class CircuitBreakerHttpClientTest extends TestCase
         $mockResponse = $this->createMockResponse(200);
 
         // Fail to open circuit
+        $callCount = 0;
         $this->mockClient->expects($this->exactly(6)) // 5 failures + 1 success
             ->method('get')
-            ->willReturnOnConsecutiveCalls(
-                $this->throwException(new HttpException('Error 1')),
-                $this->throwException(new HttpException('Error 2')),
-                $this->throwException(new HttpException('Error 3')),
-                $this->throwException(new HttpException('Error 4')),
-                $this->throwException(new HttpException('Error 5')),
-                $mockResponse
-            );
+            ->willReturnCallback(function () use (&$callCount, $mockResponse) {
+                $callCount++;
+                if ($callCount <= 5) {
+                    throw new HttpException("Error {$callCount}");
+                }
+                return $mockResponse;
+            });
 
         $circuitBreaker = new CircuitBreakerHttpClient(
             $this->mockClient,
@@ -170,17 +170,16 @@ class CircuitBreakerHttpClientTest extends TestCase
         $url          = 'https://example.com/api/data';
         $mockResponse = $this->createMockResponse(200);
 
+        $callCount = 0;
         $this->mockClient->expects($this->exactly(7)) // 5 failures + 2 successes
             ->method('get')
-            ->willReturnOnConsecutiveCalls(
-                $this->throwException(new HttpException('Error 1')),
-                $this->throwException(new HttpException('Error 2')),
-                $this->throwException(new HttpException('Error 3')),
-                $this->throwException(new HttpException('Error 4')),
-                $this->throwException(new HttpException('Error 5')),
-                $mockResponse,
-                $mockResponse
-            );
+            ->willReturnCallback(function () use (&$callCount, $mockResponse) {
+                $callCount++;
+                if ($callCount <= 5) {
+                    throw new HttpException("Error {$callCount}");
+                }
+                return $mockResponse;
+            });
 
         $circuitBreaker = new CircuitBreakerHttpClient(
             $this->mockClient,
@@ -336,16 +335,15 @@ class CircuitBreakerHttpClientTest extends TestCase
         $url          = 'https://example.com/api/data';
         $mockResponse = $this->createMockResponse(200);
 
+        $callCount = 0;
         $this->mockClient->method('get')
-            ->willReturnOnConsecutiveCalls(
-                $this->throwException(new HttpException('Error 1')),
-                $this->throwException(new HttpException('Error 2')),
-                $this->throwException(new HttpException('Error 3')),
-                $this->throwException(new HttpException('Error 4')),
-                $this->throwException(new HttpException('Error 5')),
-                $mockResponse,
-                $mockResponse
-            );
+            ->willReturnCallback(function () use (&$callCount, $mockResponse) {
+                $callCount++;
+                if ($callCount <= 5) {
+                    throw new HttpException("Error {$callCount}");
+                }
+                return $mockResponse;
+            });
 
         // Expect error log when circuit opens
         $this->mockLogger->expects($this->once())
