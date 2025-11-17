@@ -208,7 +208,7 @@ class CachingHttpClientTest extends TestCase
 
         $this->mockClient->expects($this->exactly(2))
             ->method('get')
-            ->willReturnCallback(function (string $url) use ($url1, $mockResponse1, $mockResponse2): ResponseInterface {
+            ->willReturnCallback(function (string $url, array $headers = []) use ($url1, $mockResponse1, $mockResponse2): ResponseInterface {
                 return $url === $url1 ? $mockResponse1 : $mockResponse2;
             });
 
