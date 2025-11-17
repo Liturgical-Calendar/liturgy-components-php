@@ -51,14 +51,17 @@ $timesWithoutCache  = [];
 $memoryWithoutCache = [];
 
 for ($i = 1; $i <= ITERATIONS; $i++) {
-    // Create new instance each iteration (no caching)
+    // Create HTTP client before timing (exclude client instantiation overhead)
     $httpClient = HttpClientFactory::create();
-    $calendar   = new CalendarSelect(['url' => API_URL], $httpClient);
 
+    // Start timing/memory measurement BEFORE CalendarSelect creation
+    // (HTTP fetch happens in constructor via setUrl() -> fetchMetadata())
     $memoryBefore = memory_get_usage();
     $startTime    = microtime(true);
 
     try {
+        // Create new instance (triggers HTTP fetch in constructor)
+        $calendar    = new CalendarSelect(['url' => API_URL], $httpClient);
         $html        = $calendar->getSelect();
         $endTime     = microtime(true);
         $memoryAfter = memory_get_usage();
@@ -101,16 +104,21 @@ $timesWithCache  = [];
 $memoryWithCache = [];
 $cacheHits       = 0;
 
-// Create cache and HTTP client once
+// Create cache and HTTP client once (reused across all iterations)
 $cache      = new ArrayCache();
 $httpClient = HttpClientFactory::create();
-$calendar   = new CalendarSelect(['url' => API_URL], $httpClient, null, $cache);
+$calendar   = null;
 
 for ($i = 1; $i <= ITERATIONS; $i++) {
     $memoryBefore = memory_get_usage();
     $startTime    = microtime(true);
 
     try {
+        if ($i === 1) {
+            // First iteration: Create CalendarSelect (triggers HTTP fetch - cache MISS)
+            $calendar = new CalendarSelect(['url' => API_URL], $httpClient, null, $cache);
+        }
+        // All iterations: Call getSelect() (first is MISS, rest are HIT)
         $html        = $calendar->getSelect();
         $endTime     = microtime(true);
         $memoryAfter = memory_get_usage();
