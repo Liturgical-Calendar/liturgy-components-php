@@ -6,6 +6,16 @@
  * This script benchmarks the performance improvement achieved by using
  * HTTP response caching with the PSR-16 ArrayCache implementation.
  *
+ * Note: This benchmark requires network access to the Liturgical Calendar API.
+ * Results may vary based on:
+ *   - Network latency variations
+ *   - API response times
+ *   - Rate limiting
+ *   - API downtime or unavailability
+ *
+ * For consistent results, ensure a stable network connection and that the
+ * API endpoint is responsive before running the benchmark.
+ *
  * Usage:
  *   php benchmarks/http-caching.php
  */
