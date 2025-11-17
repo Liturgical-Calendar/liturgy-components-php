@@ -140,12 +140,35 @@ if (isset($_POST) && !empty($_POST)) {
             case 'ascension':
             case 'corpus_christi':
             case 'eternal_high_priest':
-            //case 'holydays_of_obligation':
-                if (false === isset($_POST['national_calendar']) && false === isset($_POST['diocesan_calendar'])) {
+                // Only add to request data for General Roman Calendar (no nation/diocese selected)
+                // and only if the value is not null or empty
+                $nationalCalendar = $_POST['national_calendar'] ?? '';
+                $diocesanCalendar = $_POST['diocesan_calendar'] ?? '';
+                if (empty($nationalCalendar) && empty($diocesanCalendar) && null !== $value && !empty($value)) {
                     $requestData[$key] = $value;
                 }
                 $camelCaseKey = lcfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', $key))) . 'Input');
                 $apiOptions->$camelCaseKey->selectedValue($value);
+                break;
+            case 'holydays_of_obligation':
+                // Handle array input (multi-select) for General Roman Calendar only
+                if (is_array($value)) {
+                    // Sanitize array values
+                    $sanitizedValues = array_map(
+                        fn($item) => is_string($item) ? htmlspecialchars($item, ENT_QUOTES, 'UTF-8') : $item,
+                        $value
+                    );
+
+                    // Only add to request data when neither national nor diocesan calendar is selected
+                    // (national/diocesan calendars have predefined holydays of obligation)
+                    $nationalCalendar = $_POST['national_calendar'] ?? '';
+                    $diocesanCalendar = $_POST['diocesan_calendar'] ?? '';
+                    if (empty($nationalCalendar) && empty($diocesanCalendar)) {
+                        $requestData[$key] = $sanitizedValues;
+                    }
+
+                    $apiOptions->holydaysOfObligationInput->selectedValue($sanitizedValues);
+                }
                 break;
         }
     }
@@ -486,7 +509,15 @@ if (isset($_POST) && !empty($_POST)) {
                                 <?php foreach ($requestData as $key => $value) : ?>
                                 <div class="col-md-4 mb-2">
                                     <span class="badge bg-secondary"><?php echo htmlspecialchars($key); ?>:</span>
-                                    <span class="ms-2"><?php echo htmlspecialchars($value === null || empty($value) ? 'null' : $value); ?></span>
+                                    <span class="ms-2"><?php
+                                    if ($value === null || $value === '') {
+                                        echo 'null';
+                                    } elseif (is_array($value)) {
+                                        echo htmlspecialchars(implode(', ', $value));
+                                    } else {
+                                        echo htmlspecialchars($value);
+                                    }
+                                    ?></span>
                                 </div>
                                 <?php endforeach; ?>
                             </div>
