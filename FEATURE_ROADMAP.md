@@ -471,22 +471,82 @@ try {
 
     /**
      * Build request URL
+     *
+     * Constructs the API endpoint URL from base URL and path segments.
+     * All path segments are properly URL-encoded to prevent injection attacks
+     * and handle special characters correctly.
+     *
+     * @return string The complete API endpoint URL
      */
     private function buildUrl(): string
     {
-        $path = '/calendar';
+        // Start with the calendar endpoint
+        $pathSegments = ['calendar'];
 
+        // Add calendar type and ID if specified (both are required together)
         if ($this->calendarType && $this->calendarId) {
-            $path .= "/{$this->calendarType}/{$this->calendarId}";
+            $pathSegments[] = rawurlencode($this->calendarType);
+            $pathSegments[] = rawurlencode($this->calendarId);
         }
 
-        if ($this->year) {
-            $path .= "/{$this->year}";
+        // Add year if specified
+        if ($this->year !== null) {
+            $pathSegments[] = rawurlencode((string)$this->year);
         }
 
-        return $this->baseUrl . $path;
+        // Build the path from encoded segments
+        $path = '/' . implode('/', $pathSegments);
+
+        // Ensure baseUrl doesn't have trailing slash to avoid double slashes
+        $baseUrl = rtrim($this->baseUrl, '/');
+
+        return $baseUrl . $path;
     }
+```
 
+#### URL Building & Encoding Examples
+
+```php
+// ✅ Standard calendar requests - properly encoded
+$request = new CalendarRequest();
+$request->year(2024)->get();
+// URL: https://litcal.johnromanodorazio.com/api/dev/calendar/2024
+
+$request->nation('US')->year(2024)->get();
+// URL: https://litcal.johnromanodorazio.com/api/dev/calendar/nation/US/2024
+
+$request->diocese('DIOCESE001')->year(2025)->get();
+// URL: https://litcal.johnromanodorazio.com/api/dev/calendar/diocese/DIOCESE001/2025
+
+// 🔒 Security: Special characters are properly URL-encoded
+$request->diocese('DIOCESE-01')->year(2024)->get();
+// URL: https://litcal.../calendar/diocese/DIOCESE-01/2024 (hyphen is safe)
+
+// 🔒 Security: Injection attempts are neutralized via encoding
+// If someone tried to pass a malicious calendar ID:
+$maliciousId = "../../../etc/passwd";
+$request->diocese($maliciousId)->year(2024)->get();
+// URL: https://litcal.../calendar/diocese/..%2F..%2F..%2Fetc%2Fpasswd/2024
+// The "../" is encoded as "%2F", preventing path traversal
+
+// 🔒 Security: URL injection attempts are encoded
+$maliciousId = "evil/calendar/inject";
+$request->nation($maliciousId)->year(2024)->get();
+// URL: https://litcal.../calendar/nation/evil%2Fcalendar%2Finject/2024
+// The "/" is encoded as "%2F", preventing path injection
+
+// ✅ Base URL trailing slash handling (no double slashes)
+$request = new CalendarRequest();
+$request->baseUrl('https://api.example.com/');  // Has trailing slash
+$request->year(2024)->get();
+// URL: https://api.example.com/calendar/2024 (not //calendar)
+
+$request->baseUrl('https://api.example.com');   // No trailing slash
+$request->year(2024)->get();
+// URL: https://api.example.com/calendar/2024 (same result)
+```
+
+```php
     /**
      * Build request headers
      *
