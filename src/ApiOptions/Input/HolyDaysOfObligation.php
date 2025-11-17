@@ -102,7 +102,13 @@ final class HolyDaysOfObligation extends Input
         $disabled = $this->disabled ? ' data-readonly="true"' : '';
 
         $options     = array_map(
-            fn (string $val, string $name): string => '<option value="' . htmlspecialchars($val, ENT_QUOTES, 'UTF-8') . '"' . ( is_array($this->selectedValue) && in_array($val, $this->selectedValue) ? ' selected' : '' ) . ( $this->disabled ? ' disabled' : '' ) . '>' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</option>',
+            function (string $val, string $name): string {
+                $escapedVal  = htmlspecialchars($val, ENT_QUOTES, 'UTF-8');
+                $escapedName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+                $selected    = is_array($this->selectedValue) && in_array($val, $this->selectedValue) ? ' selected' : '';
+                $disabled    = $this->disabled ? ' disabled' : '';
+                return "<option value=\"{$escapedVal}\"{$selected}{$disabled}>{$escapedName}</option>";
+            },
             array_keys(self::HOLY_DAYS_VALS),
             array_values(self::HOLY_DAYS_VALS)
         );
