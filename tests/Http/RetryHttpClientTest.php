@@ -160,25 +160,29 @@ class RetryHttpClientTest extends TestCase
                 $mockResponse
             );
 
-        $startTime = microtime(true);
+        // Track sleep delays instead of using real timing
+        $sleepDelays = [];
+        $mockSleep   = function (int $delayMs) use (&$sleepDelays): void {
+            $sleepDelays[] = $delayMs;
+        };
 
         // Use exponential backoff with 100ms initial delay
-        // Expected delays: 100ms (2^0), 200ms (2^1) = ~300ms total
+        // Expected delays: 100ms (2^0), 200ms (2^1)
         $retryClient = new RetryHttpClient(
             $this->mockClient,
             3,
             100, // 100ms initial delay
             true, // exponential backoff
             [],
-            $this->mockLogger
+            $this->mockLogger,
+            $mockSleep
         );
 
         $response = $retryClient->get($url);
-        $duration = ( microtime(true) - $startTime ) * 1000; // Convert to ms
 
         $this->assertEquals(200, $response->getStatusCode());
-        // Should take at least 300ms (100ms + 200ms)
-        $this->assertGreaterThan(250, $duration);
+        // Verify exponential backoff delays: 100ms, 200ms
+        $this->assertEquals([100, 200], $sleepDelays);
     }
 
     public function testLinearBackoff(): void
@@ -194,27 +198,29 @@ class RetryHttpClientTest extends TestCase
                 $mockResponse
             );
 
-        $startTime = microtime(true);
+        // Track sleep delays instead of using real timing
+        $sleepDelays = [];
+        $mockSleep   = function (int $delayMs) use (&$sleepDelays): void {
+            $sleepDelays[] = $delayMs;
+        };
 
         // Use linear backoff with 100ms delay
-        // Expected delays: 100ms + 100ms = ~200ms total
+        // Expected delays: 100ms, 100ms (same every time)
         $retryClient = new RetryHttpClient(
             $this->mockClient,
             3,
             100,
             false, // linear backoff
             [],
-            $this->mockLogger
+            $this->mockLogger,
+            $mockSleep
         );
 
         $response = $retryClient->get($url);
-        $duration = ( microtime(true) - $startTime ) * 1000;
 
         $this->assertEquals(200, $response->getStatusCode());
-        // Should take at least 200ms
-        $this->assertGreaterThan(150, $duration);
-        // But less than exponential backoff would take
-        $this->assertLessThan(350, $duration);
+        // Verify linear backoff delays: both 100ms
+        $this->assertEquals([100, 100], $sleepDelays);
     }
 
     public function testLogsRetryAttempts(): void
@@ -282,7 +288,7 @@ class RetryHttpClientTest extends TestCase
         $warningMessages = [];
         $this->mockLogger->expects($this->exactly(4))
             ->method('warning')
-            ->willReturnCallback(function ($message, $context) use (&$warningMessages) {
+            ->willReturnCallback(function (string $message) use (&$warningMessages): void {
                 $warningMessages[] = $message;
             });
 

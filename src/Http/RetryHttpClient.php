@@ -21,12 +21,19 @@ class RetryHttpClient implements HttpClientInterface
     private array $retryStatusCodes;
 
     /**
+     * @var callable(int): void
+     * Callable that performs sleep with delay in milliseconds
+     */
+    private $sleepFunction;
+
+    /**
      * @param HttpClientInterface $client Underlying HTTP client
      * @param int $maxRetries Maximum number of retry attempts (default: 3)
      * @param int $retryDelay Initial retry delay in milliseconds (default: 1000)
      * @param bool $useExponentialBackoff Whether to use exponential backoff (default: true)
      * @param array<int> $retryStatusCodes HTTP status codes to retry (default: DEFAULT_RETRY_STATUS_CODES)
      * @param LoggerInterface $logger PSR-3 logger for retry events
+     * @param callable(int): void|null $sleepFunction Optional sleep function for testing (receives delay in ms)
      */
     public function __construct(
         private HttpClientInterface $client,
@@ -34,9 +41,13 @@ class RetryHttpClient implements HttpClientInterface
         private int $retryDelay = 1000,
         private bool $useExponentialBackoff = true,
         array $retryStatusCodes = self::DEFAULT_RETRY_STATUS_CODES,
-        private LoggerInterface $logger = new NullLogger()
+        private LoggerInterface $logger = new NullLogger(),
+        ?callable $sleepFunction = null
     ) {
         $this->retryStatusCodes = $retryStatusCodes;
+        $this->sleepFunction    = $sleepFunction ?? static function (int $delayMs): void {
+            usleep($delayMs * 1000);
+        };
     }
 
     /**
@@ -183,6 +194,6 @@ class RetryHttpClient implements HttpClientInterface
             'backoff'  => $this->useExponentialBackoff ? 'exponential' : 'linear',
         ]);
 
-        usleep($delayMs * 1000); // Convert milliseconds to microseconds
+        ( $this->sleepFunction )($delayMs);
     }
 }
