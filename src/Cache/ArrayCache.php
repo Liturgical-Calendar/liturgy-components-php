@@ -1,0 +1,156 @@
+<?php
+
+namespace LiturgicalCalendar\Components\Cache;
+
+use Psr\SimpleCache\CacheInterface;
+
+/**
+ * Simple in-memory cache for development and testing
+ * Request-scoped only (no persistence)
+ *
+ * Implements PSR-16 Simple Cache interface
+ */
+class ArrayCache implements CacheInterface
+{
+    /** @var array<string, mixed> */
+    private array $cache = [];
+
+    /** @var array<string, int> */
+    private array $expiry = [];
+
+    /** @var callable(): int */
+    private $timeProvider;
+
+    /**
+     * @param (callable(): int)|null $timeProvider Function that returns current Unix timestamp (for testing)
+     */
+    public function __construct(?callable $timeProvider = null)
+    {
+        $this->timeProvider = $timeProvider ?? time(...);
+    }
+
+    /**
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public function get(string $key, mixed $default = null): mixed
+    {
+        if (!array_key_exists($key, $this->cache)) {
+            return $default;
+        }
+
+        // Check expiry
+        if (isset($this->expiry[$key]) && ( $this->timeProvider )() >= $this->expiry[$key]) {
+            unset($this->cache[$key], $this->expiry[$key]);
+            return $default;
+        }
+
+        return $this->cache[$key];
+    }
+
+    /**
+     * @param string $key
+     * @param mixed $value
+     * @param null|int|\DateInterval $ttl
+     * @return bool
+     */
+    public function set(string $key, mixed $value, null|int|\DateInterval $ttl = null): bool
+    {
+        $this->cache[$key] = $value;
+
+        if ($ttl !== null) {
+            if ($ttl instanceof \DateInterval) {
+                $now    = new \DateTime();
+                $future = clone $now;
+                $future->add($ttl);
+                $seconds = max(0, $future->getTimestamp() - $now->getTimestamp());
+            } else {
+                $seconds = $ttl;
+            }
+
+            $this->expiry[$key] = ( $this->timeProvider )() + $seconds;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param string $key
+     * @return bool
+     */
+    public function delete(string $key): bool
+    {
+        unset($this->cache[$key], $this->expiry[$key]);
+        return true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function clear(): bool
+    {
+        $this->cache  = [];
+        $this->expiry = [];
+        return true;
+    }
+
+    /**
+     * @param iterable<string> $keys
+     * @param mixed $default
+     * @return iterable<string, mixed>
+     */
+    public function getMultiple(iterable $keys, mixed $default = null): iterable
+    {
+        $result = [];
+        foreach ($keys as $key) {
+            $result[$key] = $this->get($key, $default);
+        }
+        return $result;
+    }
+
+    /**
+     * @param iterable<string, mixed> $values
+     * @param null|int|\DateInterval $ttl
+     * @return bool
+     */
+    public function setMultiple(iterable $values, null|int|\DateInterval $ttl = null): bool
+    {
+        foreach ($values as $key => $value) {
+            $this->set($key, $value, $ttl);
+        }
+        return true;
+    }
+
+    /**
+     * @param iterable<string> $keys
+     * @return bool
+     */
+    public function deleteMultiple(iterable $keys): bool
+    {
+        foreach ($keys as $key) {
+            $this->delete($key);
+        }
+        return true;
+    }
+
+    /**
+     * @param string $key
+     * @return bool
+     */
+    public function has(string $key): bool
+    {
+        // Check if key exists in cache
+        if (!array_key_exists($key, $this->cache)) {
+            return false;
+        }
+
+        // Check if key has expired
+        if (isset($this->expiry[$key]) && ( $this->timeProvider )() >= $this->expiry[$key]) {
+            unset($this->cache[$key], $this->expiry[$key]);
+            return false;
+        }
+
+        return true;
+    }
+}

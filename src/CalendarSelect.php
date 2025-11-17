@@ -6,6 +6,14 @@ use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
 use LiturgicalCalendar\Components\Models\Index\CalendarIndex;
 use LiturgicalCalendar\Components\Models\Index\NationalCalendar;
 use LiturgicalCalendar\Components\Models\Index\DiocesanCalendar;
+use LiturgicalCalendar\Components\Http\HttpClientInterface;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Http\LoggingHttpClient;
+use LiturgicalCalendar\Components\Http\CachingHttpClient;
+use LiturgicalCalendar\Components\Logging\LoggerAwareTrait;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+use Psr\SimpleCache\CacheInterface;
 
 /**
  * A class to generate a select element for selecting a Liturgical Calendar.
@@ -38,6 +46,8 @@ use LiturgicalCalendar\Components\Models\Index\DiocesanCalendar;
  */
 class CalendarSelect
 {
+    use LoggerAwareTrait;
+
     private const METADATA_URL = 'https://litcal.johnromanodorazio.com/api/dev/calendars';
 
     private static ?CalendarIndex $calendarIndex = null;
@@ -67,6 +77,7 @@ class CalendarSelect
     private bool $allowNull                        = false;
     private bool $disabled                         = false;
     private OptionsType $optionsType               = OptionsType::ALL;
+    private HttpClientInterface $httpClient;
 
     /**
      * Creates a new instance of the CalendarSelect class.
@@ -84,11 +95,80 @@ class CalendarSelect
      * - `label`: boolean, whether to include a label element, defaults to false
      * - `labelStr`: string, the string to use for the label element, defaults to 'Select a calendar'
      * - `allowNull`: boolean, whether to allow the null value in the select element, defaults to false
+     * - `cacheTtl`: int, cache TTL in seconds (default: 86400 = 24 hours)
      *
-     * @param array{locale?:string,url?:string,class?:string,id?:string,name?:string,nationFilter?:string,setOptions?:OptionsType,selectedOption?:string,label?:bool,labelStr?:string,allowNull?:bool} $options The options for the instance.
+     * **Important: HTTP Client Decorator Behavior**
+     *
+     * The constructor will automatically wrap the provided HTTP client with additional decorators
+     * if `$cache` or `$logger` are provided:
+     * - If `$cache` is provided: wraps with CachingHttpClient
+     * - If `$logger` is provided: wraps with LoggingHttpClient
+     *
+     * **Warning:** If you provide a pre-decorated client (e.g., from HttpClientFactory::createProductionClient),
+     * DO NOT also pass `$cache` or `$logger` parameters, as this will cause double-wrapping and redundant
+     * behavior (e.g., double caching, duplicate log entries).
+     *
+     * **Usage Examples:**
+     *
+     * Simple usage (auto-discovery with caching and logging):
+     * ```php
+     * $calendarSelect = new CalendarSelect(
+     *     options: [],
+     *     cache: $cache,
+     *     logger: $logger
+     * );
+     * ```
+     *
+     * Using a pre-configured production client (DO NOT pass cache/logger):
+     * ```php
+     * $httpClient = HttpClientFactory::createProductionClient($cache, $logger);
+     * $calendarSelect = new CalendarSelect(
+     *     options: [],
+     *     httpClient: $httpClient
+     *     // Note: Do NOT pass cache/logger here - already in production client
+     * );
+     * ```
+     *
+     * @param array{locale?:string,url?:string,class?:string,id?:string,name?:string,nationFilter?:string,setOptions?:OptionsType,selectedOption?:string,label?:bool,labelStr?:string,allowNull?:bool,cacheTtl?:int} $options The options for the instance.
+     * @param HttpClientInterface|null $httpClient Optional HTTP client for API requests. If null, uses auto-discovery.
+     * @param LoggerInterface|null $logger Optional PSR-3 logger (only use if $httpClient is NOT already decorated).
+     * @param CacheInterface|null $cache Optional PSR-16 cache (only use if $httpClient is NOT already decorated).
      */
-    public function __construct(array $options = ['url' => self::METADATA_URL])
-    {
+    public function __construct(
+        array $options = ['url' => self::METADATA_URL],
+        ?HttpClientInterface $httpClient = null,
+        ?LoggerInterface $logger = null,
+        ?CacheInterface $cache = null
+    ) {
+        // Initialize HTTP client with auto-discovery if not provided
+        $this->httpClient = $httpClient ?? HttpClientFactory::create();
+
+        // Get cache TTL from options (default: 24 hours for metadata)
+        $cacheTtl = $options['cacheTtl'] ?? ( 3600 * 24 );
+
+        // WARNING: The following wrapping only works correctly if $httpClient is NOT already decorated.
+        // If you're using HttpClientFactory::createProductionClient() or similar pre-decorated clients,
+        // you should NOT pass $cache or $logger parameters to avoid double-wrapping.
+
+        // Wrap HTTP client with caching if cache provided
+        // This will ADD a caching layer on top of whatever client was provided
+        if ($cache !== null) {
+            $this->httpClient = new CachingHttpClient(
+                $this->httpClient,
+                $cache,
+                $cacheTtl,
+                $logger ?? new NullLogger()
+            );
+        }
+
+        // Set logger if provided and wrap HTTP client with logging
+        // This will ADD a logging layer on top of whatever client was provided
+        if ($logger !== null) {
+            $this->setLogger($logger);
+            // Wrap HTTP client with logging decorator
+            $this->httpClient = new LoggingHttpClient($this->httpClient, $logger);
+        }
+
         if (isset($options['locale'])) {
             $this->locale($options['locale']);
         }
@@ -415,32 +495,38 @@ class CalendarSelect
     {
         // If we haven't cached the metadata yet, or the request url has changed, fetch it from the API
         if ($this->metadataUrl !== self::METADATA_URL || self::$calendarIndex === null) {
-            $url         = $this->metadataUrl ?? self::METADATA_URL;
-            $metadataRaw = file_get_contents($url);
-            if ($metadataRaw === false) {
-                throw new \Exception("Error fetching metadata from {$this->metadataUrl}");
+            $url = $this->metadataUrl ?? self::METADATA_URL;
+
+            $response = $this->httpClient->get($url);
+
+            if ($response->getStatusCode() !== 200) {
+                throw new \Exception(
+                    "Error fetching metadata from {$url}. " .
+                    "HTTP Status: {$response->getStatusCode()}"
+                );
             }
 
+            $metadataRaw  = $response->getBody()->getContents();
             $metadataJSON = json_decode($metadataRaw, true);
 
             if (JSON_ERROR_NONE !== json_last_error()) {
-                throw new \Exception("Error decoding metadata from {$this->metadataUrl}: " . json_last_error_msg());
+                throw new \Exception("Error decoding metadata from {$url}: " . json_last_error_msg());
             }
             if (false === is_array($metadataJSON)) {
-                throw new \Exception("Invalid metadata from {$this->metadataUrl}");
+                throw new \Exception("Invalid metadata from {$url}");
             }
             if (false === array_key_exists('litcal_metadata', $metadataJSON)) {
-                throw new \Exception("Missing 'litcal_metadata' in metadata from {$this->metadataUrl}");
+                throw new \Exception("Missing 'litcal_metadata' in metadata from {$url}");
             }
             $litcalMetadata = $metadataJSON['litcal_metadata'];
             if (!is_array($litcalMetadata)) {
-                throw new \Exception("'litcal_metadata' must be an array in metadata from {$this->metadataUrl}");
+                throw new \Exception("'litcal_metadata' must be an array in metadata from {$url}");
             }
             if (false === array_key_exists('diocesan_calendars', $litcalMetadata)) {
-                throw new \Exception("Missing 'diocesan_calendars' in metadata from {$this->metadataUrl}");
+                throw new \Exception("Missing 'diocesan_calendars' in metadata from {$url}");
             }
             if (false === array_key_exists('national_calendars', $litcalMetadata)) {
-                throw new \Exception("Missing 'national_calendars' in metadata from {$this->metadataUrl}");
+                throw new \Exception("Missing 'national_calendars' in metadata from {$url}");
             }
             /** @var array<string,mixed> $litcalMetadata */
             self::$calendarIndex = CalendarIndex::fromArray($litcalMetadata);

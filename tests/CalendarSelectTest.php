@@ -1,4 +1,5 @@
 <?php
+
 use PHPUnit\Framework\TestCase;
 use LiturgicalCalendar\Components\CalendarSelect;
 
@@ -13,8 +14,8 @@ class CalendarSelectTest extends TestCase
 
     public function testConstructorOptions()
     {
-        $options = [
-            'url' => 'https://litcal.johnromanodorazio.com/api/dev/calendars',
+        $options        = [
+            'url'    => 'https://litcal.johnromanodorazio.com/api/dev/calendars',
             'locale' => 'fr-FR'
         ];
         $calendarSelect = new CalendarSelect($options);
@@ -34,20 +35,20 @@ class CalendarSelectTest extends TestCase
     public function testGetSelect()
     {
         $calendarSelect = new CalendarSelect();
-        $selectHtml = $calendarSelect->getSelect();
+        $selectHtml     = $calendarSelect->getSelect();
         $this->assertStringContainsString('<select id="calendarSelect" name="calendarSelect" class="calendarSelect">', $selectHtml);
         $this->assertStringContainsString('</select>', $selectHtml);
     }
 
     public function testGetSelectWithOptions()
     {
-        $options = [
+        $options        = [
             'class' => 'form-select',
             'id'    => 'mySelect',
             'name'  => 'mySelect'
         ];
         $calendarSelect = new CalendarSelect($options);
-        $selectHtml = $calendarSelect->getSelect();
+        $selectHtml     = $calendarSelect->getSelect();
         $this->assertStringContainsString('<select id="mySelect" name="mySelect" class="form-select">', $selectHtml);
         $this->assertStringContainsString('</select>', $selectHtml);
     }

@@ -5,17 +5,16 @@ namespace LiturgicalCalendar\Components\ApiOptions\Input;
 use LiturgicalCalendar\Components\ApiOptions\Input;
 
 /**
- * Class to generate an HTML select element for the 'accept' header of the API.
+ * Class to generate an HTML multi-select element for holydays of obligation.
  *
- * This class provides the necessary methods to generate an HTML select element
- * for the 'accept' header of the API. The generated HTML includes the element's
- * class, id, and options attributes.
+ * This class provides the necessary methods to generate an HTML multi-select element
+ * for configuring which holydays of obligation should be included in the calendar.
+ * The generated HTML includes the element's class, id, and options attributes.
  *
  * @see LiturgicalCalendar\Components\ApiOptions\Input
  */
 final class HolyDaysOfObligation extends Input
 {
-    private bool $hidden         = false;
     private const HOLY_DAYS_VALS = [
         'Christmas'            => 'Christmas',
         'Epiphany'             => 'Epiphany',
@@ -31,47 +30,46 @@ final class HolyDaysOfObligation extends Input
 
     public function __construct()
     {
-        $this->name('holydays_of_obligation');
+        $this->data(['param' => 'holydays_of_obligation']);
+        $this->name('holydays_of_obligation[]');
         $this->id('holydays_of_obligation');
         $this->selectedValue(array_keys(self::HOLY_DAYS_VALS));
     }
 
     /**
-     * Sets the hidden property to true.
+     * Sets the name attribute of the input element.
      *
+     * Overrides the parent method to ensure the name always ends with '[]'
+     * for proper array serialization in PHP when the form is submitted.
+     *
+     * @param string $name The value of the name attribute.
      * @return self The instance of the class, for chaining.
      */
-    public function hide(): self
+    public function name(string $name): self
     {
-        $this->hidden = true;
+        // Ensure name ends with [] for multi-select array serialization
+        if (!str_ends_with($name, '[]')) {
+            $name .= '[]';
+        }
+        $this->name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
         return $this;
     }
 
     /**
-     * Checks if the accept header input field is hidden.
+     * Generates and returns an HTML string for the holydays of obligation multi-select element.
      *
-     * @return bool true if the accept header input field is hidden, false otherwise.
-     */
-    public function isHidden(): bool
-    {
-        return $this->hidden;
-    }
-
-    /**
-     * Generates and returns an HTML string for an accept header input element.
-     *
-     * The element is a `<select>` with the possible values for the accept header.
-     * The element's class can be set using the `inputClass` property.  A global
+     * The element is a `<select multiple>` with the possible holydays of obligation.
+     * The element's class can be set using the `inputClass` property. A global
      * class can be set for all input elements using the `setGlobalInputClass`
      * static method.
      *
-     * The element's wrapper element can be set using the `wrapper` property.  A
+     * The element's wrapper element can be set using the `wrapper` property. A
      * global wrapper can be set for all elements using the `setGlobalWrapper`
-     * static method.  The wrapper element's class can be set using the
-     * `wrapperClass` property.  A global class can be set for all wrapper
+     * static method. The wrapper element's class can be set using the
+     * `wrapperClass` property. A global class can be set for all wrapper
      * elements using the `setGlobalWrapperClass` static method.
      *
-     * @return string The HTML for the accept header input element.
+     * @return string The HTML for the holydays of obligation multi-select element.
      */
     public function get(): string
     {
@@ -101,10 +99,16 @@ final class HolyDaysOfObligation extends Input
                 ? self::$globalWrapper
                 : null );
 
-        $disabled = $this->disabled ? ' readonly' : '';
+        $disabled = $this->disabled ? ' data-readonly="true"' : '';
 
         $options     = array_map(
-            fn (string $val, string $name): string => "<option value=\"$val\"" . ( is_array($this->selectedValue) && in_array($val, $this->selectedValue) ? ' selected' : '' ) . ( $this->disabled ? ' disabled' : '' ) . ">$name</option>",
+            function (string $val, string $name): string {
+                $escapedVal  = htmlspecialchars($val, ENT_QUOTES, 'UTF-8');
+                $escapedName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+                $selected    = is_array($this->selectedValue) && in_array($val, $this->selectedValue) ? ' selected' : '';
+                $disabled    = $this->disabled ? ' disabled' : '';
+                return "<option value=\"{$escapedVal}\"{$selected}{$disabled}>{$escapedName}</option>";
+            },
             array_keys(self::HOLY_DAYS_VALS),
             array_values(self::HOLY_DAYS_VALS)
         );

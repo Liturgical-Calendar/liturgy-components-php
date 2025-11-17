@@ -6,12 +6,9 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
 
 final class Year extends Input
 {
-    public array $data = [
-        'param' => 'year'
-    ];
-
     public function __construct()
     {
+        $this->data(['param' => 'year']);
         $this->name('year');
         $this->id('year');
     }

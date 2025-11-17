@@ -1,4 +1,5 @@
 <?php
+
 use PHPUnit\Framework\TestCase;
 use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
@@ -16,7 +17,7 @@ class ApiOptionsTest extends TestCase
     public function testGetFormBasePath(): void
     {
         $apiOptions = new ApiOptions();
-        $form = $apiOptions->getForm(PathType::BASE_PATH);
+        $form       = $apiOptions->getForm(PathType::BASE_PATH);
         //$dom = new \DOMDocument();
         //$dom->loadHTML($form);
 
@@ -33,7 +34,7 @@ class ApiOptionsTest extends TestCase
     public function testGetFormAllPaths(): void
     {
         $apiOptions = new ApiOptions();
-        $form = $apiOptions->getForm(PathType::ALL_PATHS);
+        $form       = $apiOptions->getForm(PathType::ALL_PATHS);
         $this->assertStringContainsString('<label for="year_type">year_type</label>', $form);
         $this->assertStringContainsString('<label for="return_type">accept header</label>', $form);
         $this->assertStringContainsString('<label for="locale">locale</label>', $form);
@@ -44,10 +45,10 @@ class ApiOptionsTest extends TestCase
 
     public function testGetFormBasePathWithCustomOptions(): void
     {
-        $options = [
-            "locale"    => "it-IT",
-            "formLabel" => true,
-            "wrapper"   => true
+        $options    = [
+            'locale'    => 'it-IT',
+            'formLabel' => true,
+            'wrapper'   => true
         ];
         $apiOptions = new ApiOptions($options);
         //$expectedTextDomainPath = dirname(__DIR__) . "/src/ApiOptions/i18n";
@@ -63,7 +64,7 @@ class ApiOptionsTest extends TestCase
         Input::setGlobalWrapperClass('form-group col-sm-2');
         Input::setGlobalInputClass('form-select');
         $form = $apiOptions->getForm(PathType::BASE_PATH);
-        $dom = new \DOMDocument();
+        $dom  = new \DOMDocument();
         $dom->loadHTML($form);
         $divs = $dom->getElementsByTagName('div');
         /** @var DOMElement $formWrapper */
@@ -91,8 +92,8 @@ class ApiOptionsTest extends TestCase
             $this->assertEquals('form-group col-sm-2', $parent->getAttribute('class'));
             /** @var DOMElement $select */
             $options = $select->getElementsByTagName('option');
-            $values = [];
-            $texts = [];
+            $values  = [];
+            $texts   = [];
             $this->assertTrue($select->hasAttribute('data-param'));
             switch ($select->getAttribute('data-param')) {
                 case 'epiphany':
@@ -100,7 +101,7 @@ class ApiOptionsTest extends TestCase
                     foreach ($options as $option) {
                         /** @var DOMElement $option */
                         $values[] = $option->getAttribute('value');
-                        $texts[] = $option->textContent;
+                        $texts[]  = $option->textContent;
                     }
                     $this->assertEquals(['', 'JAN6', 'SUNDAY_JAN2_JAN8'], $values);
                     //TODO: for some reason this assertion fails, the translated strings are not loaded from the bound textdomain
@@ -131,7 +132,7 @@ class ApiOptionsTest extends TestCase
                     foreach ($options as $option) {
                         /** @var DOMElement $option */
                         $values[] = $option->getAttribute('value');
-                        $texts[] = $option->textContent;
+                        $texts[]  = $option->textContent;
                     }
                     $this->assertEquals(['false', 'true'], $values);
                     //TODO: for some reason this assertion fails, the English strings are not translated
@@ -147,8 +148,8 @@ class ApiOptionsTest extends TestCase
                         $values[] = $option->getAttribute('value');
                         $labels[] = $option->textContent;
                     }
-                    $localeOptionsValues = ["fr", "id", "it", "la", "nl", "pt", "sk", "es", "de", "hu", "vi"];
-                    $localeOptionsLabels = ["fr (francese)", "id (indonesiano)", "it (italiano)", "la (latino)", "nl (olandese)", "pt (portoghese)", "sk (slovacco)", "es (spagnolo)", "de (tedesco)", "hu (ungherese)", "vi (vietnamita)"];
+                    $localeOptionsValues = ['fr', 'id', 'it', 'la', 'nl', 'pt', 'sk', 'es', 'de', 'hu', 'vi'];
+                    $localeOptionsLabels = ['fr (francese)', 'id (indonesiano)', 'it (italiano)', 'la (latino)', 'nl (olandese)', 'pt (portoghese)', 'sk (slovacco)', 'es (spagnolo)', 'de (tedesco)', 'hu (ungherese)', 'vi (vietnamita)'];
                     $this->assertContainsAll($localeOptionsValues, $values);
                     $this->assertContainsAll($localeOptionsLabels, $labels);
                     $this->assertEquals('locale', $precedingSibling->textContent);
@@ -159,10 +160,10 @@ class ApiOptionsTest extends TestCase
 
     public function testGetFormAllPathsWithCustomOptions(): void
     {
-        $options = [
-            "locale"    => "it-IT",
-            "formLabel" => true,
-            "wrapper"   => true
+        $options    = [
+            'locale'    => 'it-IT',
+            'formLabel' => true,
+            'wrapper'   => true
         ];
         $apiOptions = new ApiOptions($options);
         $apiOptions->wrapper->as('div')->class('row mb-4')->id('calendarOptions');
@@ -171,7 +172,7 @@ class ApiOptionsTest extends TestCase
         Input::setGlobalWrapperClass('form-group col-sm-2');
         Input::setGlobalInputClass('form-select');
         $form = $apiOptions->getForm(PathType::ALL_PATHS);
-        $dom = new \DOMDocument();
+        $dom  = new \DOMDocument();
         $dom->loadHTML($form);
         $divs = $dom->getElementsByTagName('div');
         /** @var DOMElement $formWrapper */
@@ -199,7 +200,7 @@ class ApiOptionsTest extends TestCase
             $this->assertEquals('form-group col-sm-2', $parent->getAttribute('class'));
             /** @var DOMElement $select */
             $options = $select->getElementsByTagName('option');
-            $values = [];
+            $values  = [];
             $this->assertTrue($select->hasAttribute('data-param'));
             switch ($select->getAttribute('data-param')) {
                 case 'year_type':

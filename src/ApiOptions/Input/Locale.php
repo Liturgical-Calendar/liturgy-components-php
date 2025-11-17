@@ -4,6 +4,13 @@ namespace LiturgicalCalendar\Components\ApiOptions\Input;
 
 use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
+use LiturgicalCalendar\Components\Http\HttpClientInterface;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Http\LoggingHttpClient;
+use LiturgicalCalendar\Components\Http\CachingHttpClient;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+use Psr\SimpleCache\CacheInterface;
 
 /**
  * Class Locale
@@ -11,17 +18,24 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
  * Generates an HTML select element for selecting a locale in the Liturgical
  * Calendar API options form.
  *
+ * Static Metadata Caching ("First Instance Wins"):
+ * - Metadata (self::$metadata) is a process-wide static cache keyed by ApiOptions::getApiUrl()
+ * - The FIRST instance to call setOptionsForCalendar() fetches metadata via its HTTP client
+ * - Subsequent instances (even with different HTTP client configurations) reuse the cached metadata
+ * - This means only the first instance's HTTP client, logger, and cache are used for the API request
+ * - Each instance maintains its own HTTP client configuration, but only the first instance exercises it
+ *
+ * Implications for Testing:
+ * - When testing with different HTTP client mocks, ensure tests run in isolation or reset static state
+ * - The first Locale instance created in a test suite will determine the metadata for all subsequent instances
+ *
  * @see LiturgicalCalendar\Components\ApiOptions
  * @see LiturgicalCalendar\Components\ApiOptions\Input
  */
 class Locale extends Input
 {
-    /** @var array<string,string> */
-    public array $data = [
-        'param' => 'locale'
-    ];
-
-    private static \stdClass $metadata;
+    /** @var \stdClass|null Process-wide metadata cache (first instance wins) */
+    private static ?\stdClass $metadata = null;
 
     /** @var string[] */
     private static array $apiLocales = [];
@@ -29,22 +43,91 @@ class Locale extends Input
     /** @var array<string,string[]> */
     private static array $apiLocalesDisplay = [];
 
+    private HttpClientInterface $httpClient;
+
     /**
-     * Fetches the list of locales from the Liturgical Calendar API and stores
-     * them in the {@see LiturgicalCalendar\Components\ApiOptions\Input\Locale::$apiLocales} static property.
+     * Create a new Locale input element.
      *
-     * If the {@see LiturgicalCalendar\Components\ApiOptions::$locale} property is set, it will also generate a
-     * sorted list of locales with their display names in the given locale
-     * and store it in the {@see LiturgicalCalendar\Components\ApiOptions\Input\Locale::$apiLocalesDisplay} static property.
+     * HTTP Client Configuration vs. Metadata Fetching:
+     * - Each instance maintains its own HTTP client configuration (with optional caching and logging)
+     * - However, API metadata is a process-wide static cache keyed by ApiOptions::getApiUrl()
+     * - Only the FIRST instance will actually use its HTTP client to fetch metadata
+     * - Subsequent instances will reuse the cached metadata, regardless of their HTTP client configuration
+     * - This means the first instance's logger and cache will be used for the metadata request
      *
-     * If the list of locales has already been fetched, it will not fetch it again.
-     * Instead, it will return the stored list.
+     * HTTP Client Decoration:
+     * - If cache is provided: wraps client with CachingHttpClient
+     * - If logger is provided: wraps client with LoggingHttpClient
+     * - Decoration order: CachingHttpClient (inner) -> LoggingHttpClient (outer)
      *
-     * @throws \Exception If there is an error fetching or decoding the list of
-     *                     locales from the Liturgical Calendar API.
+     * WARNING: Avoid double-wrapping by choosing one approach:
+     * 1. Pass a raw/base HTTP client + logger/cache parameters (recommended for most cases)
+     * 2. Pass a pre-composed/decorated client with logger=null, cache=null (for advanced scenarios)
+     *
+     * Do NOT pass an already-decorated client along with logger/cache parameters,
+     * as this will result in double-wrapping (e.g., logging the same request twice).
+     *
+     * Examples:
+     * ```php
+     * // ✅ RECOMMENDED: Pass raw client with logger/cache
+     * $client = HttpClientFactory::create();
+     * $logger = new Logger('locale');
+     * $cache = new ArrayCache();
+     * $locale = new Locale($client, $logger, $cache);
+     *
+     * // ✅ ALSO GOOD: Let constructor auto-discover client
+     * $logger = new Logger('locale');
+     * $cache = new ArrayCache();
+     * $locale = new Locale(null, $logger, $cache);
+     *
+     * // ✅ ADVANCED: Pre-composed client, no additional decoration
+     * $client = new LoggingHttpClient(
+     *     new CachingHttpClient(HttpClientFactory::create(), $cache, 86400, $logger),
+     *     $logger
+     * );
+     * $locale = new Locale($client, null, null);
+     *
+     * // ❌ WRONG: Pre-composed client with logger/cache (double-wrapping!)
+     * $client = new LoggingHttpClient(HttpClientFactory::create(), $logger);
+     * $locale = new Locale($client, $logger, $cache); // Will wrap logger TWICE
+     * ```
+     *
+     * @param HttpClientInterface|null $httpClient Optional HTTP client for API requests. If null, uses auto-discovery.
+     * @param LoggerInterface|null $logger Optional PSR-3 logger (only use if $httpClient is NOT already decorated).
+     * @param CacheInterface|null $cache Optional PSR-16 cache (only use if $httpClient is NOT already decorated).
+     * @param int $cacheTtl Cache TTL in seconds (default: 24 hours for locale data).
      */
-    public function __construct()
-    {
+    public function __construct(
+        ?HttpClientInterface $httpClient = null,
+        ?LoggerInterface $logger = null,
+        ?CacheInterface $cache = null,
+        int $cacheTtl = 86400
+    ) {
+        // Initialize instance HTTP client with provided configuration
+        $baseClient = $httpClient ?? HttpClientFactory::create();
+
+        // WARNING: The following wrapping only works correctly if $httpClient is NOT already decorated.
+        // If you're using a pre-composed client with caching/logging already applied,
+        // you should pass logger=null and cache=null to avoid double-wrapping.
+
+        // Wrap with caching if cache provided
+        if ($cache !== null) {
+            $baseClient = new CachingHttpClient(
+                $baseClient,
+                $cache,
+                $cacheTtl,
+                $logger ?? new NullLogger()
+            );
+        }
+
+        // Wrap with logging if logger provided
+        if ($logger !== null) {
+            $this->httpClient = new LoggingHttpClient($baseClient, $logger);
+        } else {
+            $this->httpClient = $baseClient;
+        }
+
+        $this->data(['param' => 'locale']);
         $this->setOptionsForCalendar(null, null);
         $this->name('locale');
         $this->id('locale');
@@ -119,14 +202,45 @@ class Locale extends Input
         return $html;
     }
 
+    /**
+     * Set locale options based on calendar type and ID.
+     *
+     * Static Metadata Caching Behavior:
+     * - Metadata is cached in a single process-wide static variable (self::$metadata)
+     * - The cache is NOT keyed by API URL - it is global for the entire PHP process
+     * - The FIRST call to this method will fetch metadata from ApiOptions::getApiUrl()
+     * - All subsequent calls (across all instances) will reuse the cached metadata
+     * - No additional HTTP requests will be made after the initial fetch
+     *
+     * Important Limitations:
+     * - The API base URL (ApiOptions::getApiUrl()) must NOT change after the first metadata fetch
+     * - Only the first instance's HTTP client configuration (logger, cache, timeouts) will be used
+     * - Subsequent instances will use cached data regardless of their HTTP client configuration
+     * - If you need to support multiple API URLs in one process, the cache implementation
+     *   would need to be refactored to key by URL (see code comments for details)
+     *
+     * @param string|null $calendarType The type of calendar ('nation', 'diocese', or null for general)
+     * @param string|null $calendarId The calendar ID (required if calendarType is specified)
+     * @throws \Exception If there is an error fetching or parsing API data
+     * @return void
+     */
     public function setOptionsForCalendar(?string $calendarType, ?string $calendarId): void
     {
         $apiUrl = ApiOptions::getApiUrl();
-        if (empty(self::$metadata)) {
-            $metadataRaw = file_get_contents("{$apiUrl}/calendars");
-            if ($metadataRaw === false) {
-                throw new \Exception("Failed to fetch locales from {$apiUrl}/calendars");
+        // Static cache check: only the first call will proceed to fetch metadata
+        if (self::$metadata === null) {
+            $url = "{$apiUrl}/calendars";
+
+            $response = $this->httpClient->get($url);
+
+            if ($response->getStatusCode() !== 200) {
+                throw new \Exception(
+                    "Failed to fetch locales from {$url}. " .
+                    "HTTP Status: {$response->getStatusCode()}"
+                );
             }
+
+            $metadataRaw  = $response->getBody()->getContents();
             $metadataJson = json_decode($metadataRaw);
             if (JSON_ERROR_NONE !== json_last_error()) {
                 throw new \Exception("Failed to decode locales from {$apiUrl}/calendars");
@@ -148,13 +262,7 @@ class Locale extends Input
             $locales = self::$metadata->locales;
             /** @var array<string> $locales */
             self::$apiLocales = $locales;
-            $localeDisplay    = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
-                $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
-                return $carry;
-            }, []);
-            /** @var array<string> $localeDisplay */
-            self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
-            asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
+            $this->generateLocaleDisplay();
         } elseif (null === $calendarId || null === $calendarType) {
             throw new \Exception('Invalid calendarType or calendarId');
         } else {
@@ -180,13 +288,7 @@ class Locale extends Input
                     $locales = $calendar->locales;
                     /** @var array<string> $locales */
                     self::$apiLocales = $locales;
-                    $localeDisplay    = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
-                        $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
-                        return $carry;
-                    }, []);
-                    /** @var array<string> $localeDisplay */
-                    self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
-                    asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
+                    $this->generateLocaleDisplay();
                     break;
                 case 'diocese':
                     if (false === property_exists(self::$metadata, 'diocesan_calendars') || false === is_array(self::$metadata->diocesan_calendars)) {
@@ -209,17 +311,35 @@ class Locale extends Input
                     $locales = $calendar->locales;
                     /** @var array<string> $locales */
                     self::$apiLocales = $locales;
-                    $localeDisplay    = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
-                        $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
-                        return $carry;
-                    }, []);
-                    /** @var array<string> $localeDisplay */
-                    self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
-                    asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
+                    $this->generateLocaleDisplay();
                     break;
                 default:
                     throw new \Exception("Invalid calendarType: {$calendarType}");
             }
         }
+    }
+
+    /**
+     * Generate locale display names for the current locale.
+     *
+     * Takes the locales stored in self::$apiLocales (populated by setOptionsForCalendar),
+     * generates display names using the current ApiOptions::getLocale(), and stores
+     * the sorted result in self::$apiLocalesDisplay.
+     *
+     * Note: self::$apiLocalesDisplay is keyed by locale to support different display
+     * languages, but self::$apiLocales and self::$metadata are global (not keyed by API URL).
+     * This means changing ApiOptions::getApiUrl() after the first metadata fetch is not supported.
+     *
+     * @return void
+     */
+    private function generateLocaleDisplay(): void
+    {
+        $localeDisplay = array_reduce(self::$apiLocales, function (array $carry, string $item): array {
+            $carry[$item] = \Locale::getDisplayName($item, ApiOptions::getLocale());
+            return $carry;
+        }, []);
+        /** @var array<string> $localeDisplay */
+        self::$apiLocalesDisplay[ApiOptions::getLocale()] = $localeDisplay;
+        asort(self::$apiLocalesDisplay[ApiOptions::getLocale()]);
     }
 }

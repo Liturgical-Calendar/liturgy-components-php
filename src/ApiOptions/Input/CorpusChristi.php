@@ -21,12 +21,9 @@ use IntlDateFormatter;
  */
 final class CorpusChristi extends Input
 {
-    public array $data = [
-        'param' => 'corpus_christi'
-    ];
-
     public function __construct()
     {
+        $this->data(['param' => 'corpus_christi']);
         $this->name('corpus_christi');
         $this->id('corpus_christi');
     }

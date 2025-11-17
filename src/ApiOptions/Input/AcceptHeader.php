@@ -15,11 +15,6 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
  */
 final class AcceptHeader extends Input
 {
-    /** @var array<string,string> */
-    public array $data = [
-        'param' => 'accept'
-    ];
-
     private bool $as_return_type_param   = false;
     private bool $hidden                 = false;
     private const RETURN_TYPE_PARAM_VALS = ['JSON', 'XML', 'YML', 'ICS'];
@@ -32,6 +27,7 @@ final class AcceptHeader extends Input
 
     public function __construct()
     {
+        $this->data(['param' => 'accept']);
         $this->name('return_type');
         $this->id('return_type');
     }

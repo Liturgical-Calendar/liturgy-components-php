@@ -18,13 +18,9 @@ use LiturgicalCalendar\Components\ApiOptions\Input;
  */
 final class EternalHighPriest extends Input
 {
-    public array $data = [
-        'param' => 'eternal_high_priest'
-    ];
-
-
     public function __construct()
     {
+        $this->data(['param' => 'eternal_high_priest']);
         $this->name('eternal_high_priest');
         $this->id('eternal_high_priest');
     }
