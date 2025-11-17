@@ -78,6 +78,24 @@ class FileGetContentsClientTest extends TestCase
         $this->assertInstanceOf(ResponseInterface::class, $response);
     }
 
+    public function testPostWithUnencodableBodyThrowsException(): void
+    {
+        $url = 'data://text/plain;base64,' . base64_encode('test');
+
+        // Create a resource which cannot be JSON-encoded
+        $resource = fopen('php://memory', 'r');
+        $body     = ['resource' => $resource];
+
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage('Failed to encode request body as JSON');
+
+        try {
+            $this->client->post($url, $body);
+        } finally {
+            fclose($resource);
+        }
+    }
+
     public function testPostWithInvalidUrlThrowsException(): void
     {
         $invalidUrl = 'invalid-scheme://nonexistent.test/path';
