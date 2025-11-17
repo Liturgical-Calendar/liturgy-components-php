@@ -385,11 +385,15 @@ class CalendarRequest
             }
 
             $responseBody = $response->getBody()->getContents();
-            $calendar = json_decode($responseBody);
+            $calendar = json_decode(
+                $responseBody,
+                associative: false,
+                flags: JSON_THROW_ON_ERROR
+            );
 
-            if (JSON_ERROR_NONE !== json_last_error()) {
+            if (!is_object($calendar)) {
                 throw new \Exception(
-                    "Invalid JSON response: " . json_last_error_msg()
+                    "Invalid JSON response: expected object, got " . gettype($calendar)
                 );
             }
 
