@@ -151,6 +151,14 @@ class FileGetContentsClientTest extends TestCase
         );
     }
 
+    /**
+     * Smoke test: Verifies implementation doesn't crash with various Content-Type header cases.
+     *
+     * Note: This test verifies the implementation handles case-insensitive Content-Type headers
+     * without errors, but cannot verify that duplicate headers aren't transmitted due to the
+     * data:// URL limitation. Actual header behavior would require integration tests with real
+     * HTTP endpoints that can inspect transmitted headers.
+     */
     public function testPostRespectsCaseInsensitiveContentTypeHeader(): void
     {
         $url  = 'data://text/plain;base64,' . base64_encode('Response');
