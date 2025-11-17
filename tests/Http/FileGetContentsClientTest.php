@@ -42,7 +42,7 @@ class FileGetContentsClientTest extends TestCase
     public function testGetWithInvalidUrlThrowsException(): void
     {
         $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Failed to fetch URL');
+        $this->expectExceptionMessage('Failed to fetch URL: invalid-scheme://nonexistent.test/path');
 
         // Use a URL scheme that doesn't exist to force failure
         $this->client->get('invalid-scheme://nonexistent.test/path');
@@ -79,7 +79,7 @@ class FileGetContentsClientTest extends TestCase
     public function testPostWithInvalidUrlThrowsException(): void
     {
         $this->expectException(HttpException::class);
-        $this->expectExceptionMessage('Failed to post to URL');
+        $this->expectExceptionMessage('Failed to post to URL: invalid-scheme://nonexistent.test/path');
 
         // Use a URL scheme that doesn't exist to force failure
         $this->client->post('invalid-scheme://nonexistent.test/path', 'data');
