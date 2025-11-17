@@ -18,14 +18,23 @@ use Psr\SimpleCache\CacheInterface;
  * Generates an HTML select element for selecting a locale in the Liturgical
  * Calendar API options form.
  *
- * Note: Metadata fetched from the API is cached statically across all instances
- * for performance. However, each instance maintains its own HTTP client configuration.
+ * Static Metadata Caching ("First Instance Wins"):
+ * - Metadata (self::$metadata) is a process-wide static cache keyed by ApiOptions::getApiUrl()
+ * - The FIRST instance to call setOptionsForCalendar() fetches metadata via its HTTP client
+ * - Subsequent instances (even with different HTTP client configurations) reuse the cached metadata
+ * - This means only the first instance's HTTP client, logger, and cache are used for the API request
+ * - Each instance maintains its own HTTP client configuration, but only the first instance exercises it
+ *
+ * Implications for Testing:
+ * - When testing with different HTTP client mocks, ensure tests run in isolation or reset static state
+ * - The first Locale instance created in a test suite will determine the metadata for all subsequent instances
  *
  * @see LiturgicalCalendar\Components\ApiOptions
  * @see LiturgicalCalendar\Components\ApiOptions\Input
  */
 class Locale extends Input
 {
+    /** @var \stdClass|null Process-wide metadata cache (first instance wins) */
     private static ?\stdClass $metadata = null;
 
     /** @var string[] */
@@ -39,12 +48,53 @@ class Locale extends Input
     /**
      * Create a new Locale input element.
      *
-     * Each instance maintains its own HTTP client configuration (with optional caching and logging).
-     * However, API metadata is cached statically across all instances for performance optimization.
+     * HTTP Client Configuration vs. Metadata Fetching:
+     * - Each instance maintains its own HTTP client configuration (with optional caching and logging)
+     * - However, API metadata is a process-wide static cache keyed by ApiOptions::getApiUrl()
+     * - Only the FIRST instance will actually use its HTTP client to fetch metadata
+     * - Subsequent instances will reuse the cached metadata, regardless of their HTTP client configuration
+     * - This means the first instance's logger and cache will be used for the metadata request
+     *
+     * HTTP Client Decoration:
+     * - If cache is provided: wraps client with CachingHttpClient
+     * - If logger is provided: wraps client with LoggingHttpClient
+     * - Decoration order: CachingHttpClient (inner) -> LoggingHttpClient (outer)
+     *
+     * WARNING: Avoid double-wrapping by choosing one approach:
+     * 1. Pass a raw/base HTTP client + logger/cache parameters (recommended for most cases)
+     * 2. Pass a pre-composed/decorated client with logger=null, cache=null (for advanced scenarios)
+     *
+     * Do NOT pass an already-decorated client along with logger/cache parameters,
+     * as this will result in double-wrapping (e.g., logging the same request twice).
+     *
+     * Examples:
+     * ```php
+     * // ✅ RECOMMENDED: Pass raw client with logger/cache
+     * $client = HttpClientFactory::create();
+     * $logger = new Logger('locale');
+     * $cache = new ArrayCache();
+     * $locale = new Locale($client, $logger, $cache);
+     *
+     * // ✅ ALSO GOOD: Let constructor auto-discover client
+     * $logger = new Logger('locale');
+     * $cache = new ArrayCache();
+     * $locale = new Locale(null, $logger, $cache);
+     *
+     * // ✅ ADVANCED: Pre-composed client, no additional decoration
+     * $client = new LoggingHttpClient(
+     *     new CachingHttpClient(HttpClientFactory::create(), $cache, 86400, $logger),
+     *     $logger
+     * );
+     * $locale = new Locale($client, null, null);
+     *
+     * // ❌ WRONG: Pre-composed client with logger/cache (double-wrapping!)
+     * $client = new LoggingHttpClient(HttpClientFactory::create(), $logger);
+     * $locale = new Locale($client, $logger, $cache); // Will wrap logger TWICE
+     * ```
      *
      * @param HttpClientInterface|null $httpClient Optional HTTP client for API requests. If null, uses auto-discovery.
-     * @param LoggerInterface|null $logger Optional PSR-3 logger for HTTP request/response logging.
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching.
+     * @param LoggerInterface|null $logger Optional PSR-3 logger (only use if $httpClient is NOT already decorated).
+     * @param CacheInterface|null $cache Optional PSR-16 cache (only use if $httpClient is NOT already decorated).
      * @param int $cacheTtl Cache TTL in seconds (default: 24 hours for locale data).
      */
     public function __construct(
@@ -55,6 +105,10 @@ class Locale extends Input
     ) {
         // Initialize instance HTTP client with provided configuration
         $baseClient = $httpClient ?? HttpClientFactory::create();
+
+        // WARNING: The following wrapping only works correctly if $httpClient is NOT already decorated.
+        // If you're using a pre-composed client with caching/logging already applied,
+        // you should pass logger=null and cache=null to avoid double-wrapping.
 
         // Wrap with caching if cache provided
         if ($cache !== null) {
@@ -151,9 +205,17 @@ class Locale extends Input
     /**
      * Set locale options based on calendar type and ID.
      *
-     * Fetches metadata from the API on first call and caches it statically.
-     * Subsequent calls (even from different instances) will use the cached metadata.
-     * Only the first instance's HTTP client will be used for the API request.
+     * Static Metadata Caching Behavior:
+     * - Checks if self::$metadata is null (cache miss)
+     * - If cache miss: fetches metadata from API using $this->httpClient
+     * - If cache hit: reuses cached metadata (no HTTP request made)
+     * - The cache is keyed implicitly by ApiOptions::getApiUrl()
+     * - This means the FIRST call across all instances will populate the cache
+     * - Subsequent calls (even from different instances with different HTTP clients) skip the fetch
+     *
+     * Important: Only the first instance's HTTP client configuration (logger, cache, timeouts)
+     * will be exercised for the metadata request. Subsequent instances will not make any HTTP
+     * requests, regardless of their HTTP client configuration.
      *
      * @param string|null $calendarType The type of calendar ('nation', 'diocese', or null for general)
      * @param string|null $calendarId The calendar ID (required if calendarType is specified)
@@ -163,6 +225,7 @@ class Locale extends Input
     public function setOptionsForCalendar(?string $calendarType, ?string $calendarId): void
     {
         $apiUrl = ApiOptions::getApiUrl();
+        // Static cache check: only the first call will proceed to fetch metadata
         if (self::$metadata === null) {
             $url = "{$apiUrl}/calendars";
 
