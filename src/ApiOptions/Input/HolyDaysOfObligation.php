@@ -99,7 +99,7 @@ final class HolyDaysOfObligation extends Input
                 ? self::$globalWrapper
                 : null );
 
-        $disabled = $this->disabled ? ' readonly' : '';
+        $disabled = $this->disabled ? ' data-readonly="true"' : '';
 
         $options     = array_map(
             fn (string $val, string $name): string => '<option value="' . htmlspecialchars($val, ENT_QUOTES, 'UTF-8') . '"' . ( is_array($this->selectedValue) && in_array($val, $this->selectedValue) ? ' selected' : '' ) . ( $this->disabled ? ' disabled' : '' ) . '>' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</option>',
