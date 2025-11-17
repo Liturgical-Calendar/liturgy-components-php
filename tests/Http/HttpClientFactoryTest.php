@@ -73,7 +73,7 @@ class HttpClientFactoryTest extends TestCase
         }
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Guzzle HTTP client not found');
+        $this->expectExceptionMessage('Guzzle HTTP client not found. Install with: composer require guzzlehttp/guzzle');
 
         HttpClientFactory::createWithGuzzle();
     }
@@ -116,7 +116,9 @@ class HttpClientFactoryTest extends TestCase
         $client = HttpClientFactory::create();
 
         // Verify the client has the required methods
+        // @phpstan-ignore-next-line - Testing runtime method existence even though interface guarantees it
         $this->assertTrue(method_exists($client, 'get'));
+        // @phpstan-ignore-next-line - Testing runtime method existence even though interface guarantees it
         $this->assertTrue(method_exists($client, 'post'));
     }
 
