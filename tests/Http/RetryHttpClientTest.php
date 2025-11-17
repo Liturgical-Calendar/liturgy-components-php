@@ -341,7 +341,7 @@ class RetryHttpClientTest extends TestCase
     public function testNegativeRetryDelayThrowsException(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('retryDelay must be non-negative, got -100');
+        $this->expectExceptionMessage('retryDelay must be positive, got -100');
 
         new RetryHttpClient(
             $this->mockClient,
@@ -351,6 +351,81 @@ class RetryHttpClientTest extends TestCase
             [],
             $this->mockLogger
         );
+    }
+
+    public function testZeroRetryDelayThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('retryDelay must be positive, got 0');
+
+        new RetryHttpClient(
+            $this->mockClient,
+            3,
+            0, // Zero retryDelay is invalid
+            false,
+            [],
+            $this->mockLogger
+        );
+    }
+
+    public function testInvalidRetryStatusCodeTypeThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('retryStatusCodes must contain only integers, got string at index 1');
+
+        new RetryHttpClient(
+            $this->mockClient,
+            3,
+            1000,
+            false,
+            [500, '503', 504], // @phpstan-ignore-line - Testing invalid input intentionally
+            $this->mockLogger
+        );
+    }
+
+    public function testRetryStatusCodeBelowRangeThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('retryStatusCodes must be in range 100-599, got 99 at index 0');
+
+        new RetryHttpClient(
+            $this->mockClient,
+            3,
+            1000,
+            false,
+            [99], // Below valid range
+            $this->mockLogger
+        );
+    }
+
+    public function testRetryStatusCodeAboveRangeThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('retryStatusCodes must be in range 100-599, got 600 at index 0');
+
+        new RetryHttpClient(
+            $this->mockClient,
+            3,
+            1000,
+            false,
+            [600], // Above valid range
+            $this->mockLogger
+        );
+    }
+
+    public function testValidRetryStatusCodesAccepted(): void
+    {
+        // Test edge cases of valid range
+        $retryClient = new RetryHttpClient(
+            $this->mockClient,
+            3,
+            1000,
+            false,
+            [100, 199, 300, 400, 500, 599], // Valid range boundaries
+            $this->mockLogger
+        );
+
+        $this->assertInstanceOf(RetryHttpClient::class, $retryClient);
     }
 
     public function testZeroMaxRetriesIsValid(): void

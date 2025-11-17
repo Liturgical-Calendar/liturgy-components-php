@@ -30,12 +30,12 @@ class RetryHttpClient implements HttpClientInterface
     /**
      * @param HttpClientInterface $client Underlying HTTP client
      * @param int $maxRetries Maximum number of retry attempts (default: 3, must be >= 0)
-     * @param int $retryDelay Initial retry delay in milliseconds (default: 1000, must be >= 0)
+     * @param int $retryDelay Initial retry delay in milliseconds (default: 1000, must be > 0)
      * @param bool $useExponentialBackoff Whether to use exponential backoff (default: true)
-     * @param array<int> $retryStatusCodes HTTP status codes to retry (default: DEFAULT_RETRY_STATUS_CODES)
+     * @param array<int> $retryStatusCodes HTTP status codes to retry (default: DEFAULT_RETRY_STATUS_CODES, must be 100-599)
      * @param LoggerInterface $logger PSR-3 logger for retry events
      * @param callable(int): void|null $sleepFunction Optional sleep function for testing (receives delay in ms)
-     * @throws InvalidArgumentException If maxRetries or retryDelay is negative
+     * @throws InvalidArgumentException If validation fails for maxRetries, retryDelay, or retryStatusCodes
      */
     public function __construct(
         private HttpClientInterface $client,
@@ -50,8 +50,24 @@ class RetryHttpClient implements HttpClientInterface
             throw new InvalidArgumentException("maxRetries must be non-negative, got {$maxRetries}");
         }
 
-        if ($retryDelay < 0) {
-            throw new InvalidArgumentException("retryDelay must be non-negative, got {$retryDelay}");
+        if ($retryDelay <= 0) {
+            throw new InvalidArgumentException("retryDelay must be positive, got {$retryDelay}");
+        }
+
+        // Validate retry status codes
+        foreach ($retryStatusCodes as $index => $statusCode) {
+            if (!is_int($statusCode)) {
+                $type = get_debug_type($statusCode);
+                throw new InvalidArgumentException(
+                    "retryStatusCodes must contain only integers, got {$type} at index {$index}"
+                );
+            }
+
+            if ($statusCode < 100 || $statusCode > 599) {
+                throw new InvalidArgumentException(
+                    "retryStatusCodes must be in range 100-599, got {$statusCode} at index {$index}"
+                );
+            }
         }
 
         $this->retryStatusCodes = $retryStatusCodes;
