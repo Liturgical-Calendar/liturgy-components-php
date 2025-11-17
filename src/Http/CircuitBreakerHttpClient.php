@@ -31,13 +31,16 @@ class CircuitBreakerHttpClient implements HttpClientInterface
     /** @var array<int> */
     private array $failureStatusCodes;
 
+    /** @var callable(): int */
+    private $timeProvider;
+
     /**
      * @param HttpClientInterface $client Underlying HTTP client
      * @param int $failureThreshold Number of failures before opening circuit (default: 5)
      * @param int $recoveryTimeout Time in seconds before attempting recovery (default: 60)
      * @param int $successThreshold Number of successes in HALF_OPEN before closing circuit (default: 2)
      * @param LoggerInterface $logger PSR-3 logger for circuit breaker events
-     * @param callable(): int $timeProvider Function that returns current Unix timestamp (for testing)
+     * @param (callable(): int)|null $timeProvider Function that returns current Unix timestamp (for testing)
      * @param array<int> $failureStatusCodes HTTP status codes that should trip the circuit breaker (default: [] - only exceptions)
      */
     public function __construct(
@@ -46,7 +49,7 @@ class CircuitBreakerHttpClient implements HttpClientInterface
         private int $recoveryTimeout = 60,
         private int $successThreshold = 2,
         private LoggerInterface $logger = new NullLogger(),
-        private $timeProvider = null,
+        ?callable $timeProvider = null,
         array $failureStatusCodes = self::DEFAULT_FAILURE_STATUS_CODES
     ) {
         $this->timeProvider       = $timeProvider ?? time(...);
