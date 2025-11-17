@@ -341,6 +341,14 @@ class CalendarRequest
 
     /**
      * Add custom header
+     *
+     * Note: The 'Accept' header will be overridden if returnType() is set,
+     * as the API prioritizes the return_type parameter over the Accept header.
+     * For other headers, custom values will be used as-is.
+     *
+     * @param string $name Header name
+     * @param string $value Header value
+     * @return self
      */
     public function header(string $name, string $value): self
     {
@@ -429,6 +437,17 @@ class CalendarRequest
 
     /**
      * Build request headers
+     *
+     * Generates HTTP headers for the API request. Header precedence:
+     * - The Accept header is ALWAYS set from returnType() if specified, as the API
+     *   prioritizes the return_type parameter over the Accept header
+     * - Other custom headers (set via header() method) take precedence over defaults
+     * - Default headers are used if not overridden
+     *
+     * Note: Any custom 'Accept' header will be overridden if returnType is set,
+     * because the API ignores the Accept header when return_type parameter is present.
+     *
+     * @return array<string,string> Associative array of header name => value
      */
     private function buildHeaders(): array
     {
@@ -440,8 +459,12 @@ class CalendarRequest
             $headers['Accept-Language'] = $this->locale;
         }
 
+        // Merge custom headers (they can override defaults)
+        $finalHeaders = array_merge($headers, $this->customHeaders);
+
+        // returnType ALWAYS overrides Accept header (API prioritizes return_type parameter)
         if ($this->returnType) {
-            $headers['Accept'] = match($this->returnType) {
+            $finalHeaders['Accept'] = match($this->returnType) {
                 'xml' => 'application/xml',
                 'yaml' => 'application/yaml',
                 'ical' => 'text/calendar',
@@ -449,7 +472,7 @@ class CalendarRequest
             };
         }
 
-        return array_merge($headers, $this->customHeaders);
+        return $finalHeaders;
     }
 
     /**
@@ -597,20 +620,38 @@ class CalendarResponse
 
 namespace LiturgicalCalendar\Components;
 
+use LiturgicalCalendar\Components\Http\HttpClientInterface;
+use Psr\Log\LoggerInterface;
+use Psr\SimpleCache\CacheInterface;
+
 /**
  * Builder for creating CalendarRequest instances with common configurations
+ *
+ * Provides convenient static methods for fetching calendar data without manually
+ * constructing CalendarRequest objects. All methods accept optional HTTP client,
+ * logger, and cache dependencies for full control over the request configuration.
  */
 class CalendarResponseBuilder
 {
     /**
      * Quick request for General Roman Calendar
+     *
+     * @param int $year The liturgical year to fetch
+     * @param string $locale The locale for localized content (default: 'en')
+     * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
+     * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
+     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
+     * @return \stdClass Calendar response object
+     * @throws \Exception If request fails or response is invalid
      */
     public static function generalCalendar(
         int $year,
         string $locale = 'en',
-        ?HttpClientInterface $httpClient = null
+        ?HttpClientInterface $httpClient = null,
+        ?LoggerInterface $logger = null,
+        ?CacheInterface $cache = null
     ): \stdClass {
-        return (new CalendarRequest($httpClient))
+        return (new CalendarRequest($httpClient, $logger, $cache))
             ->year($year)
             ->locale($locale)
             ->get();
@@ -618,14 +659,25 @@ class CalendarResponseBuilder
 
     /**
      * Quick request for National Calendar
+     *
+     * @param string $nation The national calendar ID (e.g., 'IT', 'US', 'FR')
+     * @param int $year The liturgical year to fetch
+     * @param string $locale The locale for localized content (default: 'en')
+     * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
+     * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
+     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
+     * @return \stdClass Calendar response object
+     * @throws \Exception If request fails or response is invalid
      */
     public static function nationalCalendar(
         string $nation,
         int $year,
         string $locale = 'en',
-        ?HttpClientInterface $httpClient = null
+        ?HttpClientInterface $httpClient = null,
+        ?LoggerInterface $logger = null,
+        ?CacheInterface $cache = null
     ): \stdClass {
-        return (new CalendarRequest($httpClient))
+        return (new CalendarRequest($httpClient, $logger, $cache))
             ->nation($nation)
             ->year($year)
             ->locale($locale)
@@ -634,20 +686,66 @@ class CalendarResponseBuilder
 
     /**
      * Quick request for Diocesan Calendar
+     *
+     * @param string $diocese The diocesan calendar ID (9-character format)
+     * @param int $year The liturgical year to fetch
+     * @param string $locale The locale for localized content (default: 'en')
+     * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
+     * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
+     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
+     * @return \stdClass Calendar response object
+     * @throws \Exception If request fails or response is invalid
      */
     public static function diocesanCalendar(
         string $diocese,
         int $year,
         string $locale = 'en',
-        ?HttpClientInterface $httpClient = null
+        ?HttpClientInterface $httpClient = null,
+        ?LoggerInterface $logger = null,
+        ?CacheInterface $cache = null
     ): \stdClass {
-        return (new CalendarRequest($httpClient))
+        return (new CalendarRequest($httpClient, $logger, $cache))
             ->diocese($diocese)
             ->year($year)
             ->locale($locale)
             ->get();
     }
 }
+```
+
+#### CalendarResponseBuilder Usage Examples
+
+```php
+// Minimal usage - all dependencies auto-discovered
+$calendar = CalendarResponseBuilder::generalCalendar(2024);
+
+// With custom locale
+$calendar = CalendarResponseBuilder::nationalCalendar('IT', 2024, 'it');
+
+// With HTTP client for testing/mocking
+$mockClient = new MockHttpClient();
+$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $mockClient);
+
+// With logger for debugging
+$logger = new Logger('calendar');
+$calendar = CalendarResponseBuilder::nationalCalendar('US', 2024, 'en', null, $logger);
+
+// With cache for performance
+$cache = new FilesystemCache();
+$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', null, null, $cache);
+
+// Full configuration with all dependencies
+$httpClient = HttpClientFactory::create();
+$logger = new Logger('calendar');
+$cache = new ArrayCache();
+$calendar = CalendarResponseBuilder::diocesanCalendar(
+    'DIOCESE001',
+    2024,
+    'en',
+    $httpClient,
+    $logger,
+    $cache
+);
 ```
 
 ### CalendarRequest Usage Examples
@@ -677,7 +775,7 @@ $calendar = $request->year(2024)
     ->get();
 
 // Or even simpler with static helper
-$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $httpClient);
+$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $httpClient, $logger, $cache);
 ```
 
 ### Benefits
