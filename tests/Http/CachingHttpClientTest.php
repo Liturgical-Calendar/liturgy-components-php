@@ -4,6 +4,7 @@ namespace LiturgicalCalendar\Components\Tests\Http;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\Group;
 use LiturgicalCalendar\Components\Http\CachingHttpClient;
 use LiturgicalCalendar\Components\Http\HttpClientInterface;
 use LiturgicalCalendar\Components\Cache\ArrayCache;
@@ -147,6 +148,11 @@ class CachingHttpClientTest extends TestCase
         $this->assertEquals(200, $response2->getStatusCode());
     }
 
+    /**
+     * Test that cache TTL expiration works correctly
+     *
+     * Uses a mock time provider to test cache expiration without actual delays.
+     */
     public function testCacheTtlRespected(): void
     {
         $url          = 'https://example.com/api/data';
@@ -154,23 +160,38 @@ class CachingHttpClientTest extends TestCase
 
         $mockResponse = $this->createMockResponse(200, $responseBody);
 
+        // Mock time provider to control time without sleep()
+        $currentTime  = 1000;
+        $timeProvider = function () use (&$currentTime): int {
+            return $currentTime;
+        };
+
+        // Create cache with mock time provider
+        $cache = new ArrayCache($timeProvider);
+
         // Expect two calls - one initial, one after cache expiry
         $this->mockClient->expects($this->exactly(2))
             ->method('get')
             ->with($url, [])
             ->willReturn($mockResponse);
 
-        // Use 1 second TTL for testing
-        $cachingClient = new CachingHttpClient($this->mockClient, $this->cache, 1, $this->mockLogger);
+        // Use 10 second TTL for testing
+        $cachingClient = new CachingHttpClient($this->mockClient, $cache, 10, $this->mockLogger);
 
-        // First call - cache miss
+        // First call - cache miss at time=1000
         $response1 = $cachingClient->get($url);
         $this->assertEquals(200, $response1->getStatusCode());
 
-        // Wait for cache to expire
-        sleep(2);
+        // Advance time by 5 seconds (still within TTL)
+        $currentTime = 1005;
+        // Second call - should hit cache (not expired yet)
+        // We need to call it but mockClient should only be called once total so far
+        // Actually, let's just advance time past expiry to keep test focused
 
-        // Second call - cache expired, should hit underlying client
+        // Advance time past expiry (1000 + 10 = 1010, so set to 1011)
+        $currentTime = 1011;
+
+        // Second call - cache expired, should hit underlying client again
         $response2 = $cachingClient->get($url);
         $this->assertEquals(200, $response2->getStatusCode());
     }

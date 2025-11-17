@@ -18,6 +18,17 @@ class ArrayCache implements CacheInterface
     /** @var array<string, int> */
     private array $expiry = [];
 
+    /** @var callable(): int */
+    private $timeProvider;
+
+    /**
+     * @param (callable(): int)|null $timeProvider Function that returns current Unix timestamp (for testing)
+     */
+    public function __construct(?callable $timeProvider = null)
+    {
+        $this->timeProvider = $timeProvider ?? time(...);
+    }
+
     /**
      * @param string $key
      * @param mixed $default
@@ -30,7 +41,7 @@ class ArrayCache implements CacheInterface
         }
 
         // Check expiry
-        if (isset($this->expiry[$key]) && time() >= $this->expiry[$key]) {
+        if (isset($this->expiry[$key]) && ( $this->timeProvider )() >= $this->expiry[$key]) {
             unset($this->cache[$key], $this->expiry[$key]);
             return $default;
         }
@@ -58,7 +69,7 @@ class ArrayCache implements CacheInterface
                 $seconds = $ttl;
             }
 
-            $this->expiry[$key] = time() + $seconds;
+            $this->expiry[$key] = ( $this->timeProvider )() + $seconds;
         }
 
         return true;
@@ -135,7 +146,7 @@ class ArrayCache implements CacheInterface
         }
 
         // Check if key has expired
-        if (isset($this->expiry[$key]) && time() >= $this->expiry[$key]) {
+        if (isset($this->expiry[$key]) && ( $this->timeProvider )() >= $this->expiry[$key]) {
             unset($this->cache[$key], $this->expiry[$key]);
             return false;
         }

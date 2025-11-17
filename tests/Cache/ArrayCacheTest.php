@@ -31,22 +31,37 @@ class ArrayCacheTest extends TestCase
 
     public function testSetWithIntegerTtl(): void
     {
-        $this->cache->set('key', 'value', 1); // 1 second TTL
-        $this->assertEquals('value', $this->cache->get('key'));
+        // Use mock time provider to control time
+        $currentTime  = 1000;
+        $timeProvider = function () use (&$currentTime): int {
+            return $currentTime;
+        };
+        $cache        = new ArrayCache($timeProvider);
 
-        // Sleep to exceed TTL
-        sleep(2);
-        $this->assertNull($this->cache->get('key'));
+        $cache->set('key', 'value', 10); // 10 second TTL
+        $this->assertEquals('value', $cache->get('key'));
+
+        // Advance time past expiry (1000 + 10 = 1010, set to 1011)
+        $currentTime = 1011;
+        $this->assertNull($cache->get('key'));
     }
 
     public function testSetWithDateIntervalTtl(): void
     {
-        $ttl = new \DateInterval('PT1S'); // 1 second
-        $this->cache->set('key', 'value', $ttl);
-        $this->assertEquals('value', $this->cache->get('key'));
+        // Use mock time provider to control time
+        $currentTime  = 1000;
+        $timeProvider = function () use (&$currentTime): int {
+            return $currentTime;
+        };
+        $cache        = new ArrayCache($timeProvider);
 
-        sleep(2);
-        $this->assertNull($this->cache->get('key'));
+        $ttl = new \DateInterval('PT10S'); // 10 seconds
+        $cache->set('key', 'value', $ttl);
+        $this->assertEquals('value', $cache->get('key'));
+
+        // Advance time past expiry (1000 + 10 = 1010, set to 1011)
+        $currentTime = 1011;
+        $this->assertNull($cache->get('key'));
     }
 
     public function testDelete(): void
@@ -76,9 +91,7 @@ class ArrayCacheTest extends TestCase
         $this->cache->set('key1', 'value1');
         $this->cache->set('key2', 'value2');
 
-        $values = $this->cache->getMultiple(['key1', 'key2', 'key3'], 'default');
-
-        $this->assertIsIterable($values);
+        $values      = $this->cache->getMultiple(['key1', 'key2', 'key3'], 'default');
         $valuesArray = iterator_to_array($values);
 
         $this->assertEquals('value1', $valuesArray['key1']);
@@ -103,23 +116,30 @@ class ArrayCacheTest extends TestCase
 
     public function testSetMultipleWithTtl(): void
     {
+        // Use mock time provider to control time
+        $currentTime  = 1000;
+        $timeProvider = function () use (&$currentTime): int {
+            return $currentTime;
+        };
+        $cache        = new ArrayCache($timeProvider);
+
         $values = [
             'key1' => 'value1',
             'key2' => 'value2',
         ];
 
-        $this->cache->setMultiple($values, 2);
+        $cache->setMultiple($values, 10); // 10 second TTL
 
         // Verify values are immediately available
-        $this->assertEquals('value1', $this->cache->get('key1'));
-        $this->assertEquals('value2', $this->cache->get('key2'));
+        $this->assertEquals('value1', $cache->get('key1'));
+        $this->assertEquals('value2', $cache->get('key2'));
 
-        // Sleep longer than TTL to ensure expiry
-        sleep(3);
+        // Advance time past expiry (1000 + 10 = 1010, set to 1011)
+        $currentTime = 1011;
 
         // Both values should be expired
-        $this->assertNull($this->cache->get('key1'));
-        $this->assertNull($this->cache->get('key2'));
+        $this->assertNull($cache->get('key1'));
+        $this->assertNull($cache->get('key2'));
     }
 
     public function testDeleteMultiple(): void
@@ -148,11 +168,19 @@ class ArrayCacheTest extends TestCase
 
     public function testHasReturnsFalseForExpiredKey(): void
     {
-        $this->cache->set('key', 'value', 1);
-        $this->assertTrue($this->cache->has('key'));
+        // Use mock time provider to control time
+        $currentTime  = 1000;
+        $timeProvider = function () use (&$currentTime): int {
+            return $currentTime;
+        };
+        $cache        = new ArrayCache($timeProvider);
 
-        sleep(2);
-        $this->assertFalse($this->cache->has('key'));
+        $cache->set('key', 'value', 10); // 10 second TTL
+        $this->assertTrue($cache->has('key'));
+
+        // Advance time past expiry (1000 + 10 = 1010, set to 1011)
+        $currentTime = 1011;
+        $this->assertFalse($cache->has('key'));
     }
 
     public function testHasReturnsTrueForNullValue(): void
