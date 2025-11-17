@@ -30,7 +30,7 @@ class ArrayCache implements CacheInterface
         }
 
         // Check expiry
-        if (isset($this->expiry[$key]) && time() > $this->expiry[$key]) {
+        if (isset($this->expiry[$key]) && time() >= $this->expiry[$key]) {
             unset($this->cache[$key], $this->expiry[$key]);
             return $default;
         }
@@ -135,7 +135,7 @@ class ArrayCache implements CacheInterface
         }
 
         // Check if key has expired
-        if (isset($this->expiry[$key]) && time() > $this->expiry[$key]) {
+        if (isset($this->expiry[$key]) && time() >= $this->expiry[$key]) {
             unset($this->cache[$key], $this->expiry[$key]);
             return false;
         }
