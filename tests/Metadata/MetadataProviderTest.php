@@ -382,7 +382,7 @@ class MetadataProviderTest extends TestCase
         $warningMessage = '';
 
         // Set up error handler to catch the warning
-        set_error_handler(function ($errno, $errstr) use (&$warningIssued, &$warningMessage) {
+        set_error_handler(function (int $_errno, string $errstr) use (&$warningIssued, &$warningMessage): bool {
             $warningIssued  = true;
             $warningMessage = $errstr;
             return true; // Suppress the warning
@@ -404,7 +404,7 @@ class MetadataProviderTest extends TestCase
         $warningMessage = '';
 
         // Set up error handler to catch the warning
-        set_error_handler(function ($errno, $errstr) use (&$warningIssued, &$warningMessage) {
+        set_error_handler(function (int $_errno, string $errstr) use (&$warningIssued, &$warningMessage): bool {
             $warningIssued  = true;
             $warningMessage = $errstr;
             return true; // Suppress the warning
@@ -427,7 +427,7 @@ class MetadataProviderTest extends TestCase
         $warningMessage = '';
 
         // Set up error handler to catch the warning
-        set_error_handler(function ($errno, $errstr) use (&$warningIssued, &$warningMessage) {
+        set_error_handler(function (int $_errno, string $errstr) use (&$warningIssued, &$warningMessage): bool {
             $warningIssued  = true;
             $warningMessage = $errstr;
             return true; // Suppress the warning
