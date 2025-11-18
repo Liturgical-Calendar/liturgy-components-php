@@ -3,6 +3,7 @@
 ## Project Overview
 
 This is a PHP library providing reusable frontend components for the Liturgical Calendar API. It includes:
+
 - `MetadataProvider`: Centralized singleton for calendar metadata fetching and caching
 - `CalendarSelect`: Dropdown components for selecting liturgical calendars
 - `ApiOptions`: Form inputs for API request parameters
@@ -94,6 +95,7 @@ composer test:quick        # Run tests excluding slow tests
 ### Centralized Singleton Pattern
 
 **IMPORTANT**: The library uses a centralized singleton `MetadataProvider` class for all calendar metadata operations. This ensures:
+
 - **Single source of truth** for metadata across all components
 - **Immutable configuration** - API URL, HTTP client, cache, and logger are set once on first initialization
 - **Efficient caching** - Metadata is fetched once and shared across all component instances
@@ -206,6 +208,7 @@ public function testSomething()
 ### Key Differences from Previous Architecture
 
 **Before** (instance-based):
+
 ```php
 // ❌ OLD: URL configuration per component instance
 $calendar1 = new CalendarSelect([], $httpClient, null, $cache);
@@ -219,6 +222,7 @@ $isValid = $calendar1->isValidDioceseForNation('boston_us', 'US');
 ```
 
 **Now** (singleton-based):
+
 ```php
 // ✅ NEW: Initialize once at application bootstrap
 MetadataProvider::getInstance(
@@ -240,7 +244,7 @@ $isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
 MetadataProvider uses two-tier caching:
 
 1. **Process-wide cache** (static property) - Takes precedence, persists for PHP process lifetime
-2. **PSR-16 cache** (optional) - Only used for initial HTTP fetch
+1. **PSR-16 cache** (optional) - Only used for initial HTTP fetch
 
 ```php
 // First component - fetches from API, caches in both layers
@@ -258,6 +262,7 @@ MetadataProvider::clearCache();
 ## API Endpoint & Structure
 
 Default API endpoint: `https://litcal.johnromanodorazio.com/api/dev/`
+
 - Components are designed to work with this API structure
 - Responses are expected in JSON format
 - Locale support matches API's supported locales
@@ -267,6 +272,7 @@ Default API endpoint: `https://litcal.johnromanodorazio.com/api/dev/`
 The components consume responses that conform to official JSON schemas maintained in the API repository:
 
 **Schema References** (development branch):
+
 - **OpenAPI Spec**: `https://raw.githubusercontent.com/Liturgical-Calendar/LiturgicalCalendarAPI/refs/heads/development/jsondata/schemas/openapi.json`
 - **Common Definitions**: `https://raw.githubusercontent.com/Liturgical-Calendar/LiturgicalCalendarAPI/refs/heads/development/jsondata/schemas/CommonDef.json`
 - **Calendar Metadata**: `https://raw.githubusercontent.com/Liturgical-Calendar/LiturgicalCalendarAPI/refs/heads/development/jsondata/schemas/LitCalMetadata.json`
@@ -275,6 +281,7 @@ The components consume responses that conform to official JSON schemas maintaine
 ### Key API Endpoints
 
 **CalendarSelect Component** works with:
+
 - `/calendars` - Returns `LitCalMetadata` with:
   - `national_calendars[]` - Array of national calendar objects (calendar_id, locales, settings)
   - `diocesan_calendars[]` - Array of diocesan calendar objects (calendar_id, nation, group)
@@ -283,12 +290,14 @@ The components consume responses that conform to official JSON schemas maintaine
   - `wider_regions[]` - Regional definitions
 
 **ApiOptions Component** parameters for:
+
 - `/calendar` - General Roman Calendar
 - `/calendar/{year}` - Specific year
 - `/calendar/nation/{calendar_id}` - National calendars (IT, US, NL, VA, CA, etc.)
 - `/calendar/diocese/{calendar_id}` - Diocesan calendars
 
 **WebCalendar Component** consumes `/calendar*` responses with `LitCal` schema:
+
 - `settings{}` - Calendar configuration (year, locale, epiphany, ascension, corpus_christi, eternal_high_priest)
 - `metadata{}` - API version, timestamp, event counts by rank
 - `litcal[]` - Array of liturgical events with:
