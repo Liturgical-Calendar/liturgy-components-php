@@ -93,10 +93,12 @@ class MetadataProvider
         ?LoggerInterface $logger = null,
         int $cacheTtl = 86400
     ): self {
-        // Generate instance key based on configuration
-        $instanceKey = spl_object_hash($httpClient ?? new \stdClass()) .
-                       '_' . spl_object_hash($cache ?? new \stdClass()) .
-                       '_' . spl_object_hash($logger ?? new \stdClass());
+        // Generate stable instance key based on configuration
+        // Use 'none' for null dependencies to ensure true singleton for default config
+        $httpClientKey = $httpClient !== null ? spl_object_hash($httpClient) : 'none';
+        $cacheKey      = $cache !== null ? spl_object_hash($cache) : 'none';
+        $loggerKey     = $logger !== null ? spl_object_hash($logger) : 'none';
+        $instanceKey   = "{$httpClientKey}_{$cacheKey}_{$loggerKey}";
 
         if (isset(self::$instances[$instanceKey])) {
             return self::$instances[$instanceKey];

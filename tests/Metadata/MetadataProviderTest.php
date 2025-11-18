@@ -88,6 +88,20 @@ class MetadataProviderTest extends TestCase
         $this->assertSame($instance1, $instance2, 'Same configuration should return same instance');
     }
 
+    public function testGetInstanceReturnsSingletonForDefaultConfiguration()
+    {
+        // Clear any existing instances first
+        MetadataProvider::clearCache();
+
+        // Multiple calls with all null parameters should return same instance
+        $instance1 = MetadataProvider::getInstance();
+        $instance2 = MetadataProvider::getInstance();
+        $instance3 = MetadataProvider::getInstance(null, null, null);
+
+        $this->assertSame($instance1, $instance2, 'Default config (all null) should return same instance');
+        $this->assertSame($instance1, $instance3, 'Explicit nulls should return same instance as default');
+    }
+
     public function testGetMetadataFetchesFromApi()
     {
         $httpClient = $this->createMockHttpClient();
