@@ -57,7 +57,8 @@
         "analyse": "phpstan analyse",
         "parallel-lint": "parallel-lint --exclude .git --exclude vendor .",
         "test": "phpunit --testdox --display-warnings",
-        "test:quick": "phpunit --testdox --display-warnings --exclude-group slow"
+        "test:quick": "phpunit --testdox --display-warnings --exclude-group slow",
+        "test-filter": "phpunit --testdox --display-warnings --filter"
     },
     "config": {
         "allow-plugins": {
