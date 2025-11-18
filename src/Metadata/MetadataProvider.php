@@ -95,10 +95,11 @@ class MetadataProvider
     ): self {
         // Generate stable instance key based on configuration
         // Use 'none' for null dependencies to ensure true singleton for default config
+        // Include TTL in key so different TTLs create different instances
         $httpClientKey = $httpClient !== null ? spl_object_hash($httpClient) : 'none';
         $cacheKey      = $cache !== null ? spl_object_hash($cache) : 'none';
         $loggerKey     = $logger !== null ? spl_object_hash($logger) : 'none';
-        $instanceKey   = "{$httpClientKey}_{$cacheKey}_{$loggerKey}";
+        $instanceKey   = "{$httpClientKey}_{$cacheKey}_{$loggerKey}_{$cacheTtl}";
 
         if (isset(self::$instances[$instanceKey])) {
             return self::$instances[$instanceKey];

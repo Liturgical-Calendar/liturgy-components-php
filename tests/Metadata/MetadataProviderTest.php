@@ -102,6 +102,23 @@ class MetadataProviderTest extends TestCase
         $this->assertSame($instance1, $instance3, 'Explicit nulls should return same instance as default');
     }
 
+    public function testDifferentCacheTtlCreatesDifferentInstances()
+    {
+        $httpClient = $this->createMockHttpClient();
+        $cache      = new ArrayCache();
+        $logger     = $this->createMock(LoggerInterface::class);
+
+        // Different TTLs should create different provider instances
+        $instance1Hour = MetadataProvider::getInstance($httpClient, $cache, $logger, 3600);
+        $instance2Hour = MetadataProvider::getInstance($httpClient, $cache, $logger, 7200);
+
+        $this->assertNotSame($instance1Hour, $instance2Hour, 'Different TTLs should create different instances');
+
+        // Same TTL should return same instance
+        $instance1HourAgain = MetadataProvider::getInstance($httpClient, $cache, $logger, 3600);
+        $this->assertSame($instance1Hour, $instance1HourAgain, 'Same TTL should return same instance');
+    }
+
     public function testGetMetadataFetchesFromApi()
     {
         $httpClient = $this->createMockHttpClient();
