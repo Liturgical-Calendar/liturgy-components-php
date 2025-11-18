@@ -50,7 +50,9 @@ if (class_exists('Monolog\Logger')) {
         $result = mkdir($logsDir, 0755, true);
         error_log('mkdir result: ' . ( $result ? 'SUCCESS' : 'FAILED' ));
         if (!$result) {
-            error_log('mkdir error: ' . error_get_last()['message'] ?? 'unknown');
+            $lastError = error_get_last();
+            $errorMsg  = $lastError['message'] ?? 'unknown';
+            error_log('mkdir error: ' . $errorMsg);
         }
     }
 
