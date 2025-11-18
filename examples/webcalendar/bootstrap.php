@@ -30,29 +30,26 @@ ini_set('display_errors', '1');
 //       Run `composer install` (not `composer install --no-dev`) to use them.
 // ============================================================================
 
+// Debug mode from environment (configure in .env file)
+$debugMode = filter_var($_ENV['DEBUG_MODE'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
+
 // 1. Setup Logger (Monolog) - if available
 $logger = null;
 
-// DEBUG: Check if Monolog is available
-error_log('Checking for Monolog...');
-error_log('class_exists(Monolog\Logger): ' . ( class_exists('Monolog\Logger') ? 'YES' : 'NO' ));
-
 if (class_exists('Monolog\Logger')) {
-    error_log('Monolog found! Creating logger...');
-
     // Create logs directory if it doesn't exist
     $logsDir = __DIR__ . '/logs';
-    error_log('Logs directory: ' . $logsDir);
-    error_log('Directory exists: ' . ( is_dir($logsDir) ? 'YES' : 'NO' ));
 
     if (!is_dir($logsDir)) {
-        error_log('Creating logs directory...');
+        if ($debugMode) {
+            error_log('Creating logs directory: ' . $logsDir);
+        }
         $result = mkdir($logsDir, 0755, true);
-        error_log('mkdir result: ' . ( $result ? 'SUCCESS' : 'FAILED' ));
+        // Always log errors (even when debug mode is disabled)
         if (!$result) {
             $lastError = error_get_last();
             $errorMsg  = $lastError['message'] ?? 'unknown';
-            error_log('mkdir error: ' . $errorMsg);
+            error_log('Failed to create logs directory: ' . $errorMsg);
         }
     }
 
@@ -63,14 +60,16 @@ if (class_exists('Monolog\Logger')) {
             $logsDir . '/litcal.log',
             Monolog\Level::Debug
         ));
-        error_log('Logger created successfully!');
+        if ($debugMode) {
+            error_log('Logger initialized successfully');
+        }
         $logger->info('Logger initialized successfully');
     } catch (\Exception $e) {
+        // Always log errors (even when debug mode is disabled)
         error_log('Error creating logger: ' . $e->getMessage());
     }
-} else {
-    error_log('Monolog NOT found - logging will be disabled');
-    error_log('Run `composer install` to enable logging');
+} elseif ($debugMode) {
+    error_log('Monolog not found - run `composer install` to enable logging');
 }
 
 // 2. Setup Cache

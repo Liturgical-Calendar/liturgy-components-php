@@ -125,6 +125,53 @@ $calendarSelect2 = new CalendarSelect();
 $locale = new Locale();
 ```
 
+**⚠️ IMPORTANT**: If you're using `HttpClientFactory::createProductionClient()` or any pre-decorated HTTP client, **DO NOT** pass `cache` or `logger` parameters again to
+`MetadataProvider::getInstance()`. See the "Avoiding Double-Wrapping" section below for details.
+
+### Avoiding Double-Wrapping (Important!)
+
+**WARNING**: If you use `HttpClientFactory::createProductionClient()` or any pre-decorated HTTP client, **DO NOT** also pass `cache` or `logger` parameters to
+`MetadataProvider::getInstance()`. This will cause double-wrapping and duplicate logging/caching.
+
+**Correct (with production client):**
+
+```php
+// Production client already includes cache, logger, retry, circuit breaker
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600,
+    maxRetries: 3,
+    failureThreshold: 5
+);
+
+// Only pass the httpClient - it's already decorated
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient  // ← Already decorated, don't pass cache/logger again
+);
+```
+
+**Incorrect (double-wrapping):**
+
+```php
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600
+);
+
+// ❌ DON'T DO THIS - causes double-wrapping warning
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,     // ← Already in $httpClient!
+    logger: $logger    // ← Already in $httpClient!
+);
+```
+
+If you pass both an HTTP client AND cache/logger parameters, a runtime warning will be triggered to alert you of potential double-wrapping.
+
 ### Immutable Configuration
 
 Once `MetadataProvider::getInstance()` is called with configuration, **all subsequent calls ignore parameters** and return the same singleton:
