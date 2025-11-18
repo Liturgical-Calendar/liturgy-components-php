@@ -8,6 +8,13 @@ use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 
 class CalendarSelectTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Reset MetadataProvider singleton to ensure test isolation
+        MetadataProvider::resetForTesting();
+    }
+
     public function testConstructorDefaults()
     {
         $calendarSelect = new CalendarSelect();
