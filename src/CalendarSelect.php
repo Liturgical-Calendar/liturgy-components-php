@@ -11,6 +11,7 @@ use LiturgicalCalendar\Components\Http\HttpClientFactory;
 use LiturgicalCalendar\Components\Http\LoggingHttpClient;
 use LiturgicalCalendar\Components\Http\CachingHttpClient;
 use LiturgicalCalendar\Components\Logging\LoggerAwareTrait;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Psr\SimpleCache\CacheInterface;
@@ -50,7 +51,8 @@ class CalendarSelect
 
     private const METADATA_URL = 'https://litcal.johnromanodorazio.com/api/dev/calendars';
 
-    private static ?CalendarIndex $calendarIndex = null;
+    private CalendarIndex $calendarIndex;
+    private MetadataProvider $metadataProvider;
 
     /** @var NationalCalendar[] $nationalCalendarsWithDioceses */
     private array $nationalCalendarsWithDioceses = [];
@@ -77,7 +79,6 @@ class CalendarSelect
     private bool $allowNull                        = false;
     private bool $disabled                         = false;
     private OptionsType $optionsType               = OptionsType::ALL;
-    private HttpClientInterface $httpClient;
 
     /**
      * Creates a new instance of the CalendarSelect class.
@@ -140,33 +141,20 @@ class CalendarSelect
         ?LoggerInterface $logger = null,
         ?CacheInterface $cache = null
     ) {
-        // Initialize HTTP client with auto-discovery if not provided
-        $this->httpClient = $httpClient ?? HttpClientFactory::create();
-
         // Get cache TTL from options (default: 24 hours for metadata)
         $cacheTtl = $options['cacheTtl'] ?? ( 3600 * 24 );
 
-        // WARNING: The following wrapping only works correctly if $httpClient is NOT already decorated.
-        // If you're using HttpClientFactory::createProductionClient() or similar pre-decorated clients,
-        // you should NOT pass $cache or $logger parameters to avoid double-wrapping.
+        // Initialize MetadataProvider with provided dependencies
+        $this->metadataProvider = MetadataProvider::getInstance(
+            $httpClient,
+            $cache,
+            $logger,
+            $cacheTtl
+        );
 
-        // Wrap HTTP client with caching if cache provided
-        // This will ADD a caching layer on top of whatever client was provided
-        if ($cache !== null) {
-            $this->httpClient = new CachingHttpClient(
-                $this->httpClient,
-                $cache,
-                $cacheTtl,
-                $logger ?? new NullLogger()
-            );
-        }
-
-        // Set logger if provided and wrap HTTP client with logging
-        // This will ADD a logging layer on top of whatever client was provided
+        // Set logger if provided
         if ($logger !== null) {
             $this->setLogger($logger);
-            // Wrap HTTP client with logging decorator
-            $this->httpClient = new LoggingHttpClient($this->httpClient, $logger);
         }
 
         if (isset($options['locale'])) {
@@ -179,13 +167,17 @@ class CalendarSelect
                 throw new \Exception("Invalid URL: {$options['url']}");
             }
             $url = rtrim($url, '/');
-            $this->setUrl($url . '/calendars');
+            // Extract API base URL (remove /calendars if present)
+            $url = rtrim($url, '/calendars');
+            $this->setUrl($url);
         } else {
-            $this->setUrl(self::METADATA_URL);
+            // Extract API base URL from METADATA_URL
+            $apiUrl = str_replace('/calendars', '', self::METADATA_URL);
+            $this->setUrl($apiUrl);
         }
 
         // Ensure calendar index is loaded
-        if (self::$calendarIndex === null) {
+        if (!isset($this->calendarIndex)) {
             throw new \Exception('Failed to load calendar index metadata');
         }
 
@@ -202,8 +194,8 @@ class CalendarSelect
         }
 
         if (isset($options['nationFilter'])) {
-            if (false === in_array($options['nationFilter'], self::$calendarIndex->nationalCalendarsKeys, true)) {
-                throw new \Exception("Invalid nation: {$options['nationFilter']}, valid values are: " . implode(', ', self::$calendarIndex->nationalCalendarsKeys));
+            if (false === in_array($options['nationFilter'], $this->calendarIndex->nationalCalendarsKeys, true)) {
+                throw new \Exception("Invalid nation: {$options['nationFilter']}, valid values are: " . implode(', ', $this->calendarIndex->nationalCalendarsKeys));
             }
             $this->nationFilterForDioceseOptions = $options['nationFilter'];
         }
@@ -246,12 +238,12 @@ class CalendarSelect
     }
 
     /**
-     * Sets the URL for the metadata API endpoint.
+     * Sets the API base URL and fetches metadata
      *
-     * This method updates the metadata URL and fetches the metadata
-     * using the updated URL.
+     * This method updates the API base URL and fetches the metadata
+     * using the MetadataProvider.
      *
-     * @param string $url The URL of the metadata API endpoint.
+     * @param string $url The base API URL (e.g., 'https://litcal.johnromanodorazio.com/api/dev')
      *
      * @return $this
      */
@@ -376,11 +368,11 @@ class CalendarSelect
      */
     public function nationFilter(string $nation): self
     {
-        if (self::$calendarIndex === null) {
+        if (!isset($this->calendarIndex)) {
             throw new \Exception('Calendar index not loaded');
         }
-        if (false === in_array($nation, self::$calendarIndex->nationalCalendarsKeys, true)) {
-            throw new \Exception("Invalid nation: {$nation}, valid values are: " . implode(', ', self::$calendarIndex->nationalCalendarsKeys));
+        if (false === in_array($nation, $this->calendarIndex->nationalCalendarsKeys, true)) {
+            throw new \Exception("Invalid nation: {$nation}, valid values are: " . implode(', ', $this->calendarIndex->nationalCalendarsKeys));
         }
         $this->nationFilterForDioceseOptions = $nation;
         return $this;
@@ -482,55 +474,17 @@ class CalendarSelect
     }
 
     /**
-     * Fetches the metadata from the API if it has not been fetched yet.
+     * Fetches the metadata from the API using MetadataProvider
      *
-     * If the request url has changed since the last time it was fetched, it will be refetched.
+     * The metadata is cached by MetadataProvider for the current process,
+     * so subsequent calls will not make additional HTTP requests.
      *
-     * If the metadata is invalid, an exception is thrown.
-     *
-     * @throws \Exception If there is an error fetching or decoding the metadata,
-     *                     or if the metadata is invalid.
+     * @throws \Exception If there is an error fetching or decoding the metadata
      */
     private function fetchMetadata(): void
     {
-        // If we haven't cached the metadata yet, or the request url has changed, fetch it from the API
-        if ($this->metadataUrl !== self::METADATA_URL || self::$calendarIndex === null) {
-            $url = $this->metadataUrl ?? self::METADATA_URL;
-
-            $response = $this->httpClient->get($url);
-
-            if ($response->getStatusCode() !== 200) {
-                throw new \Exception(
-                    "Error fetching metadata from {$url}. " .
-                    "HTTP Status: {$response->getStatusCode()}"
-                );
-            }
-
-            $metadataRaw  = $response->getBody()->getContents();
-            $metadataJSON = json_decode($metadataRaw, true);
-
-            if (JSON_ERROR_NONE !== json_last_error()) {
-                throw new \Exception("Error decoding metadata from {$url}: " . json_last_error_msg());
-            }
-            if (false === is_array($metadataJSON)) {
-                throw new \Exception("Invalid metadata from {$url}");
-            }
-            if (false === array_key_exists('litcal_metadata', $metadataJSON)) {
-                throw new \Exception("Missing 'litcal_metadata' in metadata from {$url}");
-            }
-            $litcalMetadata = $metadataJSON['litcal_metadata'];
-            if (!is_array($litcalMetadata)) {
-                throw new \Exception("'litcal_metadata' must be an array in metadata from {$url}");
-            }
-            if (false === array_key_exists('diocesan_calendars', $litcalMetadata)) {
-                throw new \Exception("Missing 'diocesan_calendars' in metadata from {$url}");
-            }
-            if (false === array_key_exists('national_calendars', $litcalMetadata)) {
-                throw new \Exception("Missing 'national_calendars' in metadata from {$url}");
-            }
-            /** @var array<string,mixed> $litcalMetadata */
-            self::$calendarIndex = CalendarIndex::fromArray($litcalMetadata);
-        }
+        $url                 = $this->metadataUrl ?? str_replace('/calendars', '', self::METADATA_URL);
+        $this->calendarIndex = $this->metadataProvider->getMetadata($url);
     }
 
 
@@ -556,10 +510,10 @@ class CalendarSelect
      */
     private function addNationalCalendarWithDioceses(string $nation): void
     {
-        if (self::$calendarIndex === null) {
+        if (!isset($this->calendarIndex)) {
             throw new \Exception('Calendar index not loaded');
         }
-        $nationalCalendar = array_values(array_filter(self::$calendarIndex->nationalCalendars, fn(NationalCalendar $item) => $item->calendarId === $nation));
+        $nationalCalendar = array_values(array_filter($this->calendarIndex->nationalCalendars, fn(NationalCalendar $item) => $item->calendarId === $nation));
         array_push($this->nationalCalendarsWithDioceses, $nationalCalendar[0]);
         $this->dioceseOptions[$nation] = [];
     }
@@ -616,7 +570,7 @@ class CalendarSelect
      */
     private function buildAllOptions(): void
     {
-        if (self::$calendarIndex === null) {
+        if (!isset($this->calendarIndex)) {
             throw new \Exception('Calendar index not loaded');
         }
 
@@ -626,16 +580,14 @@ class CalendarSelect
         }
         $col->setStrength(\Collator::PRIMARY); // only compare base characters; not accents, lower/upper-case, ...
 
-        foreach (self::$calendarIndex->diocesanCalendars as $diocesanCalendar) {
+        foreach ($this->calendarIndex->diocesanCalendars as $diocesanCalendar) {
             if (!$this->hasNationalCalendarWithDioceses($diocesanCalendar->nation)) {
                 // we add all nations with dioceses to the nations list
                 $this->addNationalCalendarWithDioceses($diocesanCalendar->nation);
             }
             $this->addDioceseOption($diocesanCalendar);
         }
-        // PHPStan null check (already validated at method start)
-        assert(self::$calendarIndex !== null);
-        $sortedNationalCalendars = self::$calendarIndex->nationalCalendars;
+        $sortedNationalCalendars = $this->calendarIndex->nationalCalendars;
         usort($sortedNationalCalendars, function (NationalCalendar $a, NationalCalendar $b) use ($col): int {
             $displayA = \Locale::getDisplayRegion('-' . $a->calendarId, $this->locale);
             $displayB = \Locale::getDisplayRegion('-' . $b->calendarId, $this->locale);
@@ -732,11 +684,11 @@ class CalendarSelect
     /**
      * Retrieves the metadata URL used by the calendar select instance.
      *
-     * @return ?string The metadata URL.
+     * @return ?string The metadata URL with /calendars appended.
      */
     public function getMetadataUrl(): ?string
     {
-        return $this->metadataUrl;
+        return $this->metadataUrl !== null ? $this->metadataUrl . '/calendars' : null;
     }
 
     /**
@@ -758,12 +710,12 @@ class CalendarSelect
      *
      * @return bool True if the diocese is valid for the nation, false otherwise.
      */
-    public static function isValidDioceseForNation(string $diocese_id, string $nation): bool
+    public function isValidDioceseForNation(string $diocese_id, string $nation): bool
     {
-        if (self::$calendarIndex === null) {
+        if (!isset($this->calendarIndex)) {
             return false;
         }
-        $nationalCalendarMetadata = array_values(array_filter(self::$calendarIndex->nationalCalendars, fn(NationalCalendar $item) => $item->calendarId === $nation));
+        $nationalCalendarMetadata = array_values(array_filter($this->calendarIndex->nationalCalendars, fn(NationalCalendar $item) => $item->calendarId === $nation));
         if (count($nationalCalendarMetadata) === 0) {
             return false;
         }
@@ -780,11 +732,11 @@ class CalendarSelect
      * This contains all the calendar metadata returned by the API,
      * including all the national and diocesan calendars.
      *
-     * @return CalendarIndex|null The metadata index, or null if the metadata hasn't been fetched yet.
+     * @return CalendarIndex The metadata index
      */
-    public static function getMetadata(): ?CalendarIndex
+    public function getMetadata(): CalendarIndex
     {
-        return self::$calendarIndex;
+        return $this->calendarIndex;
     }
 
     /**
