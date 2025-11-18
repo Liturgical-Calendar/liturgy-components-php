@@ -25,7 +25,8 @@ If you intend on contributing to the repository and installing development requi
 
 ## New: PSR-Compliant HTTP Features
 
-This library now supports **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories), **PSR-18** (HTTP Client), **PSR-3** (Logging), and **PSR-16** (Simple Cache) standards, providing professional-grade features:
+This library now supports **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories), **PSR-18** (HTTP Client), **PSR-3** (Logging), and **PSR-16** (Simple Cache)
+standards, providing professional-grade features:
 
 - **🚀 HTTP Response Caching** - Reduce API calls and improve performance by up to 90%
 - **📊 Structured Logging** - Monitor and debug HTTP requests with PSR-3 loggers
@@ -813,6 +814,52 @@ Then run the `composer test` script, which calls the included PHPUnit package to
 To run a single test class or a single method within a class, use the `composer test-filter` script
 followed by the desired `Class` or `Class::method`, e.g.
 `composer test-filter CalendarSelectTest::testIsValidLocale`.
+
+## Code Quality & Linting
+
+This project maintains high code quality standards with automated linting and static analysis.
+
+### PHP Code Quality
+
+```bash
+composer lint              # Check PHP code style (phpcs)
+composer lint:fix          # Auto-fix PHP code style (phpcbf)
+composer analyse           # Run PHPStan static analysis (Level 10)
+composer parallel-lint     # Check PHP syntax
+```
+
+### Markdown Linting
+
+This project enforces consistent markdown formatting. To lint markdown files:
+
+```bash
+npm install                # Install markdown linting dependencies (first time only)
+composer lint:md           # Check markdown files
+composer lint:md:fix       # Auto-fix markdown issues
+```
+
+See [MARKDOWN_LINTING.md](MARKDOWN_LINTING.md) for detailed markdown linting documentation.
+
+### Git Hooks (CaptainHook)
+
+The project uses CaptainHook to automatically run quality checks before commits and pushes:
+
+**Pre-commit** (runs on `git commit`):
+
+- PHP syntax linting
+- PHP code style checking (phpcs)
+- Markdown formatting (markdownlint)
+
+**Pre-push** (runs on `git push`):
+
+- PHP parallel syntax checking
+- PHPStan static analysis (Level 10)
+
+Hooks are automatically installed via Composer. To manually reinstall:
+
+```bash
+vendor/bin/captainhook install -f
+```
 
 ## Translations
 

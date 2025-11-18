@@ -40,10 +40,14 @@ This is a PHP library providing reusable frontend components for the Liturgical 
 ### Markdown Standards
 
 - **CRITICAL**: All markdown files must adhere to the .markdownlint.yml rules defined in this project
+- **IMPORTANT**: Always run `composer lint:md` after editing or creating markdown files
 - Key rules include:
   - Maximum line length: 180 characters (excluding code blocks and tables)
-  - Use fenced code blocks (triple backticks)
+  - Use fenced code blocks (triple backticks) with language identifiers
+  - Fenced code blocks must be surrounded by blank lines
   - Ordered lists use consistent numbering style
+  - Lists must be surrounded by blank lines
+  - Headings must be surrounded by blank lines
   - Inline HTML is allowed for specific elements (img, a, b, table, etc.)
 
 ### Before Committing
@@ -51,13 +55,60 @@ This is a PHP library providing reusable frontend components for the Liturgical 
 Always run these commands to ensure code quality:
 
 ```bash
+# PHP Quality Checks
 composer lint              # Check coding standards (phpcs)
 composer lint:fix          # Auto-fix coding standards (phpcbf)
 composer analyse           # Run static analysis (phpstan)
 composer parallel-lint     # Check PHP syntax
 composer test              # Run full test suite
 composer test:quick        # Run tests excluding slow tests
+
+# Markdown Quality Checks
+composer lint:md           # Check markdown formatting (markdownlint)
+composer lint:md:fix       # Auto-fix markdown formatting
 ```
+
+**CRITICAL**: When you create or edit markdown files (*.md), you MUST run `composer lint:md:fix` before committing to ensure proper formatting.
+The pre-commit hook will block commits with markdown formatting errors.
+
+### Markdown File Workflow
+
+When creating or editing markdown files, follow this workflow:
+
+1. **Create/Edit** the markdown file
+1. **Auto-fix formatting**: Run `composer lint:md:fix` immediately after editing
+1. **Verify**: Run `composer lint:md` to check for any remaining issues
+1. **Fix manually** if auto-fix couldn't resolve all issues
+1. **Commit**: The pre-commit hook will verify formatting
+
+**Common markdown linting errors**:
+
+- **MD031**: Fenced code blocks need blank lines before and after
+- **MD040**: Fenced code blocks must specify language (e.g., ` ```php ` not just ` ``` `)
+- **MD032**: Lists must be surrounded by blank lines
+- **MD022**: Headings must be surrounded by blank lines
+- **MD013**: Line length must not exceed 180 characters (excluding code blocks and tables)
+
+**Example of properly formatted markdown**:
+
+````markdown
+## Heading
+
+Some text here.
+
+- List item 1
+- List item 2
+
+More text here.
+
+```bash
+command --flag value
+```
+
+Final paragraph.
+````
+
+See [MARKDOWN_LINTING.md](MARKDOWN_LINTING.md) for complete documentation.
 
 ## Project Structure
 
@@ -80,13 +131,20 @@ composer test:quick        # Run tests excluding slow tests
 1. Maintain backward compatibility - this is a published Composer package
 1. Follow existing patterns for method naming and structure
 1. Update relevant tests when modifying component behavior
-1. Ensure phpcs compliance before committing
+1. Ensure phpcs compliance before committing (run `composer lint`)
+1. **Ensure markdown linting compliance** when editing .md files (run `composer lint:md:fix`)
 1. Use type hints and return types (PHP 8.1+ features)
 1. Document public methods with clear docblocks
 
 ## Quality Assurance
 
 - **Pre-commit hooks**: Managed via CaptainHook
+  - PHP syntax linting (built-in)
+  - PHP code style checking (phpcs) - runs when `.php` files are staged
+  - Markdown formatting (markdownlint) - runs when `.md` files are staged
+- **Pre-push hooks**: Managed via CaptainHook
+  - PHP parallel syntax checking - runs when `.php` files are staged
+  - PHPStan static analysis (Level 10) - runs when `.php` files are staged
 - **CI/CD**: Ensure all quality checks pass before creating pull requests
 - **Code Coverage**: Maintain or improve test coverage with new features
 

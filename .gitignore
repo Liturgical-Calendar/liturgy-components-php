@@ -10,6 +10,8 @@
 .history/
 
 /vendor/
+/node_modules/
+package-lock.json
 /**/.env
 /**/.env.*
 /**/.envrc
