@@ -1,5 +1,7 @@
 <?php
 
+namespace LiturgicalCalendar\Components\Tests;
+
 use PHPUnit\Framework\TestCase;
 use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
@@ -240,7 +242,7 @@ class ApiOptionsTest extends TestCase
 
         // Set up error handler to capture warnings
         $warnings = [];
-        set_error_handler(function ($errno, $errstr) use (&$warnings) {
+        set_error_handler(function ($_errno, $errstr) use (&$warnings) {
             $warnings[] = $errstr;
             return true; // Suppress the warning from being displayed
         }, E_USER_WARNING);

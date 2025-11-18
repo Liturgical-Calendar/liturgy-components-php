@@ -110,14 +110,15 @@ class ApiOptions
                         // Validate that the locale is at least recognized by PHP's Intl extension
                         // by attempting to create an IntlDateFormatter with it
                         try {
-                            $testFormatter = new \IntlDateFormatter(
+                            /** @phpstan-ignore new.resultUnused */
+                            new \IntlDateFormatter(
                                 $canonicalizedLocale,
                                 \IntlDateFormatter::LONG,
                                 \IntlDateFormatter::NONE
                             );
                             // If we get here, the locale is valid enough for IntlDateFormatter
                             self::$locale = $canonicalizedLocale;
-                        } catch (\ValueError $e) {
+                        } catch (\ValueError | \IntlException $e) {
                             // Locale is invalid - trigger warning and fall back to 'en'
                             trigger_error(
                                 "Invalid locale '{$value}' provided. Falling back to 'en'. " .
@@ -219,15 +220,14 @@ class ApiOptions
     /**
      * Initializes the localization for the component.
      *
-     * If the ApiOptions::$locale is not set, it defaults to 'en-US'.
-     * Then, it sets the locale using setlocale with the following order of preference:
-     *    1. ApiOptions::$locale with '.utf8' or '.UTF-8' appended
-     *    2. ApiOptions::$locale without any suffix
-     *    3. The base locale (retrieved with a magic getter) with '_' followed by its uppercase version
-     *       and '.utf8' or '.UTF-8' appended
-     *    4. The base locale with '_' followed by its uppercase version without any suffix
-     *    5. The base locale with '.utf8' or '.UTF-8' appended
-     *    6. The base locale without any suffix
+     * If the ApiOptions::$locale is not set, it defaults to 'en_US'.
+     * Then, it sets the locale using setlocale with an array of locale variants built as follows:
+     *    - ApiOptions::$locale with '.utf8' or '.UTF-8' appended, and without suffix
+     *    - If a region is detected (via \Locale::getRegion), base locale + '_' + region with
+     *      '.utf8' or '.UTF-8' appended, and without suffix
+     *    - Base locale with '.utf8' or '.UTF-8' appended, and without suffix
+     *
+     * Duplicate variants are removed to ensure efficient locale resolution.
      *
      * If none of the locale variants can be set (usually because they are not installed on the system),
      * a warning is triggered but the component continues to function. Translations may fall back to
@@ -261,6 +261,8 @@ class ApiOptions
                 $baseLocale . '_' . $region
             ]);
         }
+        // Remove duplicates that may occur when self::$locale already includes a region
+        $localeArray = array_unique($localeArray);
 
         $runtimeLocale = setlocale(LC_ALL, $localeArray);
         if (false === $runtimeLocale) {

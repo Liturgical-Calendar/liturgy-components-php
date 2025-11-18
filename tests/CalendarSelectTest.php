@@ -1,5 +1,7 @@
 <?php
 
+namespace LiturgicalCalendar\Components\Tests;
+
 use PHPUnit\Framework\TestCase;
 use LiturgicalCalendar\Components\CalendarSelect;
 
