@@ -289,7 +289,7 @@ class MetadataProviderTest extends TestCase
         $httpClient = $this->createMockHttpClient();
         $provider   = MetadataProvider::getInstance(self::API_URL . '/', $httpClient);
 
-        $metadata1 = $provider->getMetadata();
+        $provider->getMetadata();
         // Should strip trailing slash and cache under normalized URL
         $this->assertTrue(MetadataProvider::isCached());
     }
