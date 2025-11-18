@@ -69,4 +69,35 @@ class CalendarSelectTest extends TestCase
         $this->assertTrue(CalendarSelect::isValidLocale('es_ES'));
         $this->assertFalse(CalendarSelect::isValidLocale(' invalid-locale '));
     }
+
+    public function testUrlWithCalendarsSuffixIsNormalized()
+    {
+        // URL with /calendars suffix should be normalized to base API URL
+        $options        = [
+            'url' => 'https://litcal.johnromanodorazio.com/api/dev/calendars'
+        ];
+        $calendarSelect = new CalendarSelect($options);
+        // getMetadataUrl() appends /calendars to the stored base URL
+        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev/calendars', $calendarSelect->getMetadataUrl());
+    }
+
+    public function testUrlWithoutCalendarsSuffixGetsCalendarsAppended()
+    {
+        // URL without /calendars suffix should have /calendars appended by getMetadataUrl()
+        $options        = [
+            'url' => 'https://litcal.johnromanodorazio.com/api/dev'
+        ];
+        $calendarSelect = new CalendarSelect($options);
+        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev/calendars', $calendarSelect->getMetadataUrl());
+    }
+
+    public function testUrlWithTrailingSlashIsNormalized()
+    {
+        // URL with trailing slash should be normalized
+        $options        = [
+            'url' => 'https://litcal.johnromanodorazio.com/api/dev/'
+        ];
+        $calendarSelect = new CalendarSelect($options);
+        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev/calendars', $calendarSelect->getMetadataUrl());
+    }
 }

@@ -167,8 +167,10 @@ class CalendarSelect
                 throw new \Exception("Invalid URL: {$options['url']}");
             }
             $url = rtrim($url, '/');
-            // Extract API base URL (remove /calendars if present)
-            $url = rtrim($url, '/calendars');
+            // Extract API base URL (remove literal "/calendars" suffix if present)
+            if (str_ends_with($url, '/calendars')) {
+                $url = substr($url, 0, -strlen('/calendars'));
+            }
             $this->setUrl($url);
         } else {
             // Extract API base URL from METADATA_URL
