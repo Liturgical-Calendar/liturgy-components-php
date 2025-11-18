@@ -90,7 +90,8 @@ class MetadataProviderTest extends TestCase
 
     public function testGetInstanceReturnsSingletonForDefaultConfiguration()
     {
-        // Clear any existing instances first
+        // Clear metadata cache (note: this does NOT clear singleton instances)
+        // Instances are preserved to maintain their HTTP client configurations
         MetadataProvider::clearCache();
 
         // Multiple calls with all null parameters should return same instance

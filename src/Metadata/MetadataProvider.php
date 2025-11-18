@@ -244,6 +244,10 @@ class MetadataProvider
      * Clears all cached metadata, forcing the next getMetadata() call to fetch
      * fresh data from the API (or PSR-16 cache if still valid).
      *
+     * **IMPORTANT**: This method only clears the metadata cache (self::$metadataCache).
+     * It does NOT clear singleton provider instances (self::$instances). Provider
+     * instances are preserved to maintain their HTTP client configurations.
+     *
      * **When to use this:**
      * - In long-running processes (workers, daemons, CLI scripts) when you need
      *   to refresh metadata during the process lifetime
