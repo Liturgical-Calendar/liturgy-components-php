@@ -94,10 +94,17 @@ class MetadataProviderTest extends TestCase
         $cache      = new ArrayCache();
         $logger     = $this->createMock(LoggerInterface::class);
 
+        // Suppress double-wrapping warning for this test (intentional test scenario)
+        set_error_handler(function () {
+            return true;
+        }, E_USER_WARNING);
+
         // First call initializes the singleton
         $instance1 = MetadataProvider::getInstance(self::API_URL, $httpClient, $cache, $logger);
         // Subsequent calls return the same instance (parameters are ignored)
         $instance2 = MetadataProvider::getInstance(self::API_URL, $httpClient, $cache, $logger);
+
+        restore_error_handler();
 
         $this->assertSame($instance1, $instance2, 'Should return same singleton instance');
     }
@@ -257,7 +264,15 @@ class MetadataProviderTest extends TestCase
     {
         $cache      = new ArrayCache();
         $httpClient = $this->createMockHttpClient();
-        $provider   = MetadataProvider::getInstance(self::API_URL, $httpClient, $cache);
+
+        // Suppress double-wrapping warning for this test (intentional test scenario)
+        set_error_handler(function () {
+            return true;
+        }, E_USER_WARNING);
+
+        $provider = MetadataProvider::getInstance(self::API_URL, $httpClient, $cache);
+
+        restore_error_handler();
 
         $metadata = $provider->getMetadata();
 
@@ -272,7 +287,15 @@ class MetadataProviderTest extends TestCase
         // Expect at least one log message
         $logger->expects($this->atLeastOnce())->method('info');
 
+        // Suppress double-wrapping warning for this test (intentional test scenario)
+        set_error_handler(function () {
+            return true;
+        }, E_USER_WARNING);
+
         $provider = MetadataProvider::getInstance(self::API_URL, $httpClient, null, $logger);
+
+        restore_error_handler();
+
         $provider->getMetadata();
     }
 
@@ -349,5 +372,72 @@ class MetadataProviderTest extends TestCase
         $this->expectExceptionMessage('MetadataProvider must be initialized');
 
         MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+    }
+
+    public function testWarnsAboutDoubleWrappingWhenBothClientAndCacheProvided()
+    {
+        $httpClient     = $this->createMockHttpClient();
+        $cache          = new ArrayCache();
+        $warningIssued  = false;
+        $warningMessage = '';
+
+        // Set up error handler to catch the warning
+        set_error_handler(function ($errno, $errstr) use (&$warningIssued, &$warningMessage) {
+            $warningIssued  = true;
+            $warningMessage = $errstr;
+            return true; // Suppress the warning
+        }, E_USER_WARNING);
+
+        MetadataProvider::getInstance(self::API_URL, $httpClient, $cache);
+
+        restore_error_handler();
+
+        $this->assertTrue($warningIssued, 'Expected warning was not issued');
+        $this->assertStringContainsString('double-wrapping', $warningMessage);
+    }
+
+    public function testWarnsAboutDoubleWrappingWhenBothClientAndLoggerProvided()
+    {
+        $httpClient     = $this->createMockHttpClient();
+        $logger         = $this->createMock(LoggerInterface::class);
+        $warningIssued  = false;
+        $warningMessage = '';
+
+        // Set up error handler to catch the warning
+        set_error_handler(function ($errno, $errstr) use (&$warningIssued, &$warningMessage) {
+            $warningIssued  = true;
+            $warningMessage = $errstr;
+            return true; // Suppress the warning
+        }, E_USER_WARNING);
+
+        MetadataProvider::getInstance(self::API_URL, $httpClient, null, $logger);
+
+        restore_error_handler();
+
+        $this->assertTrue($warningIssued, 'Expected warning was not issued');
+        $this->assertStringContainsString('double-wrapping', $warningMessage);
+    }
+
+    public function testWarnsAboutDoubleWrappingWhenClientAndBothCacheAndLoggerProvided()
+    {
+        $httpClient     = $this->createMockHttpClient();
+        $cache          = new ArrayCache();
+        $logger         = $this->createMock(LoggerInterface::class);
+        $warningIssued  = false;
+        $warningMessage = '';
+
+        // Set up error handler to catch the warning
+        set_error_handler(function ($errno, $errstr) use (&$warningIssued, &$warningMessage) {
+            $warningIssued  = true;
+            $warningMessage = $errstr;
+            return true; // Suppress the warning
+        }, E_USER_WARNING);
+
+        MetadataProvider::getInstance(self::API_URL, $httpClient, $cache, $logger);
+
+        restore_error_handler();
+
+        $this->assertTrue($warningIssued, 'Expected warning was not issued');
+        $this->assertStringContainsString('double-wrapping', $warningMessage);
     }
 }

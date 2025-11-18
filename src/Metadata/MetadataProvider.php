@@ -169,6 +169,16 @@ class MetadataProvider
         self::$globalLogger     = $logger;
         self::$globalCacheTtl   = $cacheTtl;
 
+        // Warn about potential double-wrapping if both client and decorators provided
+        if ($httpClient !== null && ( $cache !== null || $logger !== null )) {
+            trigger_error(
+                'MetadataProvider::getInstance() called with both httpClient and cache/logger parameters. ' .
+                'If httpClient is already decorated (e.g., from HttpClientFactory::createProductionClient()), ' .
+                'this will cause double-wrapping. Only pass httpClient OR cache/logger, not both.',
+                E_USER_WARNING
+            );
+        }
+
         // Initialize HTTP client with auto-discovery if not provided
         $baseClient = self::$globalHttpClient ?? HttpClientFactory::create();
         $logger     = self::$globalLogger ?? new NullLogger();
