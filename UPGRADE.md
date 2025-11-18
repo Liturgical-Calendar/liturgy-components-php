@@ -613,14 +613,17 @@ Components that use MetadataProvider:
 - `CalendarSelect` - Calendar dropdown selection
 - `Locale` (ApiOptions) - Locale dropdown selection
 
-Both automatically use the globally configured singleton:
+Both automatically use the globally configured singleton. The API URL is configured globally via MetadataProvider, not per component:
 
 ```php
-// NO need to pass HTTP client, cache, or logger
+// NO need to pass HTTP client, cache, logger, or URL
+// The API URL is configured globally via MetadataProvider::getInstance()
 $calendarSelect = new CalendarSelect([
-    'locale' => 'en',
-    'url' => 'https://litcal.johnromanodorazio.com/api/dev'
+    'locale' => 'en'
 ]);
+
+// All component instances use the same MetadataProvider configuration
+$anotherSelect = new CalendarSelect();
 ```
 
 ### Best Practices
