@@ -259,8 +259,8 @@ class MetadataProviderTest extends TestCase
         $url1 = 'https://example.com/api/v1';
         $url2 = 'https://example.com/api/v2';
 
-        $metadata1 = $provider->getMetadata($url1);
-        $metadata2 = $provider->getMetadata($url2);
+        $this->assertInstanceOf(CalendarIndex::class, $provider->getMetadata($url1));
+        $this->assertInstanceOf(CalendarIndex::class, $provider->getMetadata($url2));
 
         $this->assertTrue(MetadataProvider::isCached($url1));
         $this->assertTrue(MetadataProvider::isCached($url2));
