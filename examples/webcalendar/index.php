@@ -339,6 +339,10 @@ if (isset($_POST) && !empty($_POST)) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" type="text/css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" rel="stylesheet" type="text/css">
     <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
         #ApiOptionsForm fieldset {
             border: 1px solid lightgray;
             padding: 6px 12px;
@@ -430,7 +434,9 @@ if (isset($_POST) && !empty($_POST)) {
             visibility: hidden;
         }
 
-        #LitCalTable .liturgicalGrade_0, #LitCalTable .liturgicalGrade_1, #LitCalTable .liturgicalGrade_2 {
+        #LitCalTable .liturgicalGrade_0,
+        #LitCalTable .liturgicalGrade_1,
+        #LitCalTable .liturgicalGrade_2 {
             font-size: .9em;
         }
 
@@ -438,16 +444,20 @@ if (isset($_POST) && !empty($_POST)) {
             font-size: .9em;
         }
 
-        #LitCalTable .liturgicalGrade_4, #LitCalTable .liturgicalGrade_5 {
+        #LitCalTable .liturgicalGrade_4,
+        #LitCalTable .liturgicalGrade_5 {
             font-size: 1em;
         }
 
-        #LitCalTable .liturgicalGrade_6, #LitCalTable .liturgicalGrade_7 {
+        #LitCalTable .liturgicalGrade_6,
+        #LitCalTable .liturgicalGrade_7 {
             font-size: 1em;
             font-weight: bold;
         }
 
-        .liturgicalGrade.liturgicalGrade_0, .liturgicalGrade.liturgicalGrade_1, .liturgicalGrade.liturgicalGrade_2 {
+        .liturgicalGrade.liturgicalGrade_0,
+        .liturgicalGrade.liturgicalGrade_1,
+        .liturgicalGrade.liturgicalGrade_2 {
             font-style: italic;
             color: gray;
         }

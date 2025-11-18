@@ -215,9 +215,10 @@ if (isset($_POST) && !empty($_POST)) {
 
                     // Only add to request data when neither national nor diocesan calendar is selected
                     // (national/diocesan calendars have predefined holydays of obligation)
+                    // and only if there are selected values
                     $nationalCalendar = $_POST['national_calendar'] ?? '';
                     $diocesanCalendar = $_POST['diocesan_calendar'] ?? '';
-                    if (empty($nationalCalendar) && empty($diocesanCalendar)) {
+                    if (empty($nationalCalendar) && empty($diocesanCalendar) && !empty($sanitizedValues)) {
                         $requestData[$key] = $sanitizedValues;
                     }
 
