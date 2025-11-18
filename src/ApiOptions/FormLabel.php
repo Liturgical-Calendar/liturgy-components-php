@@ -133,6 +133,13 @@ class FormLabel
         return $this;
     }
 
+    /**
+     * Sets the 'for' attribute linking the label to an input element.
+     *
+     * @param string $for The id of the input element this label is associated with.
+     *
+     * @return $this
+     */
     public function for(string $for): self
     {
         $for       = htmlspecialchars($for, ENT_QUOTES, 'UTF-8');
