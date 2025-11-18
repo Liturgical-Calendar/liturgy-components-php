@@ -113,25 +113,31 @@ if (class_exists('Dotenv\Dotenv')) {
 }
 
 // Set default environment variables for production (only if not already set)
-$_ENV['API_PROTOCOL'] = $_ENV['API_PROTOCOL'] ?? 'https';
-$_ENV['API_HOST']     = $_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com';
-$_ENV['API_PORT']     = $_ENV['API_PORT'] ?? '';
+$_ENV['API_PROTOCOL']  = $_ENV['API_PROTOCOL'] ?? 'https';
+$_ENV['API_HOST']      = $_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com';
+$_ENV['API_PORT']      = $_ENV['API_PORT'] ?? '';
+$_ENV['API_BASE_PATH'] = $_ENV['API_BASE_PATH'] ?? '/api/dev';
+
+// ============================================================================
+// Build Base API URL (used by both MetadataProvider and calendar requests)
+// ============================================================================
+// Centralize URL construction to ensure metadata and calendar requests stay in sync.
+// Both use the same base URL, preventing drift between MetadataProvider and manual requests.
+
+$apiPort    = !empty($_ENV['API_PORT']) ? ":{$_ENV['API_PORT']}" : '';
+$apiBaseUrl = rtrim("{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}{$apiPort}{$_ENV['API_BASE_PATH']}", '/');
 
 // ============================================================================
 // Initialize MetadataProvider (Centralized Singleton Configuration)
 // ============================================================================
 // Initialize MetadataProvider once with all configuration. This becomes immutable
 // for the lifetime of the application. All components will use this configuration.
-// Note: $httpClient already includes caching via createProductionClient(), so pass null for cache/logger
+// Note: $httpClient from createProductionClient() is already decorated with cache/logger,
+// so we only pass the httpClient to avoid double-wrapping.
 
-$apiPort = !empty($_ENV['API_PORT']) ? ":{$_ENV['API_PORT']}" : '';
-$apiUrl  = "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}{$apiPort}";
 MetadataProvider::getInstance(
-    apiUrl: $apiUrl,
-    httpClient: $httpClient,
-    cache: null,      // Already in $httpClient from createProductionClient()
-    logger: null,     // Already in $httpClient from createProductionClient()
-    cacheTtl: 3600 * 24
+    apiUrl: $apiBaseUrl,
+    httpClient: $httpClient  // Already decorated - don't pass cache/logger
 );
 
 // ============================================================================
@@ -142,8 +148,6 @@ $apiOptions = new ApiOptions();
 $apiOptions->acceptHeaderInput->hide();
 Input::setGlobalWrapper('td');
 
-// CalendarSelect components now use the centrally configured MetadataProvider
-// No need to pass httpClient/cache/logger - they're already set in MetadataProvider
 $calendarSelectNations = new CalendarSelect();
 $calendarSelectNations->label(true)->labelText('nation')
     ->id('national_calendar')->name('national_calendar')->setOptions(OptionsType::NATIONS)->allowNull(true);
@@ -230,7 +234,7 @@ if (isset($_POST) && !empty($_POST)) {
         $requestHeaders[] = 'Accept-Language: ' . $selectedLocale;
     }
 
-    if ($selectedDiocese && $selectedNation && false === CalendarSelect::isValidDioceseForNation($selectedDiocese, $selectedNation)) {
+    if ($selectedDiocese && $selectedNation && false === MetadataProvider::isValidDioceseForNation($selectedDiocese, $selectedNation)) {
         $selectedDiocese = false;
         unset($_POST['diocesan_calendar']);
     }
@@ -265,8 +269,9 @@ if (isset($_POST) && !empty($_POST)) {
         $apiOptions->localeInput->setOptionsForCalendar('nation', $selectedNation);
     }
 
-    // Build request URL using environment variables
-    $requestUrl = "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}{$apiPort}/calendar{$requestPath}{$requestYear}";
+    // Build request URL using the centralized base URL
+    // This ensures the calendar request uses the same base as MetadataProvider
+    $requestUrl = "{$apiBaseUrl}/calendar{$requestPath}{$requestYear}";
 
     // ========================================================================
     // Make HTTP POST Request using PSR-18 HTTP Client
