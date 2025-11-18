@@ -37,6 +37,7 @@ This library now supports **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories)
 
 ```php
 use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
 use LiturgicalCalendar\Components\Cache\ArrayCache;
 
@@ -49,12 +50,11 @@ $httpClient = HttpClientFactory::createProductionClient(
     failureThreshold: 5      // Circuit breaker threshold
 );
 
-// Initialize MetadataProvider with the production client
+// Initialize MetadataProvider with the already-decorated production client
+// Note: Don't pass cache/logger again - they're already in the production client
 MetadataProvider::getInstance(
     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-    httpClient: $httpClient,
-    cache: $cache,
-    cacheTtl: 3600 * 24
+    httpClient: $httpClient
 );
 
 // Create components - they automatically use the configured MetadataProvider
@@ -121,9 +121,10 @@ $isCached = MetadataProvider::isCached();
 ```php
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
 use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+use LiturgicalCalendar\Components\CalendarSelect;
 use LiturgicalCalendar\Components\Cache\ArrayCache;
 
-// Create production-ready HTTP client
+// Create production-ready HTTP client (already includes caching, logging, retry, circuit breaker)
 $cache = new ArrayCache();
 $httpClient = HttpClientFactory::createProductionClient(
     cache: $cache,
@@ -132,12 +133,11 @@ $httpClient = HttpClientFactory::createProductionClient(
     failureThreshold: 5
 );
 
-// Initialize MetadataProvider once
+// Initialize MetadataProvider with the already-decorated client
+// Note: Don't pass cache/logger again - they're already in the production client
 MetadataProvider::getInstance(
     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-    httpClient: $httpClient,
-    cache: $cache,
-    cacheTtl: 86400
+    httpClient: $httpClient
 );
 
 // All components use this configuration automatically
