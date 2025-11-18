@@ -20,8 +20,8 @@ class CircuitBreakerHttpClientTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->mockClient = $this->createMock(HttpClientInterface::class);
-        $this->mockLogger = $this->createMock(LoggerInterface::class);
+        $this->mockClient  = $this->createMock(HttpClientInterface::class);
+        $this->mockLogger  = $this->createMock(LoggerInterface::class);
         $this->currentTime = 1000000; // Reset time for each test
     }
 

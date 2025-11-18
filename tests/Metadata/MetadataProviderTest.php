@@ -56,10 +56,10 @@ class MetadataProviderTest extends TestCase
                         'locales'     => ['en', 'it', 'la'],
                         'missals'     => ['EDITIO_TYPICA_1970'],
                         'settings'    => [
-                            'epiphany'              => 'JAN6',
-                            'ascension'             => 'THURSDAY',
-                            'corpus_christi'        => 'THURSDAY',
-                            'eternal_high_priest'   => false,
+                            'epiphany'               => 'JAN6',
+                            'ascension'              => 'THURSDAY',
+                            'corpus_christi'         => 'THURSDAY',
+                            'eternal_high_priest'    => false,
                             'holydays_of_obligation' => []
                         ]
                     ]
@@ -206,7 +206,7 @@ class MetadataProviderTest extends TestCase
                 // Missing diocesan_calendars and locales
             ]
         ]));
-        $provider   = MetadataProvider::getInstance($httpClient);
+        $provider = MetadataProvider::getInstance($httpClient);
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Missing');
