@@ -44,6 +44,7 @@ If you're using the library with default settings, no code changes are required.
 **Starting from version 2.x**, the library introduced a centralized `MetadataProvider` singleton for all calendar metadata operations.
 
 **Key Changes:**
+
 - Metadata fetching and caching is now centralized through `MetadataProvider`
 - API URL, HTTP client, cache, and logger are set **once** on first initialization and become **immutable**
 - Validation methods are now **static** methods on `MetadataProvider`
@@ -51,14 +52,17 @@ If you're using the library with default settings, no code changes are required.
 - `CalendarSelect::isValidDioceseForNation()` is now a static method
 
 **Migration:**
+
 Your existing code continues to work! However, for optimal use of the new architecture:
 
 **Old Pattern** (still works):
+
 ```php
 $calendar = new CalendarSelect(['url' => 'https://litcal.johnromanodorazio.com/api/dev']);
 ```
 
 **New Pattern** (recommended):
+
 ```php
 use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 
@@ -102,6 +106,7 @@ Replace `file_get_contents()` with PSR-18 compliant HTTP clients (Guzzle, Symfon
 Cache API responses to reduce network calls and improve page load times.
 
 **Supported Cache Backends:**
+
 - **ArrayCache** (in-memory, included)
 - **Symfony Cache** (Redis, Filesystem, APCu, Memcached)
 - Any PSR-16 compatible cache
@@ -111,6 +116,7 @@ Cache API responses to reduce network calls and improve page load times.
 Log all HTTP requests, responses, cache hits/misses, and errors for debugging and monitoring.
 
 **Supported Loggers:**
+
 - **Monolog** (recommended)
 - **Symfony Logger**
 - Any PSR-3 compatible logger
@@ -120,6 +126,7 @@ Log all HTTP requests, responses, cache hits/misses, and errors for debugging an
 Automatically retry failed HTTP requests with exponential backoff.
 
 **Features:**
+
 - Configurable retry attempts (default: 3)
 - Exponential or linear backoff
 - Configurable status codes to retry (default: 408, 429, 500, 502, 503, 504)
@@ -129,6 +136,7 @@ Automatically retry failed HTTP requests with exponential backoff.
 Prevent cascading failures by "opening" the circuit after too many consecutive failures.
 
 **States:**
+
 - **CLOSED**: Normal operation
 - **OPEN**: Failing fast, blocking requests
 - **HALF_OPEN**: Testing service recovery
@@ -234,7 +242,8 @@ $html = $calendar->getSelect();
 ```
 
 **Example Log Output:**
-```
+
+```text
 [2025-11-15 10:30:00] liturgical-calendar.INFO: HTTP GET request {"url":"https://litcal.johnromanodorazio.com/api/dev/calendars"}
 [2025-11-15 10:30:01] liturgical-calendar.INFO: HTTP GET response {"status_code":200,"duration_ms":423.5}
 ```
@@ -266,6 +275,7 @@ $calendar = new CalendarSelect();
 ```
 
 **Retry Behavior:**
+
 - **Attempt 1**: Immediate request
 - **Attempt 2**: Wait 1 second (2^0 * 1000ms)
 - **Attempt 3**: Wait 2 seconds (2^1 * 1000ms)
@@ -297,9 +307,10 @@ $calendar = new CalendarSelect();
 ```
 
 **Circuit Breaker States:**
+
 1. **CLOSED** (Normal): Requests pass through
-2. **OPEN** (Failing): Blocks requests, fails immediately
-3. **HALF_OPEN** (Testing): Allows limited requests to test recovery
+1. **OPEN** (Failing): Blocks requests, fails immediately
+1. **HALF_OPEN** (Testing): Allows limited requests to test recovery
 
 ### Production-Ready Setup
 
@@ -332,13 +343,11 @@ $httpClient = HttpClientFactory::createProductionClient(
     failureThreshold: 5      // Circuit breaker threshold
 );
 
-// 4. Initialize MetadataProvider with production client
+// 4. Initialize MetadataProvider with the already-decorated production client
+// Note: Don't pass cache/logger again - they're already in the production client
 MetadataProvider::getInstance(
     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-    httpClient: $httpClient,
-    cache: $cache,
-    logger: $logger,
-    cacheTtl: 3600 * 24
+    httpClient: $httpClient
 );
 
 // 5. Create components - they automatically use the configured MetadataProvider
@@ -346,11 +355,12 @@ $calendar = new CalendarSelect();
 ```
 
 **Middleware Stack (innermost to outermost):**
+
 1. Base HTTP Client (Guzzle or file_get_contents)
-2. Circuit Breaker (protects against cascading failures)
-3. Retry (retries failed requests)
-4. Caching (caches successful responses)
-5. Logging (logs all operations)
+1. Circuit Breaker (protects against cascading failures)
+1. Retry (retries failed requests)
+1. Caching (caches successful responses)
+1. Logging (logs all operations)
 
 ---
 
@@ -359,6 +369,7 @@ $calendar = new CalendarSelect();
 ### Cache Hit Rates
 
 With caching enabled:
+
 - **First request**: ~400ms (API call)
 - **Cached requests**: <1ms (no network)
 - **Typical cache hit rate**: 80-95% on production sites
@@ -374,9 +385,11 @@ With caching enabled:
 ### Example Performance Gains
 
 **Before (without cache):**
+
 - 10 page loads = 10 API calls = ~4 seconds total
 
 **After (with cache):**
+
 - 10 page loads = 1 API call + 9 cache hits = ~0.4 seconds total
 - **90% faster!**
 
@@ -389,18 +402,22 @@ With caching enabled:
 **Problem:** Responses not being cached
 
 **Solutions:**
+
 1. Verify cache is injected:
+
    ```php
    $calendar = new CalendarSelect([], null, null, $cache); // ✓ Correct
    $calendar = new CalendarSelect([], null, null);         // ✗ No cache
    ```
 
-2. Check cache permissions (filesystem cache):
+1. Check cache permissions (filesystem cache):
+
    ```bash
    chmod 777 /tmp/litcal-cache
    ```
 
-3. Verify cache backend is working:
+1. Verify cache backend is working:
+
    ```php
    $cache->set('test', 'value', 60);
    var_dump($cache->get('test')); // Should print 'value'
@@ -411,12 +428,15 @@ With caching enabled:
 **Problem:** No log entries
 
 **Solutions:**
+
 1. Verify logger is injected:
+
    ```php
    $calendar = new CalendarSelect([], null, $logger); // ✓ Correct
    ```
 
-2. Check log level:
+1. Check log level:
+
    ```php
    // Too high - won't log INFO/DEBUG
    $logger->pushHandler(new StreamHandler('log.txt', Logger::ERROR));
@@ -425,7 +445,8 @@ With caching enabled:
    $logger->pushHandler(new StreamHandler('log.txt', Logger::DEBUG));
    ```
 
-3. Check file permissions:
+1. Check file permissions:
+
    ```bash
    chmod 666 /var/log/litcal.log
    ```
@@ -435,7 +456,9 @@ With caching enabled:
 **Problem:** Circuit breaker opens during normal operation
 
 **Solutions:**
+
 1. Increase failure threshold:
+
    ```php
    // More tolerant
    $httpClient = HttpClientFactory::createWithCircuitBreaker(
@@ -443,8 +466,9 @@ With caching enabled:
    );
    ```
 
-2. Check underlying service health
-3. Review logs for actual failures:
+1. Check underlying service health
+1. Review logs for actual failures:
+
    ```php
    $logger->pushHandler(new StreamHandler('php://stderr', Logger::DEBUG));
    ```
@@ -454,7 +478,9 @@ With caching enabled:
 **Problem:** Retries add too much latency
 
 **Solutions:**
+
 1. Reduce retry attempts:
+
    ```php
    $httpClient = HttpClientFactory::createWithRetry(
        maxRetries: 1,  // Was: 3
@@ -462,14 +488,16 @@ With caching enabled:
    );
    ```
 
-2. Use linear backoff instead of exponential:
+1. Use linear backoff instead of exponential:
+
    ```php
    $httpClient = HttpClientFactory::createWithRetry(
        useExponentialBackoff: false
    );
    ```
 
-3. Don't retry certain status codes:
+1. Don't retry certain status codes:
+
    ```php
    $httpClient = HttpClientFactory::createWithRetry(
        retryStatusCodes: [503, 504] // Only retry 503/504
@@ -530,12 +558,10 @@ $httpClient = HttpClientFactory::createProductionClient(
 );
 
 // 3. Initialize MetadataProvider ONCE at application bootstrap
+// Note: Don't pass cache/logger again - they're already in the production client
 MetadataProvider::getInstance(
     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-    httpClient: $httpClient,
-    cache: $cache,
-    logger: $logger,
-    cacheTtl: 86400
+    httpClient: $httpClient
 );
 
 // 4. Create components - they automatically use the configured singleton
@@ -567,7 +593,7 @@ $isCached = MetadataProvider::isCached();
 ### Two-Tier Caching Strategy
 
 1. **Process-wide cache** (static property) - Persists for PHP process lifetime, takes precedence
-2. **PSR-16 cache** (optional) - Used only for initial HTTP fetch
+1. **PSR-16 cache** (optional) - Used only for initial HTTP fetch
 
 ```php
 // First component - fetches from API
@@ -583,6 +609,7 @@ MetadataProvider::clearCache();
 ### Component Integration
 
 Components that use MetadataProvider:
+
 - `CalendarSelect` - Calendar dropdown selection
 - `Locale` (ApiOptions) - Locale dropdown selection
 
@@ -599,15 +626,15 @@ $calendarSelect = new CalendarSelect([
 ### Best Practices
 
 1. **Initialize once at bootstrap**: Configure MetadataProvider in your application's initialization code
-2. **Use static methods**: Prefer `MetadataProvider::isValidDioceseForNation()` over instance methods
-3. **Long-running processes**: Call `clearCache()` periodically to refresh metadata
-4. **Testing**: Use `resetForTesting()` in test setup for isolation
+1. **Use static methods**: Prefer `MetadataProvider::isValidDioceseForNation()` over instance methods
+1. **Long-running processes**: Call `clearCache()` periodically to refresh metadata
+1. **Testing**: Use `resetForTesting()` in test setup for isolation
 
 ---
 
 ## Questions?
 
-- **GitHub Issues**: https://github.com/Liturgical-Calendar/liturgy-components-php/issues
+- **GitHub Issues**: <https://github.com/Liturgical-Calendar/liturgy-components-php/issues>
 - **Documentation**: See PSR_COMPATIBILITY.md for implementation details
 - **Examples**: See examples/ directory for working code samples
 
