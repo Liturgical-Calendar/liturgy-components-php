@@ -441,6 +441,6 @@ class MetadataProvider
         if (self::$globalApiUrl === null) {
             return null;
         }
-        return self::$globalApiUrl . '/calendars';
+        return rtrim(self::$globalApiUrl, '/') . '/calendars';
     }
 }

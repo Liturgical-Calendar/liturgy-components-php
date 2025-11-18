@@ -307,6 +307,22 @@ class MetadataProviderTest extends TestCase
         $this->assertSame(self::API_URL, MetadataProvider::getApiUrl());
     }
 
+    public function testGetMetadataUrlNormalizesTrailingSlash()
+    {
+        $httpClient = $this->createMockHttpClient();
+
+        // Test without trailing slash
+        MetadataProvider::resetForTesting();
+        MetadataProvider::getInstance(self::API_URL, $httpClient);
+        $this->assertSame(self::API_URL . '/calendars', MetadataProvider::getMetadataUrl());
+
+        // Test with trailing slash - should produce same result (no double slash)
+        MetadataProvider::resetForTesting();
+        MetadataProvider::getInstance(self::API_URL . '/', $httpClient);
+        $this->assertSame(self::API_URL . '/calendars', MetadataProvider::getMetadataUrl());
+        $this->assertStringNotContainsString('//calendars', MetadataProvider::getMetadataUrl());
+    }
+
     public function testApiUrlTrailingSlashNormalization()
     {
         $httpClient = $this->createMockHttpClient();
