@@ -242,7 +242,7 @@ class ApiOptionsTest extends TestCase
 
         // Set up error handler to capture warnings
         $warnings = [];
-        set_error_handler(function ($_errno, $errstr) use (&$warnings) {
+        set_error_handler(function (int $_errno, string $errstr) use (&$warnings): bool {
             $warnings[] = $errstr;
             return true; // Suppress the warning from being displayed
         }, E_USER_WARNING);
