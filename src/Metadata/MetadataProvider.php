@@ -24,6 +24,25 @@ use Psr\Log\NullLogger;
  * - PSR-3 logging support
  * - Automatic HTTP client configuration with caching and logging
  *
+ * **IMPORTANT: Caching Behavior**
+ *
+ * This provider uses a two-tier caching strategy:
+ *
+ * 1. **Process-wide cache** (self::$metadataCache): Once metadata is fetched for an
+ *    API URL, it is cached for the lifetime of the PHP process. This cache takes
+ *    precedence and is never automatically invalidated based on TTL.
+ *
+ * 2. **PSR-16 cache** (via CachingHttpClient): Used for HTTP response caching across
+ *    requests/processes. The TTL only applies to the initial HTTP fetch - once in
+ *    the process-wide cache, the TTL is no longer consulted.
+ *
+ * **For typical web requests**: This is optimal - metadata is fetched once per request
+ * and reused across components.
+ *
+ * **For long-running processes** (workers, daemons, CLI scripts): You must explicitly
+ * call `MetadataProvider::clearCache()` if you need to refresh metadata during the
+ * process lifetime. The PSR-16 TTL will not trigger automatic refreshes.
+ *
  * Usage:
  * ```php
  * // Simple usage with defaults
@@ -36,6 +55,10 @@ use Psr\Log\NullLogger;
  *     logger: $logger
  * );
  * $metadata = $provider->getMetadata($apiUrl);
+ *
+ * // In long-running processes, refresh metadata when needed
+ * MetadataProvider::clearCache();
+ * $freshMetadata = $provider->getMetadata($apiUrl);
  * ```
  */
 class MetadataProvider
@@ -137,6 +160,11 @@ class MetadataProvider
      * current process. Subsequent calls with the same API URL will return
      * the cached metadata without making additional HTTP requests.
      *
+     * **IMPORTANT**: The process-wide cache takes precedence over PSR-16 cache TTL.
+     * Once metadata is cached in the current process, it will NOT be refreshed even
+     * if the PSR-16 cache expires. For long-running processes, call clearCache()
+     * explicitly when you need fresh metadata.
+     *
      * @param string $apiUrl The base API URL (e.g., 'https://litcal.johnromanodorazio.com/api/dev')
      * @return CalendarIndex The calendar metadata
      * @throws \Exception If there is an error fetching or parsing metadata
@@ -213,7 +241,18 @@ class MetadataProvider
     /**
      * Clear the process-wide metadata cache
      *
-     * Useful for testing or when you need to force a refresh of metadata.
+     * Clears all cached metadata, forcing the next getMetadata() call to fetch
+     * fresh data from the API (or PSR-16 cache if still valid).
+     *
+     * **When to use this:**
+     * - In long-running processes (workers, daemons, CLI scripts) when you need
+     *   to refresh metadata during the process lifetime
+     * - In tests to ensure isolated test state
+     * - When you know the API metadata has changed and need to force a refresh
+     *
+     * **Not needed for:**
+     * - Typical web requests (each request is a new process)
+     * - Relying on PSR-16 TTL for automatic refresh (process cache takes precedence)
      *
      * @return void
      */
