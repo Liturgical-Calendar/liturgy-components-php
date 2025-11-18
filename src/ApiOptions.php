@@ -104,8 +104,29 @@ class ApiOptions
                         if (!is_string($value) && $value !== null) {
                             throw new \InvalidArgumentException('Expected string for locale, got ' . gettype($value));
                         }
-                        $value        = null !== $value ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : 'en-US';
-                        self::$locale = \Locale::canonicalize($value);
+                        $value               = null !== $value ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : 'en-US';
+                        $canonicalizedLocale = \Locale::canonicalize($value);
+
+                        // Validate that the locale is at least recognized by PHP's Intl extension
+                        // by attempting to create an IntlDateFormatter with it
+                        try {
+                            /** @phpstan-ignore new.resultUnused */
+                            new \IntlDateFormatter(
+                                $canonicalizedLocale,
+                                \IntlDateFormatter::LONG,
+                                \IntlDateFormatter::NONE
+                            );
+                            // If we get here, the locale is valid enough for IntlDateFormatter
+                            self::$locale = $canonicalizedLocale;
+                        } catch (\ValueError | \IntlException $e) {
+                            // Locale is invalid - trigger warning and fall back to 'en'
+                            trigger_error(
+                                "Invalid locale '{$value}' provided. Falling back to 'en'. " .
+                                'Error: ' . $e->getMessage(),
+                                E_USER_WARNING
+                            );
+                            self::$locale = 'en';
+                        }
                         break;
                     case 'formLabel':
                         if (is_bool($value) && $value === true) {
@@ -199,46 +220,72 @@ class ApiOptions
     /**
      * Initializes the localization for the component.
      *
-     * If the ApiOptions::$locale is not set, it defaults to 'en-US'.
-     * Then, it sets the locale using setlocale with the following order of preference:
-     *    1. ApiOptions::$locale with '.utf8' or '.UTF-8' appended
-     *    2. ApiOptions::$locale without any suffix
-     *    3. The base locale (retrieved with a magic getter) with '_' followed by its uppercase version
-     *       and '.utf8' or '.UTF-8' appended
-     *    4. The base locale with '_' followed by its uppercase version without any suffix
-     *    5. The base locale with '.utf8' or '.UTF-8' appended
-     *    6. The base locale without any suffix
+     * If the ApiOptions::$locale is not set, it defaults to 'en_US'.
+     * Then, it sets the locale using setlocale with an array of locale variants built as follows:
+     *    - ApiOptions::$locale with '.utf8' or '.UTF-8' appended, and without suffix
+     *    - If a region is detected (via \Locale::getRegion), base locale + '_' + region with
+     *      '.utf8' or '.UTF-8' appended, and without suffix
+     *    - Base locale with '.utf8' or '.UTF-8' appended, and without suffix
      *
-     * After setting the locale, it binds the textdomain 'litcal' to the 'i18n' directory.
-     * The textdomain is then set to 'litcal'.
+     * Duplicate variants are removed to ensure efficient locale resolution.
+     *
+     * If none of the locale variants can be set (usually because they are not installed on the system),
+     * a warning is triggered but the component continues to function. Translations may fall back to
+     * English or display untranslated strings.
+     *
+     * After attempting to set the locale, it binds the textdomain 'litcompphp' to the 'i18n' directory.
      */
     private function prepareL10n(): void
     {
         if (self::$locale === null) {
             self::$locale = 'en_US';
         }
-        /** @disregard P1014 because self::$baseLocale is a magic variable retrieved with a magic getter */
-        $baseLocale       = self::baseLocale();
-        $localeArray      = [
+        $region     = \Locale::getRegion(self::$locale);
+        $baseLocale = self::baseLocale();
+        if (null === $baseLocale) {
+            throw new \RuntimeException('“Pride was the reason for the division of tongues, humility the reason they were reunited.” - St. Augustine, The City of God, Book XVI, Chapter 4');
+        }
+
+        $localeArray = [
             self::$locale . '.utf8',
             self::$locale . '.UTF-8',
             self::$locale,
-            $baseLocale . '_' . strtoupper($baseLocale) . '.utf8',
-            $baseLocale . '_' . strtoupper($baseLocale) . '.UTF-8',
-            $baseLocale . '_' . strtoupper($baseLocale),
             $baseLocale . '.utf8',
             $baseLocale . '.UTF-8',
             $baseLocale
         ];
-        $currentSetLocale = setlocale(LC_ALL, $localeArray);
-        if (false === $currentSetLocale) {
-            throw new \Exception('Failed to set locale to one of the following: ' . implode(', ', $localeArray));
+        if ($region !== null && $region !== '') {
+            array_splice($localeArray, 3, 0, [
+                $baseLocale . '_' . $region . '.utf8',
+                $baseLocale . '_' . $region . '.UTF-8',
+                $baseLocale . '_' . $region
+            ]);
         }
-        $this->currentSetLocale       = $currentSetLocale;
+        // Remove duplicates that may occur when self::$locale already includes a region
+        $localeArray = array_unique($localeArray);
+
+        $runtimeLocale = setlocale(LC_ALL, $localeArray);
+        if (false === $runtimeLocale) {
+            // Locale setting failed - trigger a warning but continue
+            // The component will still work, but translations may not be available
+            trigger_error(
+                'Failed to set locale to one of the following: ' . implode(', ', $localeArray) .
+                '. Translations may not be available. To fix this, install the required locale packages on your system.',
+                E_USER_WARNING
+            );
+            // Fall back to current locale (typically "C" or system default)
+            $runtimeLocale = setlocale(LC_ALL, null) ?: 'C';
+        }
+        $this->currentSetLocale       = $runtimeLocale;
         $this->expectedTextDomainPath = __DIR__ . '/ApiOptions/i18n';
         $bound                        = bindtextdomain('litcompphp', $this->expectedTextDomainPath);
         if (false === $bound || $bound !== $this->expectedTextDomainPath) {
-            die("Failed to bind text domain, expected path: {$this->expectedTextDomainPath}, current path: {$bound}");
+            trigger_error(
+                "Failed to bind text domain. Expected path: {$this->expectedTextDomainPath}, got: {$bound}. " .
+                'Translations may not be available.',
+                E_USER_WARNING
+            );
+            $this->currentTextDomainPath = $bound ?: $this->expectedTextDomainPath;
         } else {
             $this->currentTextDomainPath = $bound;
         }

@@ -1,5 +1,7 @@
 <?php
 
+namespace LiturgicalCalendar\Components\Tests;
+
 use PHPUnit\Framework\TestCase;
 use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
@@ -225,6 +227,49 @@ class ApiOptionsTest extends TestCase
                     $this->assertEquals('accept header', $precedingSibling->textContent);
                     break;
             }
+        }
+    }
+
+    /**
+     * Test that ApiOptions handles invalid locales gracefully.
+     * Uses a non-existent locale that is invalid for IntlDateFormatter.
+     * The component should trigger a warning and fall back to 'en'.
+     */
+    public function testHandlesInvalidLocaleGracefully(): void
+    {
+        // Use a completely made-up locale that is invalid for IntlDateFormatter
+        $options = ['locale' => 'xx-NONEXISTENT'];
+
+        // Set up error handler to capture warnings
+        $warnings = [];
+        set_error_handler(function (int $_errno, string $errstr) use (&$warnings): bool {
+            $warnings[] = $errstr;
+            return true; // Suppress the warning from being displayed
+        }, E_USER_WARNING);
+
+        try {
+            $apiOptions = new ApiOptions($options);
+
+            // Verify that the component was created successfully despite invalid locale
+            $this->assertInstanceOf(ApiOptions::class, $apiOptions);
+
+            // Verify that warnings were triggered (one for invalid locale, possibly more for setlocale)
+            $this->assertNotEmpty($warnings, 'Expected warnings about invalid locale');
+            $invalidLocaleWarning = array_filter($warnings, fn($w) => str_contains($w, 'Invalid locale'));
+            $this->assertNotEmpty($invalidLocaleWarning, 'Expected a warning about invalid locale');
+
+            // Verify that locale fell back to 'en'
+            $this->assertEquals('en', ApiOptions::getLocale());
+
+            // Verify that the component still generates valid HTML
+            $form = $apiOptions->getForm(PathType::BASE_PATH);
+            $this->assertStringContainsString('<label for="epiphany">epiphany</label>', $form);
+            $this->assertStringContainsString('<select id="epiphany"', $form);
+
+            // Verify that currentSetLocale was set to something
+            $this->assertNotEmpty($apiOptions->currentSetLocale);
+        } finally {
+            restore_error_handler();
         }
     }
 }
