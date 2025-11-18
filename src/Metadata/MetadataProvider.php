@@ -46,19 +46,22 @@ use Psr\Log\NullLogger;
  * Usage:
  * ```php
  * // Simple usage with defaults
- * $provider = MetadataProvider::getInstance();
- * $metadata = $provider->getMetadata($apiUrl);
+ * $provider = MetadataProvider::getInstance(
+ *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev'
+ * );
+ * $metadata = $provider->getMetadata();
  *
  * // With custom cache and logger
  * $provider = MetadataProvider::getInstance(
+ *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
  *     cache: $cache,
  *     logger: $logger
  * );
- * $metadata = $provider->getMetadata($apiUrl);
+ * $metadata = $provider->getMetadata();
  *
  * // In long-running processes, refresh metadata when needed
  * MetadataProvider::clearCache();
- * $freshMetadata = $provider->getMetadata($apiUrl);
+ * $freshMetadata = $provider->getMetadata();
  * ```
  */
 class MetadataProvider
