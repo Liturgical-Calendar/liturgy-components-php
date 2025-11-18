@@ -22,9 +22,11 @@ use Psr\SimpleCache\CacheInterface;
  * This class will generate a select element with options for all the national
  * calendars, as well as the diocesan calendars for each nation.
  *
+ * The API URL is configured once through MetadataProvider during initialization
+ * and becomes immutable for the lifetime of the application.
+ *
  * Public Methods:
  * - {@see LiturgicalCalendar\Components\CalendarSelect::__construct()} Initializes the CalendarSelect object with default settings.
- * - {@see LiturgicalCalendar\Components\CalendarSelect::setUrl()} Sets the URL of the liturgical calendar metadata API endpoint.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::selectedOption()} Sets the selected option.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::locale()} Sets the locale for the calendar select.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::class()} Sets the class for the calendar select.
@@ -38,9 +40,8 @@ use Psr\SimpleCache\CacheInterface;
  * - {@see LiturgicalCalendar\Components\CalendarSelect::disabled()} Sets whether the select element is disabled.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::isValidLocale()} Checks if the given locale is valid.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::getSelect()} Returns the HTML for the select element.
- * - {@see LiturgicalCalendar\Components\CalendarSelect::getMetadataUrl()} Returns the URL of the liturgical calendar metadata API endpoint.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::getLocale()} Returns the locale used by the calendar select instance.
- * - {@see LiturgicalCalendar\Components\CalendarSelect::isValidDioceseForNation()} Checks if the given diocese is valid for the given nation.
+ * - {@see LiturgicalCalendar\Components\CalendarSelect::isValidDioceseForNation()} Static method to check if the given diocese is valid for the given nation.
  *
  * @package LiturgicalCalendar\Components
  * @author John Romano D'Orazio <priest@johnromanodorazio.com>
@@ -48,8 +49,6 @@ use Psr\SimpleCache\CacheInterface;
 class CalendarSelect
 {
     use LoggerAwareTrait;
-
-    private const METADATA_URL = 'https://litcal.johnromanodorazio.com/api/dev/calendars';
 
     private CalendarIndex $calendarIndex;
     private MetadataProvider $metadataProvider;
@@ -67,7 +66,6 @@ class CalendarSelect
     private array $dioceseOptionsGrouped = [];
 
     private string $locale                         = 'en';
-    private ?string $metadataUrl                   = null;
     private ?string $nationFilterForDioceseOptions = null;
     private ?string $selectedOption                = null;
     private string $class                          = 'calendarSelect';
@@ -85,8 +83,6 @@ class CalendarSelect
      *
      * The options array can contain the following keys:
      * - `locale`: string, the locale to use, defaults to 'en'
-     * - `url`: string, the URL of the liturgical calendar metadata API endpoint,
-     *        defaults to https://litcal.johnromanodorazio.com/api/dev/calendars
      * - `class`: string, the class to apply to the select element, defaults to 'calendarSelect'
      * - `id`: string, the id to apply to the select element, defaults to 'calendarSelect'
      * - `name`: string, the name to apply to the select element, defaults to 'calendarSelect'
@@ -96,92 +92,62 @@ class CalendarSelect
      * - `label`: boolean, whether to include a label element, defaults to false
      * - `labelStr`: string, the string to use for the label element, defaults to 'Select a calendar'
      * - `allowNull`: boolean, whether to allow the null value in the select element, defaults to false
-     * - `cacheTtl`: int, cache TTL in seconds (default: 86400 = 24 hours)
      *
-     * **Important: HTTP Client Decorator Behavior**
+     * **MetadataProvider Integration:**
      *
-     * The constructor will automatically wrap the provided HTTP client with additional decorators
-     * if `$cache` or `$logger` are provided:
-     * - If `$cache` is provided: wraps with CachingHttpClient
-     * - If `$logger` is provided: wraps with LoggingHttpClient
+     * CalendarSelect uses the globally configured {@see MetadataProvider} singleton for metadata operations.
+     * Initialize MetadataProvider once at application bootstrap with HTTP client, cache, and logger:
      *
-     * **Warning:** If you provide a pre-decorated client (e.g., from HttpClientFactory::createProductionClient),
-     * DO NOT also pass `$cache` or `$logger` parameters, as this will cause double-wrapping and redundant
-     * behavior (e.g., double caching, duplicate log entries).
+     * ```php
+     * use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+     * use LiturgicalCalendar\Components\Http\HttpClientFactory;
+     *
+     * // Initialize MetadataProvider once at application startup
+     * MetadataProvider::getInstance(
+     *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+     *     httpClient: HttpClientFactory::createProductionClient($cache, $logger),
+     *     cache: $cache,
+     *     logger: $logger,
+     *     cacheTtl: 86400
+     * );
+     *
+     * // Components automatically use the configured singleton
+     * $calendarSelect = new CalendarSelect(['locale' => 'en']);
+     * ```
      *
      * **Usage Examples:**
      *
-     * Simple usage (auto-discovery with caching and logging):
+     * Basic usage with default API URL:
      * ```php
-     * $calendarSelect = new CalendarSelect(
-     *     options: [],
-     *     cache: $cache,
-     *     logger: $logger
-     * );
+     * $calendarSelect = new CalendarSelect(['locale' => 'en']);
      * ```
      *
-     * Using a pre-configured production client (DO NOT pass cache/logger):
+     * Full configuration with all options:
      * ```php
-     * $httpClient = HttpClientFactory::createProductionClient($cache, $logger);
-     * $calendarSelect = new CalendarSelect(
-     *     options: [],
-     *     httpClient: $httpClient
-     *     // Note: Do NOT pass cache/logger here - already in production client
-     * );
+     * $calendarSelect = new CalendarSelect([
+     *     'locale' => 'en',
+     *     'class' => 'form-select',
+     *     'id' => 'calendar-dropdown',
+     *     'name' => 'selected_calendar',
+     *     'nationFilter' => 'US',
+     *     'selectedOption' => 'USA'
+     * ]);
      * ```
      *
-     * @param array{locale?:string,url?:string,class?:string,id?:string,name?:string,nationFilter?:string,setOptions?:OptionsType,selectedOption?:string,label?:bool,labelStr?:string,allowNull?:bool,cacheTtl?:int} $options The options for the instance.
-     * @param HttpClientInterface|null $httpClient Optional HTTP client for API requests. If null, uses auto-discovery.
-     * @param LoggerInterface|null $logger Optional PSR-3 logger (only use if $httpClient is NOT already decorated).
-     * @param CacheInterface|null $cache Optional PSR-16 cache (only use if $httpClient is NOT already decorated).
+     * @param array{locale?:string,class?:string,id?:string,name?:string,nationFilter?:string,setOptions?:OptionsType,selectedOption?:string,label?:bool,labelStr?:string,allowNull?:bool} $options The options for the instance.
      */
-    public function __construct(
-        array $options = ['url' => self::METADATA_URL],
-        ?HttpClientInterface $httpClient = null,
-        ?LoggerInterface $logger = null,
-        ?CacheInterface $cache = null
-    ) {
-        // Get cache TTL from options (default: 24 hours for metadata)
-        $cacheTtl = $options['cacheTtl'] ?? ( 3600 * 24 );
-
-        // Initialize MetadataProvider with provided dependencies
-        $this->metadataProvider = MetadataProvider::getInstance(
-            $httpClient,
-            $cache,
-            $logger,
-            $cacheTtl
-        );
-
-        // Set logger if provided
-        if ($logger !== null) {
-            $this->setLogger($logger);
-        }
+    public function __construct(array $options = [])
+    {
+        // Get MetadataProvider singleton (auto-initializes with default URL if not already initialized)
+        $this->metadataProvider = MetadataProvider::getInstance();
 
         if (isset($options['locale'])) {
             $this->locale($options['locale']);
         }
 
-        if (isset($options['url']) && $options['url'] !== self::METADATA_URL) {
-            $url = filter_var($options['url'], FILTER_VALIDATE_URL);
-            if (false === $url) {
-                throw new \Exception("Invalid URL: {$options['url']}");
-            }
-            $url = rtrim($url, '/');
-            // Extract API base URL (remove literal "/calendars" suffix if present)
-            if (str_ends_with($url, '/calendars')) {
-                $url = substr($url, 0, -strlen('/calendars'));
-            }
-            $this->setUrl($url);
-        } else {
-            // Extract API base URL from METADATA_URL
-            $apiUrl = str_replace('/calendars', '', self::METADATA_URL);
-            $this->setUrl($apiUrl);
-        }
-
-        // Ensure calendar index is loaded
-        if (!isset($this->calendarIndex)) {
-            throw new \Exception('Failed to load calendar index metadata');
-        }
+        // Fetch metadata from MetadataProvider
+        // This will throw an exception if metadata cannot be loaded
+        $this->fetchMetadata();
 
         if (isset($options['class'])) {
             $this->class = htmlspecialchars($options['class'], ENT_QUOTES, 'UTF-8');
@@ -239,22 +205,6 @@ class CalendarSelect
         }
     }
 
-    /**
-     * Sets the API base URL and fetches metadata
-     *
-     * This method updates the API base URL and fetches the metadata
-     * using the MetadataProvider.
-     *
-     * @param string $url The base API URL (e.g., 'https://litcal.johnromanodorazio.com/api/dev')
-     *
-     * @return $this
-     */
-    public function setUrl(string $url): self
-    {
-        $this->metadataUrl = $url;
-        $this->fetchMetadata();
-        return $this;
-    }
 
     /**
      * Sets the selected option of the select element.
@@ -370,9 +320,6 @@ class CalendarSelect
      */
     public function nationFilter(string $nation): self
     {
-        if (!isset($this->calendarIndex)) {
-            throw new \Exception('Calendar index not loaded');
-        }
         if (false === in_array($nation, $this->calendarIndex->nationalCalendarsKeys, true)) {
             throw new \Exception("Invalid nation: {$nation}, valid values are: " . implode(', ', $this->calendarIndex->nationalCalendarsKeys));
         }
@@ -485,8 +432,7 @@ class CalendarSelect
      */
     private function fetchMetadata(): void
     {
-        $url                 = $this->metadataUrl ?? str_replace('/calendars', '', self::METADATA_URL);
-        $this->calendarIndex = $this->metadataProvider->getMetadata($url);
+        $this->calendarIndex = $this->metadataProvider->getMetadata();
     }
 
 
@@ -512,9 +458,6 @@ class CalendarSelect
      */
     private function addNationalCalendarWithDioceses(string $nation): void
     {
-        if (!isset($this->calendarIndex)) {
-            throw new \Exception('Calendar index not loaded');
-        }
         $nationalCalendar = array_values(array_filter($this->calendarIndex->nationalCalendars, fn(NationalCalendar $item) => $item->calendarId === $nation));
         array_push($this->nationalCalendarsWithDioceses, $nationalCalendar[0]);
         $this->dioceseOptions[$nation] = [];
@@ -572,10 +515,6 @@ class CalendarSelect
      */
     private function buildAllOptions(): void
     {
-        if (!isset($this->calendarIndex)) {
-            throw new \Exception('Calendar index not loaded');
-        }
-
         $col = \Collator::create($this->locale);
         if ($col === null) {
             throw new \Exception('Failed to create Collator for locale: ' . $this->locale);
@@ -684,16 +623,6 @@ class CalendarSelect
     }
 
     /**
-     * Retrieves the metadata URL used by the calendar select instance.
-     *
-     * @return ?string The metadata URL with /calendars appended.
-     */
-    public function getMetadataUrl(): ?string
-    {
-        return $this->metadataUrl !== null ? $this->metadataUrl . '/calendars' : null;
-    }
-
-    /**
      * Returns the locale used by the calendar select instance.
      *
      * @return string The locale, a valid PHP locale string such as 'en' or 'es' or 'en_US' or 'es_ES'.
@@ -707,25 +636,17 @@ class CalendarSelect
      * Returns true if the given diocese is a valid diocese for the given nation,
      * and false otherwise.
      *
+     * This method delegates to MetadataProvider for centralized validation.
+     *
      * @param string $diocese_id The diocese to check.
      * @param string $nation The nation to check.
      *
      * @return bool True if the diocese is valid for the nation, false otherwise.
+     * @throws \Exception If MetadataProvider has not been initialized
      */
-    public function isValidDioceseForNation(string $diocese_id, string $nation): bool
+    public static function isValidDioceseForNation(string $diocese_id, string $nation): bool
     {
-        if (!isset($this->calendarIndex)) {
-            return false;
-        }
-        $nationalCalendarMetadata = array_values(array_filter($this->calendarIndex->nationalCalendars, fn(NationalCalendar $item) => $item->calendarId === $nation));
-        if (count($nationalCalendarMetadata) === 0) {
-            return false;
-        }
-        $nationalCalendar = $nationalCalendarMetadata[0];
-        if ($nationalCalendar->dioceses === null) {
-            return false;
-        }
-        return in_array($diocese_id, $nationalCalendar->dioceses);
+        return MetadataProvider::isValidDioceseForNation($diocese_id, $nation);
     }
 
     /**

@@ -14,6 +14,7 @@ use LiturgicalCalendar\Components\WebCalendar\Column;
 use LiturgicalCalendar\Components\WebCalendar\ColumnOrder;
 use LiturgicalCalendar\Components\WebCalendar\DateFormat;
 use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 
 // PSR-compliant HTTP Client with caching and logging
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
@@ -31,29 +32,63 @@ ini_set('display_errors', '1');
 
 // 1. Setup Logger (Monolog) - if available
 $logger = null;
+
+// DEBUG: Check if Monolog is available
+error_log('Checking for Monolog...');
+error_log('class_exists(Monolog\Logger): ' . ( class_exists('Monolog\Logger') ? 'YES' : 'NO' ));
+
 if (class_exists('Monolog\Logger')) {
-    $logger = new Monolog\Logger('liturgical-calendar');
-    // Log to PHP error log for simplicity (or use StreamHandler for file logging)
-    $logger->pushHandler(new Monolog\Handler\ErrorLogHandler(
-        Monolog\Handler\ErrorLogHandler::OPERATING_SYSTEM,
-        Monolog\Level::Warning
-    ));
-    // Uncomment below to log to file instead:
-    // $logger->pushHandler(new Monolog\Handler\StreamHandler(__DIR__ . '/logs/litcal.log', Monolog\Logger::DEBUG));
+    error_log('Monolog found! Creating logger...');
+
+    // Create logs directory if it doesn't exist
+    $logsDir = __DIR__ . '/logs';
+    error_log('Logs directory: ' . $logsDir);
+    error_log('Directory exists: ' . ( is_dir($logsDir) ? 'YES' : 'NO' ));
+
+    if (!is_dir($logsDir)) {
+        error_log('Creating logs directory...');
+        $result = mkdir($logsDir, 0755, true);
+        error_log('mkdir result: ' . ( $result ? 'SUCCESS' : 'FAILED' ));
+        if (!$result) {
+            error_log('mkdir error: ' . error_get_last()['message'] ?? 'unknown');
+        }
+    }
+
+    try {
+        $logger = new Monolog\Logger('liturgical-calendar');
+        // Log to file for debugging
+        $logger->pushHandler(new Monolog\Handler\StreamHandler(
+            $logsDir . '/litcal.log',
+            Monolog\Level::Debug
+        ));
+        error_log('Logger created successfully!');
+        $logger->info('Logger initialized successfully');
+    } catch (\Exception $e) {
+        error_log('Error creating logger: ' . $e->getMessage());
+    }
 } else {
-    // Monolog not available - logging will be disabled
-    // Run `composer install` to enable logging
+    error_log('Monolog NOT found - logging will be disabled');
+    error_log('Run `composer install` to enable logging');
 }
 
-// 2. Setup Cache (In-memory for this example)
-// For production, use Symfony Cache with Redis/Filesystem:
-// if (class_exists('Symfony\Component\Cache\Adapter\RedisAdapter')) {
-//     $redis = Symfony\Component\Cache\Adapter\RedisAdapter::createConnection('redis://localhost');
-//     $cache = new Symfony\Component\Cache\Psr16Cache(
-//         new Symfony\Component\Cache\Adapter\RedisAdapter($redis, 'litcal', 3600 * 24)
-//     );
-// }
-$cache = new ArrayCache();
+// 2. Setup Cache
+// For persistent caching across requests, use Symfony FilesystemAdapter or RedisAdapter
+// ArrayCache is in-memory only and resets on each request (good for single-request optimization)
+
+if (class_exists('Symfony\Component\Cache\Adapter\FilesystemAdapter')) {
+    // Persistent filesystem cache - survives across requests
+    $filesystemAdapter = new Symfony\Component\Cache\Adapter\FilesystemAdapter(
+        'litcal',           // namespace
+        3600 * 24,          // default TTL: 24 hours
+        __DIR__ . '/cache'  // cache directory
+    );
+
+    $cache = new Symfony\Component\Cache\Psr16Cache($filesystemAdapter);
+} else {
+    // Fallback to ArrayCache (in-memory, resets each request)
+    // To see cache hits, install: composer require symfony/cache
+    $cache = new ArrayCache();
+}
 
 // 3. Create Production-Ready HTTP Client
 // Includes: Circuit Breaker + Retry + Caching + Logging
@@ -82,25 +117,38 @@ $_ENV['API_PROTOCOL'] = $_ENV['API_PROTOCOL'] ?? 'https';
 $_ENV['API_HOST']     = $_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com';
 $_ENV['API_PORT']     = $_ENV['API_PORT'] ?? '';
 
-// Build $options array from environment variables
+// ============================================================================
+// Initialize MetadataProvider (Centralized Singleton Configuration)
+// ============================================================================
+// Initialize MetadataProvider once with all configuration. This becomes immutable
+// for the lifetime of the application. All components will use this configuration.
+// Note: $httpClient already includes caching via createProductionClient(), so pass null for cache/logger
+
 $apiPort = !empty($_ENV['API_PORT']) ? ":{$_ENV['API_PORT']}" : '';
-$options = ['url' => "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}{$apiPort}"];
+$apiUrl  = "{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}{$apiPort}";
+MetadataProvider::getInstance(
+    apiUrl: $apiUrl,
+    httpClient: $httpClient,
+    cache: null,      // Already in $httpClient from createProductionClient()
+    logger: null,     // Already in $httpClient from createProductionClient()
+    cacheTtl: 3600 * 24
+);
 
 // ============================================================================
-// Initialize Components with HTTP Client, Cache, and Logger
+// Initialize Components
 // ============================================================================
 
-$apiOptions = new ApiOptions($options);
+$apiOptions = new ApiOptions();
 $apiOptions->acceptHeaderInput->hide();
 Input::setGlobalWrapper('td');
 
-// CalendarSelect with cached HTTP client
-// Note: Pass null for $cache since $httpClient is already decorated with caching
-$calendarSelectNations = new CalendarSelect($options, $httpClient, null, null);
+// CalendarSelect components now use the centrally configured MetadataProvider
+// No need to pass httpClient/cache/logger - they're already set in MetadataProvider
+$calendarSelectNations = new CalendarSelect();
 $calendarSelectNations->label(true)->labelText('nation')
     ->id('national_calendar')->name('national_calendar')->setOptions(OptionsType::NATIONS)->allowNull(true);
 
-$calendarSelectDioceses = new CalendarSelect($options, $httpClient, null, null);
+$calendarSelectDioceses = new CalendarSelect();
 $calendarSelectDioceses->label(true)->labelText('diocese')
     ->id('diocesan_calendar')->name('diocesan_calendar')->setOptions(OptionsType::DIOCESES)->allowNull(true);
 

@@ -63,11 +63,28 @@ use Psr\Log\NullLogger;
  */
 class MetadataProvider
 {
+    private const DEFAULT_API_URL = 'https://litcal.johnromanodorazio.com/api/dev';
+
     /** @var array<string, CalendarIndex> Process-wide metadata cache keyed by API URL */
     private static array $metadataCache = [];
 
-    /** @var array<string, self> Singleton instances keyed by configuration hash */
-    private static array $instances = [];
+    /** @var self|null Singleton instance */
+    private static ?self $instance = null;
+
+    /** @var string|null Global API URL (immutable after first initialization) */
+    private static ?string $globalApiUrl = null;
+
+    /** @var HttpClientInterface|null Global HTTP client (immutable after first initialization) */
+    private static ?HttpClientInterface $globalHttpClient = null;
+
+    /** @var CacheInterface|null Global cache (immutable after first initialization) */
+    private static ?CacheInterface $globalCache = null;
+
+    /** @var LoggerInterface|null Global logger (immutable after first initialization) */
+    private static ?LoggerInterface $globalLogger = null;
+
+    /** @var int|null Global cache TTL (immutable after first initialization) */
+    private static ?int $globalCacheTtl = null;
 
     private HttpClientInterface $httpClient;
     private LoggerInterface $logger;
@@ -87,57 +104,81 @@ class MetadataProvider
     }
 
     /**
-     * Get or create a MetadataProvider instance
+     * Get or create the MetadataProvider singleton instance
      *
      * Returns a singleton instance configured with the provided dependencies.
-     * If cache or logger are provided, the HTTP client will be wrapped with
-     * appropriate decorators.
+     * Configuration is set once on first call and becomes immutable thereafter.
      *
-     * **Important: HTTP Client Decorator Behavior**
+     * **IMPORTANT: Immutable Configuration**
      *
-     * If `$cache` or `$logger` are provided, the constructor will automatically
-     * wrap the HTTP client with decorators:
-     * - If `$cache` is provided: wraps with CachingHttpClient
-     * - If `$logger` is provided: wraps with LoggingHttpClient
+     * All parameters are only used on the FIRST call to getInstance(). Subsequent
+     * calls will ignore all parameters and return the already-configured singleton.
+     *
+     * This ensures consistent configuration across the entire application:
+     * - API URL is set once and cannot be changed
+     * - HTTP client configuration is set once
+     * - Cache and logger are set once
+     * - Cache TTL is set once
+     *
+     * **Typical Usage:**
+     * ```php
+     * // Initialize once at application bootstrap
+     * MetadataProvider::getInstance(
+     *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+     *     httpClient: $httpClient,
+     *     cache: $cache,
+     *     logger: $logger,
+     *     cacheTtl: 86400
+     * );
+     *
+     * // Use anywhere without parameters
+     * $provider = MetadataProvider::getInstance();
+     * $metadata = $provider->getMetadata();
+     *
+     * // Or use static validation methods directly
+     * $isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+     * ```
      *
      * **Warning:** If you provide a pre-decorated client (e.g., from
      * HttpClientFactory::createProductionClient), DO NOT also pass `$cache` or
      * `$logger` parameters, as this will cause double-wrapping.
      *
-     * @param HttpClientInterface|null $httpClient Optional HTTP client. If null, uses auto-discovery.
-     * @param CacheInterface|null $cache Optional PSR-16 cache (only use if $httpClient is NOT already decorated).
-     * @param LoggerInterface|null $logger Optional PSR-3 logger (only use if $httpClient is NOT already decorated).
-     * @param int $cacheTtl Cache TTL in seconds (default: 86400 = 24 hours).
+     * @param string|null $apiUrl Optional API base URL. Only used on first call.
+     * @param HttpClientInterface|null $httpClient Optional HTTP client. Only used on first call.
+     * @param CacheInterface|null $cache Optional PSR-16 cache. Only used on first call.
+     * @param LoggerInterface|null $logger Optional PSR-3 logger. Only used on first call.
+     * @param int $cacheTtl Cache TTL in seconds (default: 86400 = 24 hours). Only used on first call.
      * @return self Singleton instance
      */
     public static function getInstance(
+        ?string $apiUrl = null,
         ?HttpClientInterface $httpClient = null,
         ?CacheInterface $cache = null,
         ?LoggerInterface $logger = null,
         int $cacheTtl = 86400
     ): self {
-        // Generate stable instance key based on configuration
-        // Use 'none' for null dependencies to ensure true singleton for default config
-        // Include TTL in key so different TTLs create different instances
-        $httpClientKey = $httpClient !== null ? spl_object_hash($httpClient) : 'none';
-        $cacheKey      = $cache !== null ? spl_object_hash($cache) : 'none';
-        $loggerKey     = $logger !== null ? spl_object_hash($logger) : 'none';
-        $instanceKey   = "{$httpClientKey}_{$cacheKey}_{$loggerKey}_{$cacheTtl}";
-
-        if (isset(self::$instances[$instanceKey])) {
-            return self::$instances[$instanceKey];
+        // Return existing instance if already initialized
+        if (self::$instance !== null) {
+            return self::$instance;
         }
 
+        // First initialization - set global configuration (immutable)
+        self::$globalApiUrl     = $apiUrl ?? self::DEFAULT_API_URL;
+        self::$globalHttpClient = $httpClient;
+        self::$globalCache      = $cache;
+        self::$globalLogger     = $logger;
+        self::$globalCacheTtl   = $cacheTtl;
+
         // Initialize HTTP client with auto-discovery if not provided
-        $baseClient = $httpClient ?? HttpClientFactory::create();
-        $logger     = $logger ?? new NullLogger();
+        $baseClient = self::$globalHttpClient ?? HttpClientFactory::create();
+        $logger     = self::$globalLogger ?? new NullLogger();
 
         // Wrap with caching if cache provided
-        if ($cache !== null) {
+        if (self::$globalCache !== null) {
             $baseClient = new CachingHttpClient(
                 $baseClient,
-                $cache,
-                $cacheTtl,
+                self::$globalCache,
+                self::$globalCacheTtl,
                 $logger
             );
         }
@@ -147,31 +188,35 @@ class MetadataProvider
             $baseClient = new LoggingHttpClient($baseClient, $logger);
         }
 
-        $instance                      = new self($baseClient, $logger);
-        self::$instances[$instanceKey] = $instance;
+        self::$instance = new self($baseClient, $logger);
 
-        return $instance;
+        return self::$instance;
     }
 
     /**
      * Get calendar metadata from the API
      *
      * Fetches metadata from the /calendars endpoint and caches it for the
-     * current process. Subsequent calls with the same API URL will return
-     * the cached metadata without making additional HTTP requests.
+     * current process. Subsequent calls will return the cached metadata
+     * without making additional HTTP requests.
      *
      * **IMPORTANT**: The process-wide cache takes precedence over PSR-16 cache TTL.
      * Once metadata is cached in the current process, it will NOT be refreshed even
      * if the PSR-16 cache expires. For long-running processes, call clearCache()
      * explicitly when you need fresh metadata.
      *
-     * @param string $apiUrl The base API URL (e.g., 'https://litcal.johnromanodorazio.com/api/dev')
+     * Uses the globally configured API URL set during getInstance() initialization.
+     *
      * @return CalendarIndex The calendar metadata
      * @throws \Exception If there is an error fetching or parsing metadata
      */
-    public function getMetadata(string $apiUrl): CalendarIndex
+    public function getMetadata(): CalendarIndex
     {
-        $apiUrl = rtrim($apiUrl, '/');
+        if (self::$globalApiUrl === null) {
+            throw new \Exception('MetadataProvider API URL not configured. Call getInstance() with apiUrl parameter first.');
+        }
+
+        $apiUrl = rtrim(self::$globalApiUrl, '/');
 
         // Check process-wide cache
         if (isset(self::$metadataCache[$apiUrl])) {
@@ -245,18 +290,18 @@ class MetadataProvider
      * fresh data from the API (or PSR-16 cache if still valid).
      *
      * **IMPORTANT**: This method only clears the metadata cache (self::$metadataCache).
-     * It does NOT clear singleton provider instances (self::$instances). Provider
-     * instances are preserved to maintain their HTTP client configurations.
+     * It does NOT clear the singleton instance (self::$instance). The singleton
+     * instance is preserved to maintain its HTTP client configuration.
      *
      * **When to use this:**
      * - In long-running processes (workers, daemons, CLI scripts) when you need
      *   to refresh metadata during the process lifetime
-     * - In tests to ensure isolated test state
      * - When you know the API metadata has changed and need to force a refresh
      *
      * **Not needed for:**
      * - Typical web requests (each request is a new process)
      * - Relying on PSR-16 TTL for automatic refresh (process cache takes precedence)
+     * - Testing (use resetForTesting() instead)
      *
      * @return void
      */
@@ -266,14 +311,123 @@ class MetadataProvider
     }
 
     /**
-     * Check if metadata is cached for the given API URL
+     * Reset the singleton instance and cache for testing purposes
      *
-     * @param string $apiUrl The base API URL
+     * **WARNING**: This method is intended for testing only. It completely
+     * resets the MetadataProvider singleton, allowing tests to create fresh
+     * instances with different configurations.
+     *
+     * **DO NOT use in production code.** In production, the singleton should
+     * be initialized once and reused throughout the application lifecycle.
+     *
+     * @internal For testing purposes only
+     * @return void
+     */
+    public static function resetForTesting(): void
+    {
+        self::$instance         = null;
+        self::$metadataCache    = [];
+        self::$globalApiUrl     = null;
+        self::$globalHttpClient = null;
+        self::$globalCache      = null;
+        self::$globalLogger     = null;
+        self::$globalCacheTtl   = null;
+    }
+
+    /**
+     * Check if metadata is cached
+     *
+     * Uses the globally configured API URL.
+     *
      * @return bool True if metadata is cached, false otherwise
      */
-    public static function isCached(string $apiUrl): bool
+    public static function isCached(): bool
     {
-        $apiUrl = rtrim($apiUrl, '/');
+        if (self::$globalApiUrl === null) {
+            return false;
+        }
+        $apiUrl = rtrim(self::$globalApiUrl, '/');
         return isset(self::$metadataCache[$apiUrl]);
+    }
+
+    /**
+     * Validates if a diocese is valid for a given nation
+     *
+     * This static method provides a centralized way to check if a diocese ID
+     * belongs to a specific nation's calendar. It uses the globally configured
+     * MetadataProvider instance to fetch and validate metadata.
+     *
+     * **Usage:**
+     * ```php
+     * // First, initialize the MetadataProvider (typically in bootstrap)
+     * MetadataProvider::getInstance(
+     *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+     *     httpClient: $httpClient,
+     *     cache: $cache,
+     *     logger: $logger
+     * );
+     *
+     * // Then use validation anywhere without parameters
+     * $isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+     * ```
+     *
+     * @param string $dioceseId The diocese calendar ID to check
+     * @param string $nation The nation calendar ID (ISO 3166-1 alpha-2 code)
+     * @return bool True if the diocese is valid for the nation, false otherwise
+     * @throws \Exception If MetadataProvider has not been initialized
+     */
+    public static function isValidDioceseForNation(string $dioceseId, string $nation): bool
+    {
+        if (self::$instance === null) {
+            throw new \Exception(
+                'MetadataProvider must be initialized before calling validation methods. ' .
+                'Call MetadataProvider::getInstance() first.'
+            );
+        }
+
+        $metadata = self::$instance->getMetadata();
+
+        // Find the national calendar for the given nation
+        $nationalCalendarMetadata = array_values(array_filter(
+            $metadata->nationalCalendars,
+            fn(\LiturgicalCalendar\Components\Models\Index\NationalCalendar $item) => $item->calendarId === $nation
+        ));
+
+        if (count($nationalCalendarMetadata) === 0) {
+            return false;
+        }
+
+        $nationalCalendar = $nationalCalendarMetadata[0];
+
+        // Check if nation has dioceses property
+        if ($nationalCalendar->dioceses === null) {
+            return false;
+        }
+
+        // Check if diocese_id is in the dioceses array
+        return in_array($dioceseId, $nationalCalendar->dioceses);
+    }
+
+    /**
+     * Get the configured global API URL
+     *
+     * @return string|null The API URL or null if not yet configured
+     */
+    public static function getApiUrl(): ?string
+    {
+        return self::$globalApiUrl;
+    }
+
+    /**
+     * Get the metadata endpoint URL (API URL + /calendars)
+     *
+     * @return string|null The metadata URL or null if not yet configured
+     */
+    public static function getMetadataUrl(): ?string
+    {
+        if (self::$globalApiUrl === null) {
+            return null;
+        }
+        return self::$globalApiUrl . '/calendars';
     }
 }

@@ -3,6 +3,7 @@
 ## Project Overview
 
 This is a PHP library providing reusable frontend components for the Liturgical Calendar API. It includes:
+- `MetadataProvider`: Centralized singleton for calendar metadata fetching and caching
 - `CalendarSelect`: Dropdown components for selecting liturgical calendars
 - `ApiOptions`: Form inputs for API request parameters
 - `WebCalendar`: Display components for liturgical calendar data
@@ -87,6 +88,172 @@ composer test:quick        # Run tests excluding slow tests
 - **Pre-commit hooks**: Managed via CaptainHook
 - **CI/CD**: Ensure all quality checks pass before creating pull requests
 - **Code Coverage**: Maintain or improve test coverage with new features
+
+## MetadataProvider Architecture
+
+### Centralized Singleton Pattern
+
+**IMPORTANT**: The library uses a centralized singleton `MetadataProvider` class for all calendar metadata operations. This ensures:
+- **Single source of truth** for metadata across all components
+- **Immutable configuration** - API URL, HTTP client, cache, and logger are set once on first initialization
+- **Efficient caching** - Metadata is fetched once and shared across all component instances
+- **Static validation methods** - No need to pass URLs or instances for validation
+
+### Initialization Pattern
+
+**Initialize MetadataProvider ONCE at application bootstrap:**
+
+```php
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Cache\ArrayCache;
+
+// Initialize MetadataProvider once with all configuration
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 86400  // 24 hours
+);
+
+// All subsequent component instances use this configuration
+$calendarSelect1 = new CalendarSelect();
+$calendarSelect2 = new CalendarSelect();
+$locale = new Locale();
+```
+
+### Immutable Configuration
+
+Once `MetadataProvider::getInstance()` is called with configuration, **all subsequent calls ignore parameters** and return the same singleton:
+
+```php
+// First call - initializes with these parameters
+MetadataProvider::getInstance(
+    apiUrl: 'https://example.com/api',
+    httpClient: $client1
+);
+
+// Second call - parameters are IGNORED, returns same instance
+MetadataProvider::getInstance(
+    apiUrl: 'https://different-url.com',  // ← Ignored
+    httpClient: $client2                   // ← Ignored
+);
+
+// API URL remains 'https://example.com/api'
+```
+
+### Static Validation Methods
+
+MetadataProvider provides static methods for validation without needing instances:
+
+```php
+// Check if diocese is valid for a nation
+$isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+
+// Also available via CalendarSelect (delegates to MetadataProvider)
+$isValid = CalendarSelect::isValidDioceseForNation('boston_us', 'US');
+
+// Get configured API URL
+$apiUrl = MetadataProvider::getApiUrl();
+
+// Get metadata endpoint URL (API URL + /calendars)
+$metadataUrl = MetadataProvider::getMetadataUrl();
+
+// Check if metadata is cached
+$isCached = MetadataProvider::isCached();
+```
+
+### Component Integration
+
+**CalendarSelect** and **Locale** components automatically use the globally configured MetadataProvider:
+
+```php
+// NO need to pass HTTP client, cache, logger, or URL to components
+$calendarSelect = new CalendarSelect([
+    'locale' => 'en'
+]);
+
+// The component uses MetadataProvider singleton internally
+// API URL is configured globally via MetadataProvider, not per component
+```
+
+### Testing
+
+For test isolation, use `resetForTesting()`:
+
+```php
+protected function setUp(): void
+{
+    // Reset singleton before each test
+    MetadataProvider::resetForTesting();
+}
+
+public function testSomething()
+{
+    // Fresh initialization for this test
+    MetadataProvider::getInstance(
+        apiUrl: 'http://test-api.local',
+        httpClient: $mockClient
+    );
+
+    // Test code...
+}
+```
+
+**WARNING**: `resetForTesting()` is for **tests only**. Never use in production code.
+
+### Key Differences from Previous Architecture
+
+**Before** (instance-based):
+```php
+// ❌ OLD: URL configuration per component instance
+$calendar1 = new CalendarSelect([], $httpClient, null, $cache);
+$calendar1->setUrl('https://api1.com');
+
+$calendar2 = new CalendarSelect([], $httpClient, null, $cache);
+$calendar2->setUrl('https://api2.com');
+
+// ❌ OLD: Instance method for validation
+$isValid = $calendar1->isValidDioceseForNation('boston_us', 'US');
+```
+
+**Now** (singleton-based):
+```php
+// ✅ NEW: Initialize once at application bootstrap
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache
+);
+
+// ✅ NEW: All components use same configuration
+$calendar1 = new CalendarSelect();
+$calendar2 = new CalendarSelect();
+
+// ✅ NEW: Static validation method
+$isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+```
+
+### Process-Wide Caching
+
+MetadataProvider uses two-tier caching:
+
+1. **Process-wide cache** (static property) - Takes precedence, persists for PHP process lifetime
+2. **PSR-16 cache** (optional) - Only used for initial HTTP fetch
+
+```php
+// First component - fetches from API, caches in both layers
+$calendar1 = new CalendarSelect();
+
+// Second component - uses process-wide cache, no HTTP request
+$calendar2 = new CalendarSelect();
+
+// Manually clear cache if needed (long-running processes)
+MetadataProvider::clearCache();
+```
+
+**Note**: `clearCache()` only clears the metadata cache, not the singleton instance itself.
 
 ## API Endpoint & Structure
 

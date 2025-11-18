@@ -21,3 +21,8 @@ phpstan.neon
 phpunit.xml
 !phpunit.xml.dist
 .phpunit.cache/
+
+# Examples - logs and cache directories
+examples/**/logs/
+examples/**/cache/
+examples/**/*.log

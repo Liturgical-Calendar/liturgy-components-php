@@ -39,6 +39,56 @@ The library now implements **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories
 
 If you're using the library with default settings, no code changes are required.
 
+### MetadataProvider Singleton Pattern (New Architecture)
+
+**Starting from version 2.x**, the library introduced a centralized `MetadataProvider` singleton for all calendar metadata operations.
+
+**Key Changes:**
+- Metadata fetching and caching is now centralized through `MetadataProvider`
+- API URL, HTTP client, cache, and logger are set **once** on first initialization and become **immutable**
+- Validation methods are now **static** methods on `MetadataProvider`
+- The `setUrl()` method has been removed from `CalendarSelect`
+- `CalendarSelect::isValidDioceseForNation()` is now a static method
+
+**Migration:**
+Your existing code continues to work! However, for optimal use of the new architecture:
+
+**Old Pattern** (still works):
+```php
+$calendar = new CalendarSelect(['url' => 'https://litcal.johnromanodorazio.com/api/dev']);
+```
+
+**New Pattern** (recommended):
+```php
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+
+// Initialize MetadataProvider once at application bootstrap
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,
+    logger: $logger
+);
+
+// Components automatically use the configured singleton
+$calendar = new CalendarSelect();
+```
+
+**Validation Method Changes:**
+
+```php
+// Old (instance method - still works but deprecated pattern)
+$calendar = new CalendarSelect();
+$isValid = $calendar->isValidDioceseForNation('boston_us', 'US');
+
+// New (static method - recommended)
+$isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+// Or via CalendarSelect
+$isValid = CalendarSelect::isValidDioceseForNation('boston_us', 'US');
+```
+
+See the **[MetadataProvider Architecture](#metadataprovider-architecture)** section below for complete documentation.
+
 ---
 
 ## New Features
@@ -109,17 +159,24 @@ Reduce API calls by caching responses:
 
 ```php
 use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use LiturgicalCalendar\Components\Cache\ArrayCache;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
 
 // In-memory cache (request-scoped)
 $cache = new ArrayCache();
+$httpClient = HttpClientFactory::create();
 
-$calendar = new CalendarSelect(
-    [],      // options
-    null,    // httpClient (auto-detected)
-    null,    // logger
-    $cache   // cache
+// Initialize MetadataProvider with cache
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,
+    cacheTtl: 3600  // 1 hour
 );
+
+// Create component - uses MetadataProvider's cache
+$calendar = new CalendarSelect();
 
 // First call - fetches from API
 $html1 = $calendar->getSelect();
@@ -133,20 +190,20 @@ $html2 = $calendar->getSelect();
 ```php
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Psr16Cache;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 
 // Persistent filesystem cache
 $filesystemAdapter = new FilesystemAdapter('litcal', 3600, '/tmp/litcal-cache');
 $cache = new Psr16Cache($filesystemAdapter);
 
-$calendar = new CalendarSelect([], null, null, $cache);
-```
+// Initialize MetadataProvider with persistent cache
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    cache: $cache,
+    cacheTtl: 3600 * 24  // 24 hours
+);
 
-**Custom Cache TTL:**
-
-```php
-$calendar = new CalendarSelect([
-    'cacheTtl' => 7200 // 2 hours
-], null, null, $cache);
+$calendar = new CalendarSelect();
 ```
 
 ### Adding Logging
@@ -155,6 +212,7 @@ Monitor HTTP requests and debug issues:
 
 ```php
 use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
@@ -162,12 +220,14 @@ use Monolog\Handler\StreamHandler;
 $logger = new Logger('liturgical-calendar');
 $logger->pushHandler(new StreamHandler('php://stderr', Logger::INFO));
 
-// Inject logger
-$calendar = new CalendarSelect(
-    [],      // options
-    null,    // httpClient
-    $logger  // logger
+// Initialize MetadataProvider with logger
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    logger: $logger
 );
+
+// Create component - uses MetadataProvider's logger
+$calendar = new CalendarSelect();
 
 // All HTTP requests will be logged
 $html = $calendar->getSelect();
@@ -185,6 +245,7 @@ Automatically retry failed requests:
 
 ```php
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use LiturgicalCalendar\Components\CalendarSelect;
 
 // Create HTTP client with retry support
@@ -195,7 +256,13 @@ $httpClient = HttpClientFactory::createWithRetry(
     retryStatusCodes: [500, 502, 503, 504] // Retry on these status codes
 );
 
-$calendar = new CalendarSelect([], $httpClient);
+// Initialize MetadataProvider with retry-enabled client
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient
+);
+
+$calendar = new CalendarSelect();
 ```
 
 **Retry Behavior:**
@@ -210,6 +277,8 @@ Prevent cascading failures:
 
 ```php
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+use LiturgicalCalendar\Components\CalendarSelect;
 
 // Create HTTP client with circuit breaker
 $httpClient = HttpClientFactory::createWithCircuitBreaker(
@@ -218,7 +287,13 @@ $httpClient = HttpClientFactory::createWithCircuitBreaker(
     successThreshold: 2    // Close circuit after 2 successes
 );
 
-$calendar = new CalendarSelect([], $httpClient);
+// Initialize MetadataProvider with circuit breaker-enabled client
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient
+);
+
+$calendar = new CalendarSelect();
 ```
 
 **Circuit Breaker States:**
@@ -232,6 +307,7 @@ Combine all features for a robust production setup:
 
 ```php
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use LiturgicalCalendar\Components\CalendarSelect;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
 use Symfony\Component\Cache\Psr16Cache;
@@ -256,8 +332,17 @@ $httpClient = HttpClientFactory::createProductionClient(
     failureThreshold: 5      // Circuit breaker threshold
 );
 
-// 4. Use with CalendarSelect
-$calendar = new CalendarSelect([], $httpClient, $logger, $cache);
+// 4. Initialize MetadataProvider with production client
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600 * 24
+);
+
+// 5. Create components - they automatically use the configured MetadataProvider
+$calendar = new CalendarSelect();
 ```
 
 **Middleware Stack (innermost to outermost):**
@@ -393,6 +478,133 @@ With caching enabled:
 
 ---
 
+## MetadataProvider Architecture
+
+The `MetadataProvider` class provides centralized management of calendar metadata with the following features:
+
+### Singleton Pattern with Immutable Configuration
+
+All configuration is set **once** on first initialization and becomes **immutable** for the application lifetime:
+
+```php
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+
+// First call - initializes with configuration
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 86400  // 24 hours
+);
+
+// All subsequent calls return the same singleton (parameters ignored)
+$provider = MetadataProvider::getInstance();
+```
+
+### Complete Example with Production Setup
+
+```php
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\ApiOptions\Input\Locale;
+use Symfony\Component\Cache\Adapter\RedisAdapter;
+use Symfony\Component\Cache\Psr16Cache;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+// 1. Setup cache and logger
+$redis = RedisAdapter::createConnection('redis://localhost');
+$cache = new Psr16Cache(new RedisAdapter($redis, 'litcal', 3600));
+$logger = new Logger('litcal');
+$logger->pushHandler(new StreamHandler('/var/log/litcal.log', Logger::WARNING));
+
+// 2. Create HTTP client with all features
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600,
+    maxRetries: 3,
+    failureThreshold: 5
+);
+
+// 3. Initialize MetadataProvider ONCE at application bootstrap
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 86400
+);
+
+// 4. Create components - they automatically use the configured singleton
+$calendarSelect = new CalendarSelect();
+$locale = new Locale();
+
+// 5. Use static validation methods
+$isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+```
+
+### Static Validation Methods
+
+No need to create instances or pass URLs:
+
+```php
+// Check if diocese belongs to nation
+$isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+
+// Get configured API URL
+$apiUrl = MetadataProvider::getApiUrl();
+
+// Get metadata endpoint URL (API URL + /calendars)
+$metadataUrl = MetadataProvider::getMetadataUrl();
+
+// Check if metadata is cached
+$isCached = MetadataProvider::isCached();
+```
+
+### Two-Tier Caching Strategy
+
+1. **Process-wide cache** (static property) - Persists for PHP process lifetime, takes precedence
+2. **PSR-16 cache** (optional) - Used only for initial HTTP fetch
+
+```php
+// First component - fetches from API
+$calendar1 = new CalendarSelect();
+
+// Second component - uses process-wide cache (no API call)
+$calendar2 = new CalendarSelect();
+
+// Long-running processes: manually clear cache when needed
+MetadataProvider::clearCache();
+```
+
+### Component Integration
+
+Components that use MetadataProvider:
+- `CalendarSelect` - Calendar dropdown selection
+- `Locale` (ApiOptions) - Locale dropdown selection
+
+Both automatically use the globally configured singleton:
+
+```php
+// NO need to pass HTTP client, cache, or logger
+$calendarSelect = new CalendarSelect([
+    'locale' => 'en',
+    'url' => 'https://litcal.johnromanodorazio.com/api/dev'
+]);
+```
+
+### Best Practices
+
+1. **Initialize once at bootstrap**: Configure MetadataProvider in your application's initialization code
+2. **Use static methods**: Prefer `MetadataProvider::isValidDioceseForNation()` over instance methods
+3. **Long-running processes**: Call `clearCache()` periodically to refresh metadata
+4. **Testing**: Use `resetForTesting()` in test setup for isolation
+
+---
+
 ## Questions?
 
 - **GitHub Issues**: https://github.com/Liturgical-Calendar/liturgy-components-php/issues
@@ -402,4 +614,4 @@ With caching enabled:
 ---
 
 **Generated with Claude Code**
-**Last Updated**: 2025-11-15
+**Last Updated**: 2025-11-18

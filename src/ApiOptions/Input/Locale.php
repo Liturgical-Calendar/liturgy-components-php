@@ -41,45 +41,27 @@ class Locale extends Input
     /**
      * Create a new Locale input element.
      *
-     * HTTP Client Configuration:
-     * - Uses MetadataProvider for centralized metadata fetching and caching
-     * - If cache is provided: MetadataProvider uses it for caching metadata
-     * - If logger is provided: MetadataProvider uses it for logging
+     * Uses the globally configured MetadataProvider singleton for fetching metadata.
+     * MetadataProvider must be initialized before creating any Locale instances.
      *
-     * WARNING: Avoid double-wrapping by choosing one approach:
-     * 1. Pass a raw/base HTTP client + logger/cache parameters (recommended for most cases)
-     * 2. Pass a pre-composed/decorated client with logger=null, cache=null (for advanced scenarios)
-     *
-     * Examples:
+     * Example:
      * ```php
-     * // ✅ RECOMMENDED: Let constructor auto-discover client
-     * $logger = new Logger('locale');
-     * $cache = new ArrayCache();
-     * $locale = new Locale(null, $logger, $cache);
+     * // Initialize MetadataProvider first (typically in bootstrap)
+     * MetadataProvider::getInstance(
+     *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+     *     httpClient: $httpClient,
+     *     cache: $cache,
+     *     logger: $logger
+     * );
      *
-     * // ✅ ADVANCED: Pre-composed client, no additional decoration
-     * $client = HttpClientFactory::createProductionClient($cache, $logger);
-     * $locale = new Locale($client, null, null);
+     * // Then create components
+     * $locale = new Locale();
      * ```
-     *
-     * @param HttpClientInterface|null $httpClient Optional HTTP client for API requests. If null, uses auto-discovery.
-     * @param LoggerInterface|null $logger Optional PSR-3 logger (only use if $httpClient is NOT already decorated).
-     * @param CacheInterface|null $cache Optional PSR-16 cache (only use if $httpClient is NOT already decorated).
-     * @param int $cacheTtl Cache TTL in seconds (default: 24 hours for locale data).
      */
-    public function __construct(
-        ?HttpClientInterface $httpClient = null,
-        ?LoggerInterface $logger = null,
-        ?CacheInterface $cache = null,
-        int $cacheTtl = 86400
-    ) {
-        // Initialize MetadataProvider with provided dependencies
-        $this->metadataProvider = MetadataProvider::getInstance(
-            $httpClient,
-            $cache,
-            $logger,
-            $cacheTtl
-        );
+    public function __construct()
+    {
+        // Use the globally configured MetadataProvider singleton
+        $this->metadataProvider = MetadataProvider::getInstance();
 
         $this->data(['param' => 'locale']);
         $this->setOptionsForCalendar(null, null);
@@ -171,8 +153,7 @@ class Locale extends Input
      */
     public function setOptionsForCalendar(?string $calendarType, ?string $calendarId): void
     {
-        $apiUrl   = ApiOptions::getApiUrl();
-        $metadata = $this->metadataProvider->getMetadata($apiUrl);
+        $metadata = $this->metadataProvider->getMetadata();
 
         if (null === $calendarType && null === $calendarId) {
             $locales = $metadata->locales;
