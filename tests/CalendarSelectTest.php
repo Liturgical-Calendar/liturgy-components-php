@@ -4,24 +4,31 @@ namespace LiturgicalCalendar\Components\Tests;
 
 use PHPUnit\Framework\TestCase;
 use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 
 class CalendarSelectTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Reset MetadataProvider singleton to ensure test isolation
+        MetadataProvider::resetForTesting();
+    }
+
     public function testConstructorDefaults()
     {
         $calendarSelect = new CalendarSelect();
-        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev/calendars', $calendarSelect->getMetadataUrl());
+        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev/calendars', MetadataProvider::getMetadataUrl());
         $this->assertEquals('en', $calendarSelect->getLocale());
     }
 
     public function testConstructorOptions()
     {
         $options        = [
-            'url'    => 'https://litcal.johnromanodorazio.com/api/dev/calendars',
             'locale' => 'fr-FR'
         ];
         $calendarSelect = new CalendarSelect($options);
-        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev/calendars', $calendarSelect->getMetadataUrl());
+        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev/calendars', MetadataProvider::getMetadataUrl());
         $this->assertEquals('fr_FR', $calendarSelect->getLocale());
     }
 

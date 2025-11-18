@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use LiturgicalCalendar\Components\Http\CircuitBreakerHttpClient;
 use LiturgicalCalendar\Components\Http\HttpClientInterface;
 use LiturgicalCalendar\Components\Http\HttpException;
+use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
@@ -14,14 +15,14 @@ use Psr\Log\LoggerInterface;
  */
 class CircuitBreakerHttpClientTest extends TestCase
 {
-    private HttpClientInterface $mockClient;
-    private LoggerInterface $mockLogger;
+    private MockObject&HttpClientInterface $mockClient;
+    private MockObject&LoggerInterface $mockLogger;
     private int $currentTime = 1000000; // Arbitrary starting timestamp
 
     protected function setUp(): void
     {
-        $this->mockClient = $this->createMock(HttpClientInterface::class);
-        $this->mockLogger = $this->createMock(LoggerInterface::class);
+        $this->mockClient  = $this->createMock(HttpClientInterface::class);
+        $this->mockLogger  = $this->createMock(LoggerInterface::class);
         $this->currentTime = 1000000; // Reset time for each test
     }
 

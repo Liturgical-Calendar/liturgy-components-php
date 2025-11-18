@@ -37,6 +37,7 @@ This library now supports **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories)
 
 ```php
 use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
 use LiturgicalCalendar\Components\Cache\ArrayCache;
 
@@ -49,13 +50,101 @@ $httpClient = HttpClientFactory::createProductionClient(
     failureThreshold: 5      // Circuit breaker threshold
 );
 
-// Use with any component
-$calendar = new CalendarSelect([], $httpClient, null, $cache);
+// Initialize MetadataProvider with the already-decorated production client
+// Note: Don't pass cache/logger again - they're already in the production client
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient
+);
+
+// Create components - they automatically use the configured MetadataProvider
+$calendar = new CalendarSelect();
 ```
 
 **Good News:** All PSR features are **100% backward compatible**. Your existing code continues to work without any modifications!
 
 For comprehensive documentation, migration examples, and performance tuning, see **[UPGRADE.md](UPGRADE.md)**.
+
+## MetadataProvider - Centralized Metadata Management
+
+Starting from version 2.x, the library uses a centralized `MetadataProvider` singleton for all calendar metadata operations.
+
+### Key Features
+
+- **Single source of truth** - All components share the same metadata
+- **Immutable configuration** - API URL, HTTP client, cache, and logger set once on initialization
+- **Static validation methods** - No need to create instances for validation
+- **Two-tier caching** - Process-wide cache + optional PSR-16 cache
+
+### Quick Start
+
+```php
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+use LiturgicalCalendar\Components\CalendarSelect;
+
+// 1. Initialize MetadataProvider ONCE at application bootstrap
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 86400  // 24 hours
+);
+
+// 2. Create components - they automatically use the configured singleton
+$calendarSelect = new CalendarSelect();
+
+// 3. Use static validation methods
+$isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+```
+
+### Static Validation Methods
+
+```php
+// Check if diocese belongs to nation
+$isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+// Also available via CalendarSelect
+$isValid = CalendarSelect::isValidDioceseForNation('boston_us', 'US');
+
+// Get configured API URL
+$apiUrl = MetadataProvider::getApiUrl();
+
+// Get metadata endpoint URL (API URL + /calendars)
+$metadataUrl = MetadataProvider::getMetadataUrl();
+
+// Check if metadata is cached
+$isCached = MetadataProvider::isCached();
+```
+
+### Production Setup Example
+
+```php
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\Cache\ArrayCache;
+
+// Create production-ready HTTP client (already includes caching, logging, retry, circuit breaker)
+$cache = new ArrayCache();
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    cacheTtl: 3600 * 24,
+    maxRetries: 3,
+    failureThreshold: 5
+);
+
+// Initialize MetadataProvider with the already-decorated client
+// Note: Don't pass cache/logger again - they're already in the production client
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient
+);
+
+// All components use this configuration automatically
+$calendar = new CalendarSelect();
+```
+
+For complete documentation, see **[UPGRADE.md - MetadataProvider Architecture](UPGRADE.md#metadataprovider-architecture)**.
 
 ### CalendarSelect
 
@@ -63,8 +152,6 @@ Produces an HTML <kbd>\<select\></kbd> element with <kbd>\<option\></kbd>s that 
 from the Liturgical Calendar API `/calendars` route. Can be instantiated passing in an array of options
 with the following keys:
 
-- `url`: The URL of the liturgical calendar metadata API endpoint.
-           Defaults to [https://litcal.johnromanodorazio.com/api/dev/calendars](https://litcal.johnromanodorazio.com/api/dev/calendars).
 - `locale`: The locale to use for the calendar select. Defaults to 'en'.
                This is the locale that will be used to translate and order the names of the countries.
                This should be a valid PHP locale string, such as 'en' or 'es' or 'en_US' or 'es_ES'.

@@ -3,6 +3,8 @@
 ## Project Overview
 
 This is a PHP library providing reusable frontend components for the Liturgical Calendar API. It includes:
+
+- `MetadataProvider`: Centralized singleton for calendar metadata fetching and caching
 - `CalendarSelect`: Dropdown components for selecting liturgical calendars
 - `ApiOptions`: Form inputs for API request parameters
 - `WebCalendar`: Display components for liturgical calendar data
@@ -88,9 +90,226 @@ composer test:quick        # Run tests excluding slow tests
 - **CI/CD**: Ensure all quality checks pass before creating pull requests
 - **Code Coverage**: Maintain or improve test coverage with new features
 
+## MetadataProvider Architecture
+
+### Centralized Singleton Pattern
+
+**IMPORTANT**: The library uses a centralized singleton `MetadataProvider` class for all calendar metadata operations. This ensures:
+
+- **Single source of truth** for metadata across all components
+- **Immutable configuration** - API URL, HTTP client, cache, and logger are set once on first initialization
+- **Efficient caching** - Metadata is fetched once and shared across all component instances
+- **Static validation methods** - No need to pass URLs or instances for validation
+
+### Initialization Pattern
+
+**Initialize MetadataProvider ONCE at application bootstrap:**
+
+```php
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Cache\ArrayCache;
+
+// Initialize MetadataProvider once with all configuration
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 86400  // 24 hours
+);
+
+// All subsequent component instances use this configuration
+$calendarSelect1 = new CalendarSelect();
+$calendarSelect2 = new CalendarSelect();
+$locale = new Locale();
+```
+
+**⚠️ IMPORTANT**: If you're using `HttpClientFactory::createProductionClient()` or any pre-decorated HTTP client, **DO NOT** pass `cache` or `logger` parameters again to
+`MetadataProvider::getInstance()`. See the "Avoiding Double-Wrapping" section below for details.
+
+### Avoiding Double-Wrapping (Important!)
+
+**WARNING**: If you use `HttpClientFactory::createProductionClient()` or any pre-decorated HTTP client, **DO NOT** also pass `cache` or `logger` parameters to
+`MetadataProvider::getInstance()`. This will cause double-wrapping and duplicate logging/caching.
+
+**Correct (with production client):**
+
+```php
+// Production client already includes cache, logger, retry, circuit breaker
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600,
+    maxRetries: 3,
+    failureThreshold: 5
+);
+
+// Only pass the httpClient - it's already decorated
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient  // ← Already decorated, don't pass cache/logger again
+);
+```
+
+**Incorrect (double-wrapping):**
+
+```php
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600
+);
+
+// ❌ DON'T DO THIS - causes double-wrapping warning
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,     // ← Already in $httpClient!
+    logger: $logger    // ← Already in $httpClient!
+);
+```
+
+If you pass both an HTTP client AND cache/logger parameters, a runtime warning will be triggered to alert you of potential double-wrapping.
+
+### Immutable Configuration
+
+Once `MetadataProvider::getInstance()` is called with configuration, **all subsequent calls ignore parameters** and return the same singleton:
+
+```php
+// First call - initializes with these parameters
+MetadataProvider::getInstance(
+    apiUrl: 'https://example.com/api',
+    httpClient: $client1
+);
+
+// Second call - parameters are IGNORED, returns same instance
+MetadataProvider::getInstance(
+    apiUrl: 'https://different-url.com',  // ← Ignored
+    httpClient: $client2                   // ← Ignored
+);
+
+// API URL remains 'https://example.com/api'
+```
+
+### Static Validation Methods
+
+MetadataProvider provides static methods for validation without needing instances:
+
+```php
+// Check if diocese is valid for a nation
+$isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+
+// Also available via CalendarSelect (delegates to MetadataProvider)
+$isValid = CalendarSelect::isValidDioceseForNation('boston_us', 'US');
+
+// Get configured API URL
+$apiUrl = MetadataProvider::getApiUrl();
+
+// Get metadata endpoint URL (API URL + /calendars)
+$metadataUrl = MetadataProvider::getMetadataUrl();
+
+// Check if metadata is cached
+$isCached = MetadataProvider::isCached();
+```
+
+### Component Integration
+
+**CalendarSelect** and **Locale** components automatically use the globally configured MetadataProvider:
+
+```php
+// NO need to pass HTTP client, cache, logger, or URL to components
+$calendarSelect = new CalendarSelect([
+    'locale' => 'en'
+]);
+
+// The component uses MetadataProvider singleton internally
+// API URL is configured globally via MetadataProvider, not per component
+```
+
+### Testing
+
+For test isolation, use `resetForTesting()`:
+
+```php
+protected function setUp(): void
+{
+    // Reset singleton before each test
+    MetadataProvider::resetForTesting();
+}
+
+public function testSomething()
+{
+    // Fresh initialization for this test
+    MetadataProvider::getInstance(
+        apiUrl: 'http://test-api.local',
+        httpClient: $mockClient
+    );
+
+    // Test code...
+}
+```
+
+**WARNING**: `resetForTesting()` is for **tests only**. Never use in production code.
+
+### Key Differences from Previous Architecture
+
+**Before** (instance-based):
+
+```php
+// ❌ OLD: URL configuration per component instance
+$calendar1 = new CalendarSelect([], $httpClient, null, $cache);
+$calendar1->setUrl('https://api1.com');
+
+$calendar2 = new CalendarSelect([], $httpClient, null, $cache);
+$calendar2->setUrl('https://api2.com');
+
+// ❌ OLD: Instance method for validation
+$isValid = $calendar1->isValidDioceseForNation('boston_us', 'US');
+```
+
+**Now** (singleton-based):
+
+```php
+// ✅ NEW: Initialize once at application bootstrap
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache
+);
+
+// ✅ NEW: All components use same configuration
+$calendar1 = new CalendarSelect();
+$calendar2 = new CalendarSelect();
+
+// ✅ NEW: Static validation method
+$isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
+```
+
+### Process-Wide Caching
+
+MetadataProvider uses two-tier caching:
+
+1. **Process-wide cache** (static property) - Takes precedence, persists for PHP process lifetime
+1. **PSR-16 cache** (optional) - Only used for initial HTTP fetch
+
+```php
+// First component - fetches from API, caches in both layers
+$calendar1 = new CalendarSelect();
+
+// Second component - uses process-wide cache, no HTTP request
+$calendar2 = new CalendarSelect();
+
+// Manually clear cache if needed (long-running processes)
+MetadataProvider::clearCache();
+```
+
+**Note**: `clearCache()` only clears the metadata cache, not the singleton instance itself.
+
 ## API Endpoint & Structure
 
 Default API endpoint: `https://litcal.johnromanodorazio.com/api/dev/`
+
 - Components are designed to work with this API structure
 - Responses are expected in JSON format
 - Locale support matches API's supported locales
@@ -100,6 +319,7 @@ Default API endpoint: `https://litcal.johnromanodorazio.com/api/dev/`
 The components consume responses that conform to official JSON schemas maintained in the API repository:
 
 **Schema References** (development branch):
+
 - **OpenAPI Spec**: `https://raw.githubusercontent.com/Liturgical-Calendar/LiturgicalCalendarAPI/refs/heads/development/jsondata/schemas/openapi.json`
 - **Common Definitions**: `https://raw.githubusercontent.com/Liturgical-Calendar/LiturgicalCalendarAPI/refs/heads/development/jsondata/schemas/CommonDef.json`
 - **Calendar Metadata**: `https://raw.githubusercontent.com/Liturgical-Calendar/LiturgicalCalendarAPI/refs/heads/development/jsondata/schemas/LitCalMetadata.json`
@@ -108,6 +328,7 @@ The components consume responses that conform to official JSON schemas maintaine
 ### Key API Endpoints
 
 **CalendarSelect Component** works with:
+
 - `/calendars` - Returns `LitCalMetadata` with:
   - `national_calendars[]` - Array of national calendar objects (calendar_id, locales, settings)
   - `diocesan_calendars[]` - Array of diocesan calendar objects (calendar_id, nation, group)
@@ -116,12 +337,14 @@ The components consume responses that conform to official JSON schemas maintaine
   - `wider_regions[]` - Regional definitions
 
 **ApiOptions Component** parameters for:
+
 - `/calendar` - General Roman Calendar
 - `/calendar/{year}` - Specific year
 - `/calendar/nation/{calendar_id}` - National calendars (IT, US, NL, VA, CA, etc.)
 - `/calendar/diocese/{calendar_id}` - Diocesan calendars
 
 **WebCalendar Component** consumes `/calendar*` responses with `LitCal` schema:
+
 - `settings{}` - Calendar configuration (year, locale, epiphany, ascension, corpus_christi, eternal_high_priest)
 - `metadata{}` - API version, timestamp, event counts by rank
 - `litcal[]` - Array of liturgical events with:
