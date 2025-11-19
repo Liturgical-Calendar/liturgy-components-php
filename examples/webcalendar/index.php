@@ -159,6 +159,8 @@ $calendarSelectDioceses = new CalendarSelect();
 $calendarSelectDioceses->label(true)->labelText('diocese')
     ->id('diocesan_calendar')->name('diocesan_calendar')->setOptions(OptionsType::DIOCESES)->allowNull(true);
 
+$selectedLocale = null;
+
 if (isset($_POST) && !empty($_POST)) {
     $requestData    = [];
     $requestHeaders = ['Accept: application/json'];
@@ -592,9 +594,11 @@ if (isset($_POST) && !empty($_POST)) {
                 foreach ($requestHeaders as $key => $value) {
                     echo '<div class="col-2"><b>' . $key . '</b>: ' . $value . '</div>';
                 }
-                echo $webCalendarHtml;
             } else {
                 echo '<div class="col-12">No POST data (perhaps click on Submit?)</div>';
+            }
+            if (isset($webCalendarHtml) && !empty($webCalendarHtml)) {
+                echo $webCalendarHtml;
             }
             echo '<input type="hidden" id="selectedLocale2" value="' . ( $selectedLocale ?? '' ) . '">';
             ?>

@@ -166,6 +166,8 @@ $calendarSelectDioceses = new CalendarSelect();
 $calendarSelectDioceses->label(true)->labelText('Diocese')->class('form-select')
     ->id('diocesan_calendar')->name('diocesan_calendar')->setOptions(OptionsType::DIOCESES)->allowNull(true);
 
+$selectedLocale = null;
+
 if (isset($_POST) && !empty($_POST)) {
     $requestData    = [];
     $requestHeaders = ['Accept: application/json'];
@@ -633,7 +635,9 @@ if (isset($_POST) && !empty($_POST)) {
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
+        <?php if (isset($webCalendarHtml) && !empty($webCalendarHtml)) : ?>
         <!-- Web Calendar -->
         <div class="row">
             <div class="col-12">
