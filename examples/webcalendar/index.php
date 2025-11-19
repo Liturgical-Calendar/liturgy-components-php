@@ -3,7 +3,6 @@
 require '../../vendor/autoload.php';
 
 use LiturgicalCalendar\Components\ApiClient;
-use LiturgicalCalendar\Components\CalendarRequest;
 use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
 use LiturgicalCalendar\Components\ApiOptions\PathType;
