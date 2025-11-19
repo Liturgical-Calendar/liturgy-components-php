@@ -328,7 +328,11 @@ if (isset($_POST) && !empty($_POST)) {
                 $calendarRequest->corpusChristi($requestData['corpus_christi']);
             }
             if (isset($requestData['eternal_high_priest'])) {
-                $calendarRequest->eternalHighPriest((bool) $requestData['eternal_high_priest']);
+                // Convert string 'true'/'false' to boolean properly
+                // filter_var correctly handles 'true' => true, 'false' => false, unlike (bool) cast
+                $calendarRequest->eternalHighPriest(
+                    filter_var($requestData['eternal_high_priest'], FILTER_VALIDATE_BOOLEAN)
+                );
             }
             if (!empty($requestData['holydays_of_obligation'] ?? null)) {
                 $calendarRequest->holydaysOfObligation($requestData['holydays_of_obligation']);
