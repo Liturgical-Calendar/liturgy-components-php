@@ -276,7 +276,11 @@ class MetadataProvider
     public function getMetadata(): CalendarIndex
     {
         if (self::$globalApiUrl === null) {
-            throw new \Exception('MetadataProvider API URL not configured. Call getInstance() with apiUrl parameter first.');
+            throw new \Exception(
+                'MetadataProvider API URL not configured. ' .
+                'Initialize via ApiClient::getInstance([\'apiUrl\' => ...]) (recommended) ' .
+                'or call MetadataProvider::getInstance(apiUrl: ...) directly.'
+            );
         }
 
         $apiUrl = rtrim(self::$globalApiUrl, '/');
