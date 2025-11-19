@@ -34,12 +34,20 @@ use Psr\SimpleCache\CacheInterface;
  *     ->corpusChristi('SUNDAY')
  *     ->eternalHighPriest(true)
  *     ->get();
+ *
+ * // Request different content types using Accept header
+ * $xmlCalendar = $request->year(2024)
+ *     ->header('Accept', 'application/xml')
+ *     ->get();
  * ```
  *
  * **Important**: The epiphany, ascension, corpusChristi, eternalHighPriest, and
  * holydaysOfObligation parameters are ONLY applicable to General Roman Calendar
  * requests. National and diocesan calendars have these settings predefined by
  * the calendar itself and will ignore these parameters.
+ *
+ * **Content Negotiation**: Use `header('Accept', 'application/xml')` to request
+ * different response formats (JSON, XML, YAML, iCal).
  */
 class CalendarRequest
 {
@@ -49,7 +57,6 @@ class CalendarRequest
     private ?int $year               = null;
     private ?string $yearType        = null;
     private ?string $locale          = null;
-    private ?string $returnType      = null;
     private ?string $epiphany        = null;
     private ?string $ascension       = null;
     private ?string $corpusChristi   = null;
@@ -193,18 +200,6 @@ class CalendarRequest
     }
 
     /**
-     * Set return type (json, xml, yaml, ical)
-     *
-     * @param string $type Response format type
-     * @return self
-     */
-    public function returnType(string $type): self
-    {
-        $this->returnType = $type;
-        return $this;
-    }
-
-    /**
      * Set Epiphany setting
      *
      * **NOTE**: Only applicable to General Roman Calendar requests.
@@ -286,10 +281,6 @@ class CalendarRequest
 
     /**
      * Add custom header
-     *
-     * **Note**: The 'Accept' header will be overridden if returnType() is set,
-     * as the API prioritizes the return_type parameter over the Accept header.
-     * For other headers, custom values will be used as-is.
      *
      * **Security**: Header names and values are validated to prevent CRLF injection attacks.
      * Only alphanumeric characters, hyphens, and underscores are allowed in header names.
@@ -437,13 +428,8 @@ class CalendarRequest
      * Build request headers
      *
      * Generates HTTP headers for the API request. Header precedence:
-     * - The Accept header is ALWAYS set from returnType() if specified, as the API
-     *   prioritizes the return_type parameter over the Accept header
-     * - Other custom headers (set via header() method) take precedence over defaults
+     * - Custom headers (set via header() method) take precedence over defaults
      * - Default headers are used if not overridden
-     *
-     * Note: Any custom 'Accept' header will be overridden if returnType is set,
-     * because the API ignores the Accept header when return_type parameter is present.
      *
      * @return array<string,string> Associative array of header name => value
      */
@@ -456,19 +442,7 @@ class CalendarRequest
         }
 
         // Merge custom headers (they can override defaults)
-        $finalHeaders = array_merge($headers, $this->customHeaders);
-
-        // returnType ALWAYS overrides Accept header (API prioritizes return_type parameter)
-        if ($this->returnType) {
-            $finalHeaders['Accept'] = match ($this->returnType) {
-                'xml'  => 'application/xml',
-                'yaml' => 'application/yaml',
-                'ical' => 'text/calendar',
-                default => 'application/json',
-            };
-        }
-
-        return $finalHeaders;
+        return array_merge($headers, $this->customHeaders);
     }
 
     /**

@@ -600,7 +600,7 @@ $request = new CalendarRequest($httpClient, $logger, $cache);
 $calendar = $request->nation('US')
     ->year(2024)
     ->locale('en')
-    ->returnType('json') // or 'xml', 'yaml', 'ical'
+    ->header('Accept', 'application/json') // or 'application/xml', 'application/yaml', 'text/calendar'
     ->get();
 
 // Note: epiphany, ascension, corpus_christi, eternal_high_priest, and
@@ -667,7 +667,6 @@ class CalendarRequest
     private ?int $year = null;
     private ?string $yearType = null;
     private ?string $locale = null;
-    private ?string $returnType = null;
     private ?string $epiphany = null;
     private ?string $ascension = null;
     private ?string $corpusChristi = null;
@@ -758,15 +757,6 @@ class CalendarRequest
     }
 
     /**
-     * Set return type (json, xml, yaml, ical)
-     */
-    public function returnType(string $type): self
-    {
-        $this->returnType = $type;
-        return $this;
-    }
-
-    /**
      * Set Epiphany setting
      *
      * NOTE: Only applicable to General Roman Calendar requests.
@@ -828,10 +818,6 @@ class CalendarRequest
 
     /**
      * Add custom header
-     *
-     * Note: The 'Accept' header will be overridden if returnType() is set,
-     * as the API prioritizes the return_type parameter over the Accept header.
-     * For other headers, custom values will be used as-is.
      *
      * Security: Header names and values are validated to prevent CRLF injection attacks.
      * Only alphanumeric characters, hyphens, and underscores are allowed in header names.
@@ -1038,13 +1024,8 @@ $request->year(2024)->get();
      * Build request headers
      *
      * Generates HTTP headers for the API request. Header precedence:
-     * - The Accept header is ALWAYS set from returnType() if specified, as the API
-     *   prioritizes the return_type parameter over the Accept header
-     * - Other custom headers (set via header() method) take precedence over defaults
+     * - Custom headers (set via header() method) take precedence over defaults
      * - Default headers are used if not overridden
-     *
-     * Note: Any custom 'Accept' header will be overridden if returnType is set,
-     * because the API ignores the Accept header when return_type parameter is present.
      *
      * @return array<string,string> Associative array of header name => value
      */
@@ -1059,19 +1040,7 @@ $request->year(2024)->get();
         }
 
         // Merge custom headers (they can override defaults)
-        $finalHeaders = array_merge($headers, $this->customHeaders);
-
-        // returnType ALWAYS overrides Accept header (API prioritizes return_type parameter)
-        if ($this->returnType) {
-            $finalHeaders['Accept'] = match($this->returnType) {
-                'xml' => 'application/xml',
-                'yaml' => 'application/yaml',
-                'ical' => 'text/calendar',
-                default => 'application/json',
-            };
-        }
-
-        return $finalHeaders;
+        return array_merge($headers, $this->customHeaders);
     }
 
     /**
@@ -1703,7 +1672,7 @@ $commonEvents = $comparison->getCommonEvents();
   - [x] Support httpClient, logger, cache, apiUrl parameters
 - [x] Implement fluent API
   - [x] Calendar type methods: nation(), diocese()
-  - [x] Parameter methods: year(), locale(), returnType(), yearType()
+  - [x] Parameter methods: year(), locale(), yearType()
   - [x] General calendar methods: epiphany(), ascension(), corpusChristi(), eternalHighPriest(), holydaysOfObligation()
   - [x] Header methods: header(), acceptLanguage()
 - [x] Implement request execution
