@@ -188,12 +188,7 @@ class CalendarRequest
     {
         // Validate locale: reject CR/LF characters to prevent header injection
         // (locale is used in Accept-Language header)
-        if (str_contains($locale, "\r") || str_contains($locale, "\n")) {
-            throw new \InvalidArgumentException(
-                'Invalid locale value: ' .
-                'Locale cannot contain CR or LF characters (possible header injection attempt).'
-            );
-        }
+        $this->validateNoCRLF($locale, 'locale value');
 
         $this->locale = $locale;
         return $this;
@@ -302,12 +297,7 @@ class CalendarRequest
         }
 
         // Validate header value: reject CR/LF characters to prevent header injection
-        if (str_contains($value, "\r") || str_contains($value, "\n")) {
-            throw new \InvalidArgumentException(
-                "Invalid header value for '{$name}': " .
-                'Header values cannot contain CR or LF characters (possible header injection attempt).'
-            );
-        }
+        $this->validateNoCRLF($value, "header value for '{$name}'");
 
         $this->customHeaders[$name] = $value;
         return $this;
@@ -485,6 +475,27 @@ class CalendarRequest
         }
 
         return $data;
+    }
+
+    /**
+     * Validate that a string does not contain CR or LF characters
+     *
+     * This helper prevents CRLF injection attacks by rejecting strings containing
+     * carriage return (CR) or line feed (LF) characters.
+     *
+     * @param string $value The string to validate
+     * @param string $context Description of what is being validated (e.g., 'locale', 'header value')
+     * @return void
+     * @throws \InvalidArgumentException If the string contains CR or LF characters
+     */
+    private function validateNoCRLF(string $value, string $context): void
+    {
+        if (str_contains($value, "\r") || str_contains($value, "\n")) {
+            throw new \InvalidArgumentException(
+                "Invalid {$context}: " .
+                'Value cannot contain CR or LF characters (possible header injection attempt).'
+            );
+        }
     }
 
     /**
