@@ -283,7 +283,8 @@ class CalendarRequestTest extends TestCase
 
     public function testCreateCalendarRequestViaApiClient(): void
     {
-        // Initialize ApiClient with configuration
+        // Reset and re-initialize ApiClient for this specific test
+        ApiClient::resetForTesting();
         ApiClient::getInstance([
             'apiUrl' => self::API_URL
         ]);
