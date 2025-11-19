@@ -583,7 +583,7 @@ if (isset($_POST) && !empty($_POST)) {
         </div>
 
         <!-- Request Details & Calendar Output -->
-        <?php if (isset($requestData) && !empty($requestData)) : ?>
+        <?php if (isset($requestUrl) && !empty($requestUrl)) : ?>
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card shadow-sm">

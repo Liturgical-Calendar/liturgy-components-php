@@ -578,7 +578,7 @@ if (isset($_POST) && !empty($_POST)) {
         </div>
         <div class="row mb-4">
             <?php
-            if (isset($requestData) && !empty($requestData)) {
+            if (isset($requestUrl) && !empty($requestUrl)) {
                 echo '<h3><b>Request URL</b></h3>';
                 echo '<div class="col-12">' . $requestUrl . '</div>';
                 echo '<h3><b>Request Data</b></h3>';
