@@ -342,54 +342,41 @@ if (isset($_POST) && !empty($_POST)) {
         // Execute the request
         $LiturgicalCalendar = $calendarRequest->get();
 
-        // Build request URL for display purposes
-        $pathSegments = ['calendar'];
-        if ($selectedDiocese) {
-            $pathSegments[] = 'diocese';
-            $pathSegments[] = $selectedDiocese;
-        } elseif ($selectedNation) {
-            $pathSegments[] = 'nation';
-            $pathSegments[] = $selectedNation;
-        }
-        if (isset($_POST['year']) && is_numeric($_POST['year'])) {
-            $pathSegments[] = $_POST['year'];
-        }
-        $requestUrl = $apiBaseUrl . '/' . implode('/', $pathSegments);
+        // Get request URL for display purposes
+        $requestUrl = $calendarRequest->getRequestUrl();
 
-        if (true) {
-            if (property_exists($LiturgicalCalendar, 'settings') && $LiturgicalCalendar->settings instanceof \stdClass) {
-                $apiOptions->epiphanyInput->selectedValue($LiturgicalCalendar->settings->epiphany);
-                $apiOptions->ascensionInput->selectedValue($LiturgicalCalendar->settings->ascension);
-                $apiOptions->corpusChristiInput->selectedValue($LiturgicalCalendar->settings->corpus_christi);
-                $apiOptions->eternalHighPriestInput->selectedValue($LiturgicalCalendar->settings->eternal_high_priest ? 'true' : 'false');
-                $apiOptions->localeInput->selectedValue($LiturgicalCalendar->settings->locale);
-                $apiOptions->yearTypeInput->selectedValue($LiturgicalCalendar->settings->year_type);
-                $apiOptions->yearInput->selectedValue($LiturgicalCalendar->settings->year);
-                $holyDaysOfObligationProperties = array_keys(array_filter((array) $LiturgicalCalendar->settings->holydays_of_obligation, fn (bool $v) => $v === true));
-                $apiOptions->holydaysOfObligationInput->selectedValue($holyDaysOfObligationProperties);
-                if ($selectedDiocese && false === $selectedNation) {
-                    $calendarSelectNations->selectedOption($LiturgicalCalendar->settings->national_calendar);
-                    $calendarSelectDioceses->nationFilter($LiturgicalCalendar->settings->national_calendar)
-                            ->setOptions(OptionsType::DIOCESES_FOR_NATION)->selectedOption($selectedDiocese);
-                }
+        if (property_exists($LiturgicalCalendar, 'settings') && $LiturgicalCalendar->settings instanceof \stdClass) {
+            $apiOptions->epiphanyInput->selectedValue($LiturgicalCalendar->settings->epiphany);
+            $apiOptions->ascensionInput->selectedValue($LiturgicalCalendar->settings->ascension);
+            $apiOptions->corpusChristiInput->selectedValue($LiturgicalCalendar->settings->corpus_christi);
+            $apiOptions->eternalHighPriestInput->selectedValue($LiturgicalCalendar->settings->eternal_high_priest ? 'true' : 'false');
+            $apiOptions->localeInput->selectedValue($LiturgicalCalendar->settings->locale);
+            $apiOptions->yearTypeInput->selectedValue($LiturgicalCalendar->settings->year_type);
+            $apiOptions->yearInput->selectedValue($LiturgicalCalendar->settings->year);
+            $holyDaysOfObligationProperties = array_keys(array_filter((array) $LiturgicalCalendar->settings->holydays_of_obligation, fn (bool $v) => $v === true));
+            $apiOptions->holydaysOfObligationInput->selectedValue($holyDaysOfObligationProperties);
+            if ($selectedDiocese && false === $selectedNation) {
+                $calendarSelectNations->selectedOption($LiturgicalCalendar->settings->national_calendar);
+                $calendarSelectDioceses->nationFilter($LiturgicalCalendar->settings->national_calendar)
+                        ->setOptions(OptionsType::DIOCESES_FOR_NATION)->selectedOption($selectedDiocese);
             }
-
-            $webCalendar = new WebCalendar($LiturgicalCalendar);
-            $webCalendar->id('LitCalTable')
-                        ->firstColumnGrouping(Grouping::BY_LITURGICAL_SEASON)
-                        ->psalterWeekGrouping()
-                        ->removeHeaderRow()
-                        ->seasonColor(ColorAs::CSS_CLASS)
-                        ->seasonColorColumns(Column::LITURGICAL_SEASON)
-                        ->eventColor(ColorAs::INDICATOR)
-                        ->eventColorColumns(Column::EVENT)
-                        ->monthHeader()
-                        ->dateFormat(DateFormat::DAY_ONLY)
-                        ->columnOrder(ColumnOrder::GRADE_FIRST)
-                        ->gradeDisplay(GradeDisplay::ABBREVIATED);
-            $webCalendarHtml  = $webCalendar->buildTable();
-            $webCalendarHtml .=  '<div class="alert alert-info text-center mt-3"><i class="fas fa-calendar-check me-2"></i>' . $webCalendar->daysCreated() . ' event days created</div>';
         }
+
+        $webCalendar = new WebCalendar($LiturgicalCalendar);
+        $webCalendar->id('LitCalTable')
+                    ->firstColumnGrouping(Grouping::BY_LITURGICAL_SEASON)
+                    ->psalterWeekGrouping()
+                    ->removeHeaderRow()
+                    ->seasonColor(ColorAs::CSS_CLASS)
+                    ->seasonColorColumns(Column::LITURGICAL_SEASON)
+                    ->eventColor(ColorAs::INDICATOR)
+                    ->eventColorColumns(Column::EVENT)
+                    ->monthHeader()
+                    ->dateFormat(DateFormat::DAY_ONLY)
+                    ->columnOrder(ColumnOrder::GRADE_FIRST)
+                    ->gradeDisplay(GradeDisplay::ABBREVIATED);
+        $webCalendarHtml  = $webCalendar->buildTable();
+        $webCalendarHtml .=  '<div class="alert alert-info text-center mt-3"><i class="fas fa-calendar-check me-2"></i>' . $webCalendar->daysCreated() . ' event days created</div>';
     } catch (\Exception $e) {
         // Handle any errors from CalendarRequest
         $webCalendarHtml = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Error: ' . htmlspecialchars($e->getMessage()) . '</div>';

@@ -374,6 +374,19 @@ class CalendarRequest
     }
 
     /**
+     * Get the request URL that will be used for the API call
+     *
+     * This method is useful for debugging or displaying the API endpoint
+     * that will be requested based on the current configuration.
+     *
+     * @return string The complete API endpoint URL
+     */
+    public function getRequestUrl(): string
+    {
+        return $this->buildUrl();
+    }
+
+    /**
      * Build request URL
      *
      * Constructs the API endpoint URL from base URL and path segments.
