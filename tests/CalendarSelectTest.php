@@ -4,6 +4,7 @@ namespace LiturgicalCalendar\Components\Tests;
 
 use PHPUnit\Framework\TestCase;
 use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\ApiClient;
 use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 
 class CalendarSelectTest extends TestCase
@@ -11,7 +12,8 @@ class CalendarSelectTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Reset MetadataProvider singleton to ensure test isolation
+        // Reset singletons to ensure test isolation
+        ApiClient::resetForTesting();
         MetadataProvider::resetForTesting();
     }
 

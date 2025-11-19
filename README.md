@@ -23,9 +23,104 @@ Note that this package requires <b>PHP >= 8.1</b>, seeing it makes use of [Enums
 It also requires PHP `ext-intl`. To check if you have all the requirements you can run `composer check-platform-reqs --no-dev`.
 If you intend on contributing to the repository and installing development requirements, you should run `composer check-platform-reqs`.
 
+## Quick Start
+
+The recommended way to use this library is through the `ApiClient` singleton, which provides a centralized configuration point for all API interactions.
+
+### Fetching Calendar Data
+
+```php
+<?php
+require 'vendor/autoload.php';
+
+use LiturgicalCalendar\Components\ApiClient;
+use LiturgicalCalendar\Components\WebCalendar;
+
+// 1. Initialize ApiClient once at application bootstrap
+$apiClient = ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev'
+]);
+
+// 2. Fetch calendar data using the factory method
+$calendarData = $apiClient->calendar()
+    ->nation('IT')
+    ->year(2024)
+    ->locale('it')
+    ->get();
+
+// 3. Display the calendar
+$webCalendar = new WebCalendar($calendarData);
+echo $webCalendar->buildTable();
+```
+
+### Building Interactive Forms
+
+```php
+<?php
+require 'vendor/autoload.php';
+
+use LiturgicalCalendar\Components\ApiClient;
+use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\ApiOptions;
+
+// Initialize ApiClient
+$apiClient = ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev'
+]);
+
+// Create calendar dropdown (uses ApiClient configuration automatically)
+$calendarSelect = new CalendarSelect();
+echo $calendarSelect->getSelect();
+
+// Create API parameter form inputs
+$apiOptions = new ApiOptions();
+echo $apiOptions->getForm();
+```
+
+### Complete Production Example
+
+```php
+<?php
+require 'vendor/autoload.php';
+
+use LiturgicalCalendar\Components\ApiClient;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Cache\ArrayCache;
+
+// 1. Setup cache (optional but recommended)
+$cache = new ArrayCache();
+
+// 2. Create production-ready HTTP client with caching, retry, and circuit breaker
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    cacheTtl: 3600 * 24,     // Cache for 24 hours
+    maxRetries: 3,           // Retry up to 3 times
+    failureThreshold: 5      // Circuit breaker threshold
+);
+
+// 3. Initialize ApiClient with production client
+$apiClient = ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient
+]);
+
+// 4. Fetch calendar data with automatic caching and retry
+$calendar = $apiClient->calendar()
+    ->nation('US')
+    ->year(2024)
+    ->locale('en')
+    ->get();
+
+// 5. Access metadata via ApiClient
+$metadata = $apiClient->metadata()->getMetadata();
+```
+
+For comprehensive documentation on caching, logging, retry logic, and circuit breakers, see **[UPGRADE.md](UPGRADE.md)**.
+
 ## New: PSR-Compliant HTTP Features
 
-This library now supports **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories), **PSR-18** (HTTP Client), **PSR-3** (Logging), and **PSR-16** (Simple Cache) standards, providing professional-grade features:
+This library now supports **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories), **PSR-18** (HTTP Client), **PSR-3** (Logging), and **PSR-16** (Simple Cache)
+standards, providing professional-grade features:
 
 - **🚀 HTTP Response Caching** - Reduce API calls and improve performance by up to 90%
 - **📊 Structured Logging** - Monitor and debug HTTP requests with PSR-3 loggers
@@ -76,7 +171,7 @@ Starting from version 2.x, the library uses a centralized `MetadataProvider` sin
 - **Static validation methods** - No need to create instances for validation
 - **Two-tier caching** - Process-wide cache + optional PSR-16 cache
 
-### Quick Start
+### Basic Usage
 
 ```php
 use LiturgicalCalendar\Components\Metadata\MetadataProvider;
@@ -813,6 +908,52 @@ Then run the `composer test` script, which calls the included PHPUnit package to
 To run a single test class or a single method within a class, use the `composer test-filter` script
 followed by the desired `Class` or `Class::method`, e.g.
 `composer test-filter CalendarSelectTest::testIsValidLocale`.
+
+## Code Quality & Linting
+
+This project maintains high code quality standards with automated linting and static analysis.
+
+### PHP Code Quality
+
+```bash
+composer lint              # Check PHP code style (phpcs)
+composer lint:fix          # Auto-fix PHP code style (phpcbf)
+composer analyse           # Run PHPStan static analysis (Level 10)
+composer parallel-lint     # Check PHP syntax
+```
+
+### Markdown Linting
+
+This project enforces consistent markdown formatting. To lint markdown files:
+
+```bash
+npm install                # Install markdown linting dependencies (first time only)
+composer lint:md           # Check markdown files
+composer lint:md:fix       # Auto-fix markdown issues
+```
+
+See [MARKDOWN_LINTING.md](MARKDOWN_LINTING.md) for detailed markdown linting documentation.
+
+### Git Hooks (CaptainHook)
+
+The project uses CaptainHook to automatically run quality checks before commits and pushes:
+
+**Pre-commit** (runs on `git commit`):
+
+- PHP syntax linting
+- PHP code style checking (phpcs)
+- Markdown formatting (markdownlint)
+
+**Pre-push** (runs on `git push`):
+
+- PHP parallel syntax checking
+- PHPStan static analysis (Level 10)
+
+Hooks are automatically installed via Composer. To manually reinstall:
+
+```bash
+vendor/bin/captainhook install -f
+```
 
 ## Translations
 

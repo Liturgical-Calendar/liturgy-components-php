@@ -1,0 +1,19 @@
+{
+    "name": "liturgy-components-php",
+    "version": "1.0.0",
+    "description": "Reusable frontend components for the Liturgical Calendar API",
+    "private": true,
+    "scripts": {
+        "lint:md": "markdownlint-cli2 \"**/*.md\" \"!vendor/**\" \"!node_modules/**\" --config .markdownlint.yml",
+        "lint:md:fix": "markdownlint-cli2 \"**/*.md\" \"!vendor/**\" \"!node_modules/**\" --config .markdownlint.yml --fix"
+    },
+    "devDependencies": {
+        "markdownlint-cli2": "^0.15.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Liturgical-Calendar/liturgy-components-php.git"
+    },
+    "author": "John R. D'Orazio",
+    "license": "Apache-2.0"
+}

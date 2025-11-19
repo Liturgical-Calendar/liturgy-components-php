@@ -22,6 +22,7 @@ This document outlines planned features and enhancements for the Liturgical Cale
 - `CalendarSelect` - Dropdown for selecting calendars (metadata requests only)
 - `ApiOptions` - Form inputs for API parameters
 - `WebCalendar` - Display component for calendar data
+- `MetadataProvider` - Singleton for fetching and caching calendar metadata from `/calendars` endpoint
 
 **HTTP Infrastructure:**
 
@@ -31,47 +32,506 @@ This document outlines planned features and enhancements for the Liturgical Cale
 - Retry middleware
 - Circuit breaker pattern
 - Production-ready HTTP client factory
+- `MetadataProvider` with singleton pattern and global HttpClient configuration
 
-### What's Missing ❌
+### What's Been Added Recently ✨
 
-**Calendar Data Fetching:**
+**ApiClient (Phase 0 - Complete):**
 
-- No dedicated component for fetching calendar data from the API
-- Examples use raw curl (see `examples/webcalendar/index.php:186-193`)
-- POST request handling is manual and repetitive
-- No built-in support for calendar request parameters
-- No automatic response validation
+- `ApiClient` singleton for centralized API configuration
+- Shared HttpClient, cache, logger configuration
+- Integration with MetadataProvider and CalendarRequest
+- Full test coverage (30+ tests)
 
-**Current Manual Approach** (from examples/webcalendar/index.php):
+**CalendarRequest (Phase 1 - Complete):**
+
+- Dedicated component for fetching calendar data from `/calendar` endpoint
+- Fluent API for building requests (nation(), diocese(), year(), locale(), etc.)
+- PSR-18 HTTP client with caching, logging, retry, circuit breaker
+- Integration with ApiClient for shared configuration
+- Examples updated to use CalendarRequest instead of raw curl
+
+**Current Modern Approach** (from examples/webcalendar/index.php):
 
 ```php
-// Lines 186-193: Manual curl POST request
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $requestUrl);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($requestData));
-$response = curl_exec($ch);
-curl_close($ch);
+// CalendarRequest via ApiClient factory method (recommended)
+$apiClient = ApiClient::getInstance();
+$response = $apiClient->calendar()
+    ->nation('US')
+    ->year(2024)
+    ->locale('en')
+    ->get();
 ```
 
-**Problems with Current Approach:**
+### What's Still Missing ❌
 
-- ❌ Uses raw curl instead of PSR-18 HTTP client
-- ❌ No caching of calendar data responses
-- ❌ No retry or circuit breaker protection
-- ❌ No logging of calendar requests
-- ❌ Manual header construction
-- ❌ Repetitive code in every implementation
-- ❌ No response validation
-- ❌ No type safety
+**Remaining Features from Roadmap:**
+
+- ❌ Phase 2: Typed response models (CalendarResponse, CalendarSettings, CalendarMetadata)
+- ❌ Phase 2: Helper methods for common queries (getEvent(), eventsByGrade(), etc.)
+- ❌ Phase 3: Smart cache keys with TTL logic based on year
+- ❌ Phase 5: Batch request support (CalendarBatchRequest)
+- ❌ Phase 5: Response formatters (iCal, PDF)
+- ❌ Phase 5: Calendar comparison tools
+
+---
+
+## Feature: ApiClient - Unified API Configuration
+
+### Overview
+
+Create a centralized `ApiClient` singleton that manages shared HTTP client configuration for all API interactions.
+This ensures `MetadataProvider` (existing) and `CalendarRequest` (planned) use the same HttpClient instance with consistent caching, logging, retry, and
+circuit breaker middleware.
+
+### Problem
+
+Currently:
+
+- **MetadataProvider** has its own singleton pattern with global static HttpClient, cache, logger
+- **CalendarRequest** (planned) will need the same HttpClient configuration
+- No coordination between components - potential for duplicate configuration
+- Users must initialize each component separately
+
+### Proposed Solution
+
+Introduce `ApiClient` as the **single source of configuration** for all API interactions:
+
+```text
+ApiClient (singleton)
+  ├── Shared HttpClient (configured with all middleware)
+  ├── Shared Cache (PSR-16)
+  ├── Shared Logger (PSR-3)
+  └── API URL configuration
+
+MetadataProvider (singleton)
+  └── Gets dependencies from ApiClient if available, falls back to own configuration
+
+CalendarRequest (instance-based)
+  └── Gets dependencies from ApiClient if available, falls back to constructor params
+```
+
+### Design Principles
+
+1. **Single Initialization Point**: Configure API access once at application bootstrap
+1. **Backward Compatible**: Components work independently if ApiClient not initialized
+1. **Dependency Injection**: Components accept explicit dependencies, fall back to ApiClient
+1. **Immutable Configuration**: Once ApiClient is initialized, configuration is fixed
+1. **Testable**: Easy to mock dependencies for testing
+
+### ApiClient API
+
+#### Basic Initialization
+
+```php
+use LiturgicalCalendar\Components\ApiClient;
+
+// Pattern A: Let ApiClient create and decorate the HTTP client
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'cache' => $cache,            // PSR-16 cache
+    'logger' => $logger,          // PSR-3 logger
+    'cacheTtl' => 86400          // Cache TTL in seconds (default: 86400)
+]);
+
+// Pattern B: Provide a pre-decorated HTTP client (no cache/logger)
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600
+);
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient  // Used as-is, no additional wrapping
+]);
+
+// All subsequent API interactions use this configuration
+```
+
+#### Accessing Shared Configuration
+
+```php
+// Get configured HTTP client
+$httpClient = ApiClient::getHttpClient();
+
+// Get configured API URL
+$apiUrl = ApiClient::getApiUrl();
+
+// Get configured cache
+$cache = ApiClient::getCache();
+
+// Get configured logger
+$logger = ApiClient::getLogger();
+
+// Check if ApiClient is initialized
+if (ApiClient::isInitialized()) {
+    // Use shared config
+}
+```
+
+#### Using CalendarRequest
+
+```php
+// Create CalendarRequest via ApiClient factory method (recommended)
+$apiClient = ApiClient::getInstance();
+$calendar = $apiClient->calendar()->year(2024)->nation('US')->get();
+
+// Access metadata via ApiClient factory method
+$metadata = $apiClient->metadata()->getMetadata();
+```
+
+### MetadataProvider Integration
+
+**Before** (current approach):
+
+```php
+// User must initialize MetadataProvider with all dependencies
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,
+    logger: $logger
+);
+
+$calendarSelect = new CalendarSelect();
+```
+
+**After** (with ApiClient):
+
+```php
+// Initialize ApiClient once (let it create and decorate the HTTP client)
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'cache' => $cache,
+    'logger' => $logger
+]);
+
+// MetadataProvider automatically uses ApiClient configuration
+$calendarSelect = new CalendarSelect();
+
+// CalendarRequest via ApiClient factory method (recommended)
+$calendar = $apiClient->calendar()
+    ->year(2024)
+    ->nation('US')
+    ->get();
+```
+
+**Simplified Usage**:
+
+```php
+// MetadataProvider pulls configuration from ApiClient singleton
+// If ApiClient is not initialized, it auto-initializes with defaults
+$metadata = MetadataProvider::getInstance();  // No params needed!
+
+// Or configure ApiClient first for custom settings
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient
+]);
+$metadata = MetadataProvider::getInstance();
+```
+
+### CalendarRequest Integration
+
+**CalendarRequest** pulls configuration from ApiClient singleton:
+
+1. **ApiClient shared config** (if initialized)
+1. **Auto-initialized defaults** (fallback)
+
+```php
+// Use ApiClient factory method (recommended)
+$apiClient = ApiClient::getInstance(['apiUrl' => 'https://api.example.com']);
+$request = $apiClient->calendar();
+
+// Or direct instantiation (still supported - uses ApiClient configuration)
+$request = new CalendarRequest();
+```
+
+### Implementation Plan
+
+#### Phase 0: ApiClient Foundation (Before CalendarRequest)
+
+**File:** `src/ApiClient.php`
+
+```php
+<?php
+
+namespace LiturgicalCalendar\Components;
+
+use LiturgicalCalendar\Components\Http\HttpClientInterface;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use Psr\SimpleCache\CacheInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+
+/**
+ * Centralized API client configuration for all API interactions
+ *
+ * Provides a single point of configuration for HTTP client, cache, logger,
+ * and API URL. All components (MetadataProvider, CalendarRequest, etc.) can
+ * pull dependencies from ApiClient for consistent configuration.
+ *
+ * Usage:
+ * ```php
+ * // Initialize once at application bootstrap (let ApiClient create the HTTP client)
+ * ApiClient::getInstance([
+ *     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+ *     'cache' => $cache,
+ *     'logger' => $logger,
+ *     'cacheTtl' => 86400
+ * ]);
+ *
+ * // All components use this configuration
+ * $metadata = $apiClient->metadata()->getMetadata();
+ * $calendar = $apiClient->calendar()->year(2024)->get();
+ * ```
+ */
+class ApiClient
+{
+    private const DEFAULT_API_URL = 'https://litcal.johnromanodorazio.com/api/dev';
+    public const DEFAULT_CACHE_TTL = 86400; // 24 hours
+
+    /** @var self|null Singleton instance */
+    private static ?self $instance = null;
+
+    /** @var string API base URL (immutable) */
+    private string $apiUrl;
+
+    /** @var HttpClientInterface HTTP client (immutable) */
+    private HttpClientInterface $httpClient;
+
+    /** @var CacheInterface|null Cache implementation (immutable) */
+    private ?CacheInterface $cache;
+
+    /** @var LoggerInterface Logger implementation (immutable) */
+    private LoggerInterface $logger;
+
+    /** @var int Default cache TTL in seconds (immutable) */
+    private int $cacheTtl;
+
+    /**
+     * Private constructor - use getInstance() instead
+     */
+    private function __construct(
+        string $apiUrl,
+        ?HttpClientInterface $httpClient,
+        ?CacheInterface $cache,
+        ?LoggerInterface $logger,
+        int $cacheTtl
+    ) {
+        $this->apiUrl = rtrim($apiUrl, '/');
+        $this->cache = $cache;
+        $this->logger = $logger ?? new NullLogger();
+        $this->cacheTtl = $cacheTtl;
+
+        // Warn about ambiguous configuration if both client and decorators are provided
+        if ($httpClient !== null && ( $cache !== null || $logger !== null )) {
+            trigger_error(
+                'ApiClient::__construct() called with both httpClient and cache/logger parameters. ' .
+                'Since a custom httpClient is provided, cache/logger configuration will be ignored. ' .
+                'Pass either httpClient OR cache/logger, not both.',
+                E_USER_WARNING
+            );
+        }
+
+        // If httpClient provided, use it; otherwise create one with optional cache/logger
+        if ($httpClient !== null) {
+            $this->httpClient = $httpClient;
+        } else {
+            $this->httpClient = HttpClientFactory::createProductionClient(
+                cache: $this->cache,
+                logger: $this->logger,
+                cacheTtl: $this->cacheTtl
+            );
+        }
+    }
+
+    /**
+     * Get singleton instance
+     *
+     * On first call, initializes with provided configuration.
+     * Subsequent calls return the same instance and ignore parameters.
+     *
+     * @param array{
+     *     apiUrl?: string,
+     *     httpClient?: HttpClientInterface|null,
+     *     cache?: CacheInterface|null,
+     *     logger?: LoggerInterface|null,
+     *     cacheTtl?: int
+     * } $config Configuration array
+     * @return self
+     */
+    public static function getInstance(array $config = []): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self(
+                apiUrl: $config['apiUrl'] ?? self::DEFAULT_API_URL,
+                httpClient: $config['httpClient'] ?? null,
+                cache: $config['cache'] ?? null,
+                logger: $config['logger'] ?? null,
+                cacheTtl: $config['cacheTtl'] ?? self::DEFAULT_CACHE_TTL
+            );
+        }
+
+        return self::$instance;
+    }
+
+    /**
+     * Check if ApiClient has been initialized
+     */
+    public static function isInitialized(): bool
+    {
+        return self::$instance !== null;
+    }
+
+    /**
+     * Get configured HTTP client
+     */
+    public static function getHttpClient(): ?HttpClientInterface
+    {
+        return self::$instance?->httpClient;
+    }
+
+    /**
+     * Get configured API URL
+     */
+    public static function getApiUrl(): ?string
+    {
+        return self::$instance?->apiUrl;
+    }
+
+    /**
+     * Get configured cache
+     */
+    public static function getCache(): ?CacheInterface
+    {
+        return self::$instance?->cache;
+    }
+
+    /**
+     * Get configured logger
+     */
+    public static function getLogger(): ?LoggerInterface
+    {
+        return self::$instance?->logger;
+    }
+
+    /**
+     * Get configured cache TTL
+     */
+    public static function getCacheTtl(): ?int
+    {
+        return self::$instance?->cacheTtl;
+    }
+
+    /**
+     * Reset singleton instance (for testing only)
+     *
+     * @internal
+     */
+    public static function resetForTesting(): void
+    {
+        self::$instance = null;
+    }
+}
+```
+
+#### Phase 0.1: Update MetadataProvider to use ApiClient
+
+**Changes to `src/Metadata/MetadataProvider.php`:**
+
+```php
+// In getInstance() method, check ApiClient first
+public static function getInstance(
+    ?string $apiUrl = null,
+    ?HttpClientInterface $httpClient = null,
+    ?CacheInterface $cache = null,
+    ?LoggerInterface $logger = null,
+    ?int $cacheTtl = null
+): self {
+    // First initialization - set global configuration
+    if (self::$instance === null) {
+        // Priority: explicit params > ApiClient > defaults
+        $finalApiUrl = $apiUrl
+            ?? ApiClient::getApiUrl()
+            ?? self::DEFAULT_API_URL;
+
+        $finalHttpClient = $httpClient
+            ?? ApiClient::getHttpClient();
+
+        $finalCache = $cache
+            ?? ApiClient::getCache();
+
+        $finalLogger = $logger
+            ?? ApiClient::getLogger()
+            ?? new NullLogger();
+
+        $finalCacheTtl = $cacheTtl
+            ?? ApiClient::getCacheTtl()
+            ?? ApiClient::DEFAULT_CACHE_TTL;
+
+        // Set global configuration (immutable)
+        self::$globalApiUrl = $finalApiUrl;
+        self::$globalCache = $finalCache;
+        self::$globalLogger = $finalLogger;
+        self::$globalCacheTtl = $finalCacheTtl;
+
+        // Configure HTTP client...
+        // (rest of initialization)
+    }
+
+    return self::$instance;
+}
+```
+
+### Benefits
+
+1. **✅ Single Configuration Point**: Initialize API access once at bootstrap
+1. **✅ DRY**: No duplicate HttpClient configuration
+1. **✅ Consistency**: All components use same middleware (cache, logger, retry, circuit breaker)
+1. **✅ Testability**: Easy to inject mocks via ApiClient
+1. **✅ Backward Compatible**: Existing code continues to work
+1. **✅ Flexibility**: Can still use components independently with explicit dependencies
+1. **✅ Future-Proof**: Easy to add more API endpoint components (Events, Missals, etc.)
+
+### Migration Guide
+
+#### Old Approach (Still Supported)
+
+```php
+// Initialize each component separately
+MetadataProvider::getInstance(
+    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
+    httpClient: $httpClient,
+    cache: $cache,
+    logger: $logger
+);
+
+// CalendarRequest would need same initialization
+$request = new CalendarRequest($httpClient, $logger, $cache);
+$request->baseUrl('https://litcal.johnromanodorazio.com/api/dev');
+```
+
+#### New Approach (Recommended)
+
+```php
+// Initialize once (let ApiClient create and decorate the HTTP client)
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'cache' => $cache,
+    'logger' => $logger
+]);
+
+// All components automatically use shared configuration
+$calendarSelect = new CalendarSelect();
+$calendar = $apiClient->calendar()->year(2024)->get();
+```
 
 ---
 
 ## Feature: CalendarRequest Component
 
-### Overview
+### CalendarRequest Overview
 
 Create a `CalendarRequest` component that encapsulates all calendar data fetching logic, leveraging our existing PSR-compliant HTTP infrastructure.
 
@@ -127,7 +587,7 @@ $request = new CalendarRequest($httpClient, $logger, $cache);
 $calendar = $request->nation('US')
     ->year(2024)
     ->locale('en')
-    ->returnType('json') // or 'xml', 'yaml', 'ical'
+    ->header('Accept', 'application/json') // or 'application/xml', 'application/yaml', 'text/calendar'
     ->get();
 
 // Note: epiphany, ascension, corpus_christi, eternal_high_priest, and
@@ -163,7 +623,7 @@ $calendar = $request->year(2024)
 Calendar** requests (bare `/calendar` or `/calendar/{year}` paths). National and diocesan calendars have these settings predefined and will ignore these parameters
 if sent.
 
-### Implementation Plan
+### CalendarRequest Implementation Plan
 
 #### Phase 1: Core CalendarRequest Component
 
@@ -194,7 +654,6 @@ class CalendarRequest
     private ?int $year = null;
     private ?string $yearType = null;
     private ?string $locale = null;
-    private ?string $returnType = null;
     private ?string $epiphany = null;
     private ?string $ascension = null;
     private ?string $corpusChristi = null;
@@ -203,12 +662,26 @@ class CalendarRequest
     private array $customHeaders = [];
 
     public function __construct(
-        private ?HttpClientInterface $httpClient = null,
-        private ?LoggerInterface $logger = null,
-        private ?CacheInterface $cache = null
+        ?HttpClientInterface $httpClient = null,
+        ?LoggerInterface $logger = null,
+        ?CacheInterface $cache = null,
+        ?string $apiUrl = null
     ) {
-        $this->httpClient = $httpClient ?? HttpClientFactory::create();
-        $this->logger = $logger ?? new NullLogger();
+        // Priority: explicit params > ApiClient > defaults
+        $this->baseUrl = $apiUrl
+            ?? ApiClient::getApiUrl()
+            ?? $this->baseUrl;
+
+        $finalHttpClient = $httpClient
+            ?? ApiClient::getHttpClient();
+
+        $finalLogger = $logger
+            ?? ApiClient::getLogger()
+            ?? new NullLogger();
+
+        $this->httpClient = $finalHttpClient ?? HttpClientFactory::create();
+        $this->logger = $finalLogger;
+        // Note: cache is used by HttpClient middleware, not stored in CalendarRequest
     }
 
     /**
@@ -267,15 +740,6 @@ class CalendarRequest
     public function locale(string $locale): self
     {
         $this->locale = $locale;
-        return $this;
-    }
-
-    /**
-     * Set return type (json, xml, yaml, ical)
-     */
-    public function returnType(string $type): self
-    {
-        $this->returnType = $type;
         return $this;
     }
 
@@ -341,10 +805,6 @@ class CalendarRequest
 
     /**
      * Add custom header
-     *
-     * Note: The 'Accept' header will be overridden if returnType() is set,
-     * as the API prioritizes the return_type parameter over the Accept header.
-     * For other headers, custom values will be used as-is.
      *
      * Security: Header names and values are validated to prevent CRLF injection attacks.
      * Only alphanumeric characters, hyphens, and underscores are allowed in header names.
@@ -551,13 +1011,8 @@ $request->year(2024)->get();
      * Build request headers
      *
      * Generates HTTP headers for the API request. Header precedence:
-     * - The Accept header is ALWAYS set from returnType() if specified, as the API
-     *   prioritizes the return_type parameter over the Accept header
-     * - Other custom headers (set via header() method) take precedence over defaults
+     * - Custom headers (set via header() method) take precedence over defaults
      * - Default headers are used if not overridden
-     *
-     * Note: Any custom 'Accept' header will be overridden if returnType is set,
-     * because the API ignores the Accept header when return_type parameter is present.
      *
      * @return array<string,string> Associative array of header name => value
      */
@@ -572,19 +1027,7 @@ $request->year(2024)->get();
         }
 
         // Merge custom headers (they can override defaults)
-        $finalHeaders = array_merge($headers, $this->customHeaders);
-
-        // returnType ALWAYS overrides Accept header (API prioritizes return_type parameter)
-        if ($this->returnType) {
-            $finalHeaders['Accept'] = match($this->returnType) {
-                'xml' => 'application/xml',
-                'yaml' => 'application/yaml',
-                'ical' => 'text/calendar',
-                default => 'application/json',
-            };
-        }
-
-        return $finalHeaders;
+        return array_merge($headers, $this->customHeaders);
     }
 
     /**
@@ -723,142 +1166,10 @@ class CalendarResponse
 }
 ```
 
-#### Phase 3: Calendar Response Builder
+#### Phase 3: Calendar Response Builder ❌ **REMOVED**
 
-**File:** `src/CalendarResponseBuilder.php`
-
-```php
-<?php
-
-namespace LiturgicalCalendar\Components;
-
-use LiturgicalCalendar\Components\Http\HttpClientInterface;
-use Psr\Log\LoggerInterface;
-use Psr\SimpleCache\CacheInterface;
-
-/**
- * Builder for creating CalendarRequest instances with common configurations
- *
- * Provides convenient static methods for fetching calendar data without manually
- * constructing CalendarRequest objects. All methods accept optional HTTP client,
- * logger, and cache dependencies for full control over the request configuration.
- */
-class CalendarResponseBuilder
-{
-    /**
-     * Quick request for General Roman Calendar
-     *
-     * @param int $year The liturgical year to fetch
-     * @param string $locale The locale for localized content (default: 'en')
-     * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
-     * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
-     * @return \stdClass Calendar response object
-     * @throws \Exception If request fails or response is invalid
-     */
-    public static function generalCalendar(
-        int $year,
-        string $locale = 'en',
-        ?HttpClientInterface $httpClient = null,
-        ?LoggerInterface $logger = null,
-        ?CacheInterface $cache = null
-    ): \stdClass {
-        return (new CalendarRequest($httpClient, $logger, $cache))
-            ->year($year)
-            ->locale($locale)
-            ->get();
-    }
-
-    /**
-     * Quick request for National Calendar
-     *
-     * @param string $nation The national calendar ID (e.g., 'IT', 'US', 'FR')
-     * @param int $year The liturgical year to fetch
-     * @param string $locale The locale for localized content (default: 'en')
-     * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
-     * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
-     * @return \stdClass Calendar response object
-     * @throws \Exception If request fails or response is invalid
-     */
-    public static function nationalCalendar(
-        string $nation,
-        int $year,
-        string $locale = 'en',
-        ?HttpClientInterface $httpClient = null,
-        ?LoggerInterface $logger = null,
-        ?CacheInterface $cache = null
-    ): \stdClass {
-        return (new CalendarRequest($httpClient, $logger, $cache))
-            ->nation($nation)
-            ->year($year)
-            ->locale($locale)
-            ->get();
-    }
-
-    /**
-     * Quick request for Diocesan Calendar
-     *
-     * @param string $diocese The diocesan calendar ID (9-character format)
-     * @param int $year The liturgical year to fetch
-     * @param string $locale The locale for localized content (default: 'en')
-     * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
-     * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
-     * @return \stdClass Calendar response object
-     * @throws \Exception If request fails or response is invalid
-     */
-    public static function diocesanCalendar(
-        string $diocese,
-        int $year,
-        string $locale = 'en',
-        ?HttpClientInterface $httpClient = null,
-        ?LoggerInterface $logger = null,
-        ?CacheInterface $cache = null
-    ): \stdClass {
-        return (new CalendarRequest($httpClient, $logger, $cache))
-            ->diocese($diocese)
-            ->year($year)
-            ->locale($locale)
-            ->get();
-    }
-}
-```
-
-#### CalendarResponseBuilder Usage Examples
-
-```php
-// Minimal usage - all dependencies auto-discovered
-$calendar = CalendarResponseBuilder::generalCalendar(2024);
-
-// With custom locale
-$calendar = CalendarResponseBuilder::nationalCalendar('IT', 2024, 'it');
-
-// With HTTP client for testing/mocking
-$mockClient = new MockHttpClient();
-$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $mockClient);
-
-// With logger for debugging
-$logger = new Logger('calendar');
-$calendar = CalendarResponseBuilder::nationalCalendar('US', 2024, 'en', null, $logger);
-
-// With cache for performance
-$cache = new FilesystemCache();
-$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', null, null, $cache);
-
-// Full configuration with all dependencies
-$httpClient = HttpClientFactory::create();
-$logger = new Logger('calendar');
-$cache = new ArrayCache();
-$calendar = CalendarResponseBuilder::diocesanCalendar(
-    'DIOCESE001',
-    2024,
-    'en',
-    $httpClient,
-    $logger,
-    $cache
-);
-```
+**Removed in 2025-11**: This static helper class was removed as it provided no additional value over the already-clean CalendarRequest fluent API.
+CalendarRequest directly provides the same functionality with better flexibility.
 
 ### CalendarRequest Usage Examples
 
@@ -880,21 +1191,37 @@ $calendar = json_decode($response);
 #### After (CalendarRequest Component)
 
 ```php
-// Simple and clean
-$request = new CalendarRequest($httpClient, $logger, $cache);
+// Pattern A: Configure via ApiClient (recommended - let it create the HTTP client)
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'cache' => $cache,
+    'logger' => $logger,
+    'cacheTtl' => 3600
+]);
+
+// Simple and clean - pulls config from ApiClient
+$request = new CalendarRequest();
 $calendar = $request->year(2024)
     ->locale('en')
     ->get();
 
-// Or even simpler with static helper
-$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $httpClient, $logger, $cache);
+// Pattern B: Pre-decorated HttpClient (no ApiClient needed)
+$decoratedClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600
+);
+$request = new CalendarRequest($decoratedClient);
+$calendar = $request->year(2024)
+    ->locale('en')
+    ->get();
 ```
 
-### Benefits
+### CalendarRequest Benefits
 
 1. **✅ PSR-Compliant**: Uses existing HTTP client infrastructure
-1. **✅ Cached**: Automatic response caching (if cache provided)
-1. **✅ Logged**: All requests logged (if logger provided)
+1. **✅ Cached**: Automatic response caching (configured via ApiClient or pre-decorated HttpClient)
+1. **✅ Logged**: All requests logged (configured via ApiClient or pre-decorated HttpClient)
 1. **✅ Resilient**: Built-in retry and circuit breaker
 1. **✅ Validated**: Automatic response validation
 1. **✅ Type-Safe**: Full PHPStan compliance
@@ -1142,42 +1469,149 @@ $commonEvents = $comparison->getCommonEvents();
 
 ## Implementation Timeline
 
-### Phase 1: Core CalendarRequest (Week 1)
+### Phase 0: ApiClient Foundation ✅ **COMPLETED**
 
-- [ ] Create `CalendarRequest` component
-- [ ] Implement fluent API
-- [ ] Add response validation
-- [ ] Unit tests (20+ tests)
-- [ ] PHPStan Level 10 validation
-- [ ] Update examples to use CalendarRequest
+**Goal**: Establish centralized API configuration before CalendarRequest implementation
 
-### Phase 2: Response Models (Week 2)
+- [x] Create `ApiClient` singleton class (`src/ApiClient.php`)
+  - [x] Implement getInstance() with config array parameter
+  - [x] Add static getters: getHttpClient(), getApiUrl(), getCache(), getLogger(), getCacheTtl()
+  - [x] Add isInitialized() check
+  - [x] ~~Add createCalendarRequest() factory method~~ (removed as redundant)
+  - [x] Add resetForTesting() for test isolation
+- [x] Update `MetadataProvider` to use ApiClient
+  - [x] Modify getInstance() to check ApiClient first (priority: explicit params > ApiClient > defaults)
+  - [x] Maintain backward compatibility
+  - [x] Update docstrings
+- [x] Unit tests for ApiClient
+  - [x] Test singleton behavior
+  - [x] Test configuration priority (explicit > ApiClient > defaults)
+  - [x] Test static getters
+  - [x] Test resetForTesting()
+  - [x] Test integration with MetadataProvider
+- [x] Update documentation
+  - [x] Update CLAUDE.md with ApiClient initialization pattern
+  - [x] Update README.md with new recommended approach
+  - [x] Add migration examples
+- [x] PHPStan Level 10 validation
+- [x] Update examples to use ApiClient pattern
+
+**Success Criteria**:
+
+- [x] ApiClient tests pass (30+ tests, exceeded 15+ target)
+- [x] MetadataProvider still works with explicit params (backward compatibility)
+- [x] MetadataProvider works with ApiClient configuration
+- [x] All existing tests still pass (200 tests, 716 assertions)
+- [x] PHPStan Level 10 maintained
+
+### Phase 1: Core CalendarRequest ✅ **COMPLETED**
+
+**Goal**: Implement calendar data fetching with ApiClient integration
+
+- [x] Create `CalendarRequest` component (`src/CalendarRequest.php`)
+- [x] Implement constructor with ApiClient fallback
+  - [x] Priority: explicit params > ApiClient > defaults
+  - [x] Support httpClient, logger, cache, apiUrl parameters
+- [x] Implement fluent API
+  - [x] Calendar type methods: nation(), diocese()
+  - [x] Parameter methods: year(), locale(), yearType()
+  - [x] General calendar methods: epiphany(), ascension(), corpusChristi(), eternalHighPriest(), holydaysOfObligation()
+  - [x] Header methods: header(), acceptLanguage()
+- [x] Implement request execution
+  - [x] buildUrl() with proper URL encoding
+  - [x] buildHeaders() with header validation (CRLF injection prevention)
+  - [x] buildPostData()
+  - [x] get() method with response validation
+- [x] Add response validation
+  - [x] Validate required properties (litcal, settings)
+  - [x] Validate data types
+- [x] **Unit tests (25 tests)** ✅ **COMPLETE** (`tests/CalendarRequestTest.php`)
+  - [x] Test fluent API methods (chainability)
+  - [x] Test URL building and encoding
+    - [x] General calendar URL
+    - [x] National calendar URL
+    - [x] Diocesan calendar URL
+    - [x] Year parameter in URL
+    - [x] Special character encoding
+    - [x] Trailing slash handling
+  - [x] Test header validation (valid/invalid cases)
+    - [x] CRLF injection prevention in header values
+    - [x] CRLF injection prevention in locale
+    - [x] CRLF injection prevention in acceptLanguage()
+    - [x] Invalid header names rejected
+    - [x] Valid header names accepted
+  - [x] Test year bounds validation (1970-9999)
+  - [x] Test integration with ApiClient
+    - [x] ~~`ApiClient::createCalendarRequest()` factory method~~ (removed as redundant)
+    - [x] Shared configuration from ApiClient
+    - [x] Error when ApiClient not initialized
+  - [ ] Test POST data construction ⚠️ **Remaining gap**
+  - [ ] Test response validation ⚠️ **Remaining gap**
+  - [ ] Test get() HTTP execution with mock client ⚠️ **Remaining gap**
+- [x] PHPStan Level 10 validation
+- [x] Update examples to use CalendarRequest
+
+**Success Criteria**:
+
+- [x] CalendarRequest works with ApiClient configuration
+- [x] CalendarRequest works with explicit dependencies
+- [x] CalendarRequest works with defaults (creates own HttpClient)
+- [x] All header injection attacks prevented
+- [x] All URL encoding scenarios handled
+- [x] PHPStan Level 10 maintained
+- [x] **Unit test coverage for core functionality** (25 tests, 42 assertions)
+
+**Known Gaps** (non-blocking for Phase 1):
+
+- POST data construction testing (integration tests cover this)
+- Response validation testing (integration tests cover this)
+- HTTP execution mocking (covered by real API calls in examples)
+
+### Phase 2: Response Models (Week 3 - Priority 3)
 
 - [ ] Create typed response models
+  - [ ] CalendarResponse
+  - [ ] CalendarSettings
+  - [ ] CalendarMetadata
 - [ ] Add helper methods for common queries
+  - [ ] getEvent(), eventsByGrade(), eventsBySeason(), getSolemnities()
 - [ ] Add response filtering
-- [ ] Unit tests for models
+- [ ] Unit tests for models (15+ tests)
 
-### Phase 3: Caching & Optimization (Week 3)
+### Phase 3: Caching & Optimization (Week 4 - Priority 4)
 
-- [ ] Implement smart cache keys
+- [ ] Implement smart cache keys in CalendarRequest
+  - [ ] Include calendar type, ID, year, locale, year_type
+  - [ ] Hash optional parameters for general calendar
+  - [ ] Exclude ignored params for national/diocesan calendars
 - [ ] Add TTL logic based on year
+  - [ ] Past years: 30 days
+  - [ ] Current year: 24 hours
+  - [ ] Future years: 7 days
+  - [ ] Use UTC for calculations
 - [ ] Add cache invalidation methods
 - [ ] Performance benchmarking
+- [ ] Unit tests (10+ tests)
 
-### Phase 4: Advanced Features (Week 4)
+### Phase 4: CalendarResponseBuilder ❌ **REMOVED** (Not Needed)
 
-- [ ] Batch request support
+**Removed in 2025-11**: Static helper class deemed unnecessary. CalendarRequest already provides a clean fluent API, making CalendarResponseBuilder redundant.
+Since no tests or examples were written and no release was published, removed to keep codebase clean.
+
+### Phase 5: Advanced Features (Week 6 - Priority 6)
+
+- [ ] Batch request support (CalendarBatchRequest)
 - [ ] Response formatters (iCal, PDF)
 - [ ] Calendar comparison tools
 - [ ] Documentation updates
 
-### Phase 5: Polish & Release
+### Phase 6: Polish & Release (Week 7)
 
-- [ ] Update UPGRADE.md
+- [ ] Update UPGRADE.md with ApiClient migration guide
 - [ ] Create comprehensive examples
-- [ ] Add to README
+- [ ] Update README with new patterns
 - [ ] Release notes
+- [ ] Version bump
 
 ---
 
@@ -1240,10 +1674,37 @@ $req = new CalendarRequest($httpClient, $logger, $cache);
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2025-11-15
-**Status**: Proposal - Awaiting Implementation
-**Priority**: High
+**Document Version**: 3.2
+**Last Updated**: 2025-11-19
+**Status**: Partially Implemented - Phases 0 & 1 Complete
+**Priority**: Medium (Core features complete, advanced features remain)
+
+**Changes in v3.2** (2025-11):
+
+- Removed CalendarResponseBuilder (Phase 4) - deemed unnecessary since CalendarRequest already provides clean fluent API
+
+**Changes in v3.1**:
+
+- ~~Updated Phase 4 status to reflect CalendarResponseBuilder implementation completion~~
+- ~~Marked CalendarResponseBuilder unit tests and example integration as pending~~
+- ~~Updated "What's Still Missing" to show Phase 4 implementation complete, tests pending~~
+
+**Changes in v3.0**:
+
+- Updated status to reflect Phase 0 (ApiClient) completion
+- Updated status to reflect Phase 1 (CalendarRequest) implementation completion
+- Marked CalendarRequest unit tests as pending (implementation exists but lacks test coverage)
+- Updated "What's Missing" section to "What's Been Added Recently" + "What's Still Missing"
+- Reflected current state: examples no longer use raw curl, now use CalendarRequest
+- All existing tests pass (200 tests, 716 assertions)
+
+**Changes in v2.0**:
+
+- Added ApiClient singleton for unified API configuration (Phase 0)
+- Updated MetadataProvider integration to use ApiClient
+- Updated CalendarRequest to support ApiClient fallback
+- Reorganized implementation timeline with ApiClient as foundation
+- Added detailed success criteria for each phase
 
 ---
 

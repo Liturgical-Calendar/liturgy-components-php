@@ -2,6 +2,7 @@
 
 namespace LiturgicalCalendar\Components\Metadata;
 
+use LiturgicalCalendar\Components\ApiClient;
 use LiturgicalCalendar\Components\Models\Index\CalendarIndex;
 use LiturgicalCalendar\Components\Http\HttpClientInterface;
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
@@ -45,18 +46,18 @@ use Psr\Log\NullLogger;
  *
  * Usage:
  * ```php
- * // Simple usage with defaults
- * $provider = MetadataProvider::getInstance(
- *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev'
- * );
+ * // Simple usage with defaults (ApiClient auto-initialized)
+ * $provider = MetadataProvider::getInstance();
  * $metadata = $provider->getMetadata();
  *
- * // With custom cache and logger
- * $provider = MetadataProvider::getInstance(
- *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
- *     cache: $cache,
- *     logger: $logger
- * );
+ * // With custom configuration (recommended - initialize ApiClient first)
+ * ApiClient::getInstance([
+ *     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+ *     'httpClient' => $httpClient,
+ *     'cache' => $cache,
+ *     'logger' => $logger,
+ * ]);
+ * $provider = MetadataProvider::getInstance();
  * $metadata = $provider->getMetadata();
  *
  * // In long-running processes, refresh metadata when needed
@@ -80,14 +81,8 @@ class MetadataProvider
     /** @var HttpClientInterface|null Global HTTP client (immutable after first initialization) */
     private static ?HttpClientInterface $globalHttpClient = null;
 
-    /** @var CacheInterface|null Global cache (immutable after first initialization) */
-    private static ?CacheInterface $globalCache = null;
-
     /** @var LoggerInterface|null Global logger (immutable after first initialization) */
     private static ?LoggerInterface $globalLogger = null;
-
-    /** @var int|null Global cache TTL (immutable after first initialization) */
-    private static ?int $globalCacheTtl = null;
 
     private HttpClientInterface $httpClient;
     private LoggerInterface $logger;
@@ -109,99 +104,54 @@ class MetadataProvider
     /**
      * Get or create the MetadataProvider singleton instance
      *
-     * Returns a singleton instance configured with the provided dependencies.
+     * Uses shared configuration from ApiClient singleton. If ApiClient is not yet
+     * initialized, it will be auto-initialized with default values.
+     *
      * Configuration is set once on first call and becomes immutable thereafter.
      *
-     * **IMPORTANT: Immutable Configuration**
-     *
-     * All parameters are only used on the FIRST call to getInstance(). Subsequent
-     * calls will ignore all parameters and return the already-configured singleton.
-     *
-     * This ensures consistent configuration across the entire application:
-     * - API URL is set once and cannot be changed
-     * - HTTP client configuration is set once
-     * - Cache and logger are set once
-     * - Cache TTL is set once
-     *
-     * **Typical Usage:**
+     * **Usage:**
      * ```php
-     * // Initialize once at application bootstrap
-     * MetadataProvider::getInstance(
-     *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-     *     httpClient: $httpClient,
-     *     cache: $cache,
-     *     logger: $logger,
-     *     cacheTtl: 86400
-     * );
+     * // Initialize ApiClient once at application bootstrap (recommended)
+     * ApiClient::getInstance([
+     *     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+     *     'httpClient' => $httpClient,  // Already decorated with cache/logger
+     *     'cache' => $cache,
+     *     'logger' => $logger
+     * ]);
      *
-     * // Use anywhere without parameters
+     * // Use anywhere without parameters - pulls config from ApiClient
      * $provider = MetadataProvider::getInstance();
      * $metadata = $provider->getMetadata();
-     *
-     * // Or use static validation methods directly
-     * $isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
      * ```
      *
-     * **Warning:** If you provide a pre-decorated client (e.g., from
-     * HttpClientFactory::createProductionClient), DO NOT also pass `$cache` or
-     * `$logger` parameters, as this will cause double-wrapping.
+     * **Automatic Initialization:**
+     * If ApiClient is not initialized, MetadataProvider will auto-initialize it
+     * with default values (default API URL, basic HTTP client, null logger).
      *
-     * @param string|null $apiUrl Optional API base URL. Only used on first call.
-     * @param HttpClientInterface|null $httpClient Optional HTTP client. Only used on first call.
-     * @param CacheInterface|null $cache Optional PSR-16 cache. Only used on first call.
-     * @param LoggerInterface|null $logger Optional PSR-3 logger. Only used on first call.
-     * @param int $cacheTtl Cache TTL in seconds (default: 86400 = 24 hours). Only used on first call.
      * @return self Singleton instance
      */
-    public static function getInstance(
-        ?string $apiUrl = null,
-        ?HttpClientInterface $httpClient = null,
-        ?CacheInterface $cache = null,
-        ?LoggerInterface $logger = null,
-        int $cacheTtl = 86400
-    ): self {
+    public static function getInstance(): self
+    {
         // Return existing instance if already initialized
         if (self::$instance !== null) {
             return self::$instance;
         }
 
-        // First initialization - set global configuration (immutable)
-        self::$globalApiUrl     = $apiUrl ?? self::DEFAULT_API_URL;
-        self::$globalHttpClient = $httpClient;
-        self::$globalCache      = $cache;
-        self::$globalLogger     = $logger;
-        self::$globalCacheTtl   = $cacheTtl;
-
-        // Warn about potential double-wrapping if both client and decorators provided
-        if ($httpClient !== null && ( $cache !== null || $logger !== null )) {
-            trigger_error(
-                'MetadataProvider::getInstance() called with both httpClient and cache/logger parameters. ' .
-                'If httpClient is already decorated (e.g., from HttpClientFactory::createProductionClient()), ' .
-                'this will cause double-wrapping. Only pass httpClient OR cache/logger, not both.',
-                E_USER_WARNING
-            );
+        // Ensure ApiClient is initialized (auto-initialize with defaults if needed)
+        if (!ApiClient::isInitialized()) {
+            ApiClient::getInstance(); // Uses default values
         }
 
-        // Initialize HTTP client with auto-discovery if not provided
-        $baseClient = self::$globalHttpClient ?? HttpClientFactory::create();
-        $logger     = self::$globalLogger ?? new NullLogger();
+        // First initialization - pull all configuration from ApiClient
+        self::$globalApiUrl     = ApiClient::getApiUrl() ?? self::DEFAULT_API_URL;
+        self::$globalHttpClient = ApiClient::getHttpClient();
+        self::$globalLogger     = ApiClient::getLogger();
 
-        // Wrap with caching if cache provided
-        if (self::$globalCache !== null) {
-            $baseClient = new CachingHttpClient(
-                $baseClient,
-                self::$globalCache,
-                self::$globalCacheTtl,
-                $logger
-            );
-        }
+        // Use HttpClient from ApiClient (already decorated) or create default
+        $baseClient  = self::$globalHttpClient ?? HttpClientFactory::create();
+        $finalLogger = self::$globalLogger ?? new NullLogger();
 
-        // Wrap with logging if logger provided (and not NullLogger)
-        if (!( $logger instanceof NullLogger )) {
-            $baseClient = new LoggingHttpClient($baseClient, $logger);
-        }
-
-        self::$instance = new self($baseClient, $logger);
+        self::$instance = new self($baseClient, $finalLogger);
 
         return self::$instance;
     }
@@ -226,7 +176,10 @@ class MetadataProvider
     public function getMetadata(): CalendarIndex
     {
         if (self::$globalApiUrl === null) {
-            throw new \Exception('MetadataProvider API URL not configured. Call getInstance() with apiUrl parameter first.');
+            throw new \Exception(
+                'MetadataProvider API URL not configured. ' .
+                'Initialize via ApiClient::getInstance([\'apiUrl\' => ...]) before calling getMetadata().'
+            );
         }
 
         $apiUrl = rtrim(self::$globalApiUrl, '/');
@@ -342,9 +295,7 @@ class MetadataProvider
         self::$metadataCache    = [];
         self::$globalApiUrl     = null;
         self::$globalHttpClient = null;
-        self::$globalCache      = null;
         self::$globalLogger     = null;
-        self::$globalCacheTtl   = null;
     }
 
     /**
@@ -372,15 +323,15 @@ class MetadataProvider
      *
      * **Usage:**
      * ```php
-     * // First, initialize the MetadataProvider (typically in bootstrap)
-     * MetadataProvider::getInstance(
-     *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-     *     httpClient: $httpClient,
-     *     cache: $cache,
-     *     logger: $logger
-     * );
+     * // First, initialize ApiClient (typically in bootstrap)
+     * ApiClient::getInstance([
+     *     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+     *     'httpClient' => $httpClient,
+     *     'cache' => $cache,
+     *     'logger' => $logger
+     * ]);
      *
-     * // Then use validation anywhere without parameters
+     * // Then use validation anywhere
      * $isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
      * ```
      *

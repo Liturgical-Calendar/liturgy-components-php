@@ -3,6 +3,7 @@
 namespace LiturgicalCalendar\Components\Tests\Metadata;
 
 use PHPUnit\Framework\TestCase;
+use LiturgicalCalendar\Components\ApiClient;
 use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use LiturgicalCalendar\Components\Models\Index\CalendarIndex;
 use LiturgicalCalendar\Components\Http\HttpClientInterface;
@@ -17,8 +18,9 @@ class MetadataProviderTest extends TestCase
 
     protected function setUp(): void
     {
-        // Reset singleton and cache before each test to ensure test isolation
+        // Reset singletons and cache before each test to ensure test isolation
         MetadataProvider::resetForTesting();
+        ApiClient::resetForTesting();
     }
 
     /**
@@ -99,12 +101,20 @@ class MetadataProviderTest extends TestCase
             return true;
         }, E_USER_WARNING);
 
-        // First call initializes the singleton
-        $instance1 = MetadataProvider::getInstance(self::API_URL, $httpClient, $cache, $logger);
-        // Subsequent calls return the same instance (parameters are ignored)
-        $instance2 = MetadataProvider::getInstance(self::API_URL, $httpClient, $cache, $logger);
+        // Initialize ApiClient first
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient,
+            'cache'      => $cache,
+            'logger'     => $logger
+        ]);
 
         restore_error_handler();
+
+        // First call initializes the singleton
+        $instance1 = MetadataProvider::getInstance();
+        // Subsequent calls return the same instance
+        $instance2 = MetadataProvider::getInstance();
 
         $this->assertSame($instance1, $instance2, 'Should return same singleton instance');
     }
@@ -114,31 +124,42 @@ class MetadataProviderTest extends TestCase
         // Multiple calls should return same instance
         $instance1 = MetadataProvider::getInstance();
         $instance2 = MetadataProvider::getInstance();
-        $instance3 = MetadataProvider::getInstance(null, null, null, null);
+        $instance3 = MetadataProvider::getInstance();
 
         $this->assertSame($instance1, $instance2, 'Default config should return same instance');
-        $this->assertSame($instance1, $instance3, 'Explicit nulls should return same instance as default');
+        $this->assertSame($instance1, $instance3, 'Multiple calls should return same instance');
     }
 
-    public function testSubsequentGetInstanceCallsIgnoreParameters()
+    public function testSubsequentGetInstanceCallsReturnSameInstance()
     {
         $httpClient1 = $this->createMockHttpClient();
-        $httpClient2 = $this->createMockHttpClient();
 
-        // First call initializes with httpClient1
-        $instance1 = MetadataProvider::getInstance(self::API_URL, $httpClient1);
-        // Second call with different httpClient should return same instance
-        $instance2 = MetadataProvider::getInstance('https://different-url.com', $httpClient2);
+        // Initialize ApiClient with first configuration
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient1
+        ]);
 
-        $this->assertSame($instance1, $instance2, 'Subsequent calls should ignore parameters and return same instance');
-        $this->assertSame(self::API_URL, MetadataProvider::getApiUrl(), 'API URL should remain the one from first call');
+        // First call initializes MetadataProvider
+        $instance1 = MetadataProvider::getInstance();
+        // Second call should return same instance
+        $instance2 = MetadataProvider::getInstance();
+
+        $this->assertSame($instance1, $instance2, 'Subsequent calls should return same instance');
+        $this->assertSame(self::API_URL, MetadataProvider::getApiUrl(), 'API URL should remain from ApiClient configuration');
     }
 
     public function testGetMetadataFetchesFromApi()
     {
         $httpClient = $this->createMockHttpClient();
-        $provider   = MetadataProvider::getInstance(self::API_URL, $httpClient);
 
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        $provider = MetadataProvider::getInstance();
         $metadata = $provider->getMetadata();
 
         $this->assertInstanceOf(CalendarIndex::class, $metadata);
@@ -162,7 +183,13 @@ class MetadataProviderTest extends TestCase
                    ->with(self::API_URL . '/calendars')
                    ->willReturn($response);
 
-        $provider = MetadataProvider::getInstance(self::API_URL, $httpClient);
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        $provider = MetadataProvider::getInstance();
 
         // First call - should fetch from API
         $metadata1 = $provider->getMetadata();
@@ -181,8 +208,14 @@ class MetadataProviderTest extends TestCase
     public function testIsCachedReturnsTrueAfterFetch()
     {
         $httpClient = $this->createMockHttpClient();
-        $provider   = MetadataProvider::getInstance(self::API_URL, $httpClient);
 
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        $provider = MetadataProvider::getInstance();
         $provider->getMetadata();
 
         $this->assertTrue(MetadataProvider::isCached());
@@ -191,8 +224,14 @@ class MetadataProviderTest extends TestCase
     public function testClearCacheRemovesAllCachedMetadata()
     {
         $httpClient = $this->createMockHttpClient();
-        $provider   = MetadataProvider::getInstance(self::API_URL, $httpClient);
 
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        $provider = MetadataProvider::getInstance();
         $provider->getMetadata();
         $this->assertTrue(MetadataProvider::isCached());
 
@@ -203,7 +242,14 @@ class MetadataProviderTest extends TestCase
     public function testGetMetadataThrowsExceptionOnNon200Response()
     {
         $httpClient = $this->createMockHttpClient(404, '');
-        $provider   = MetadataProvider::getInstance(self::API_URL, $httpClient);
+
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        $provider = MetadataProvider::getInstance();
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Failed to fetch metadata');
@@ -214,7 +260,14 @@ class MetadataProviderTest extends TestCase
     public function testGetMetadataThrowsExceptionOnInvalidJson()
     {
         $httpClient = $this->createMockHttpClient(200, 'invalid json');
-        $provider   = MetadataProvider::getInstance(self::API_URL, $httpClient);
+
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        $provider = MetadataProvider::getInstance();
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Failed to decode metadata');
@@ -225,7 +278,14 @@ class MetadataProviderTest extends TestCase
     public function testGetMetadataThrowsExceptionOnMissingLitcalMetadata()
     {
         $httpClient = $this->createMockHttpClient(200, json_encode(['other_data' => []]));
-        $provider   = MetadataProvider::getInstance(self::API_URL, $httpClient);
+
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        $provider = MetadataProvider::getInstance();
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Missing \'litcal_metadata\'');
@@ -236,7 +296,14 @@ class MetadataProviderTest extends TestCase
     public function testGetMetadataThrowsExceptionOnInvalidLitcalMetadataType()
     {
         $httpClient = $this->createMockHttpClient(200, json_encode(['litcal_metadata' => 'not an array']));
-        $provider   = MetadataProvider::getInstance(self::API_URL, $httpClient);
+
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        $provider = MetadataProvider::getInstance();
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('\'litcal_metadata\' must be an array');
@@ -252,7 +319,14 @@ class MetadataProviderTest extends TestCase
                 // Missing diocesan_calendars and locales
             ]
         ]));
-        $provider = MetadataProvider::getInstance(self::API_URL, $httpClient);
+
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        $provider = MetadataProvider::getInstance();
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Missing');
@@ -270,10 +344,16 @@ class MetadataProviderTest extends TestCase
             return true;
         }, E_USER_WARNING);
 
-        $provider = MetadataProvider::getInstance(self::API_URL, $httpClient, $cache);
+        // Initialize ApiClient with cache
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient,
+            'cache'      => $cache
+        ]);
 
         restore_error_handler();
 
+        $provider = MetadataProvider::getInstance();
         $metadata = $provider->getMetadata();
 
         $this->assertInstanceOf(CalendarIndex::class, $metadata);
@@ -292,17 +372,30 @@ class MetadataProviderTest extends TestCase
             return true;
         }, E_USER_WARNING);
 
-        $provider = MetadataProvider::getInstance(self::API_URL, $httpClient, null, $logger);
+        // Initialize ApiClient with logger
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient,
+            'logger'     => $logger
+        ]);
 
         restore_error_handler();
 
+        $provider = MetadataProvider::getInstance();
         $provider->getMetadata();
     }
 
     public function testApiUrlIsConfiguredCorrectly()
     {
         $httpClient = $this->createMockHttpClient();
-        MetadataProvider::getInstance(self::API_URL, $httpClient);
+
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        MetadataProvider::getInstance();
 
         $this->assertSame(self::API_URL, MetadataProvider::getApiUrl());
     }
@@ -313,12 +406,22 @@ class MetadataProviderTest extends TestCase
 
         // Test without trailing slash
         MetadataProvider::resetForTesting();
-        MetadataProvider::getInstance(self::API_URL, $httpClient);
+        ApiClient::resetForTesting();
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+        MetadataProvider::getInstance();
         $this->assertSame(self::API_URL . '/calendars', MetadataProvider::getMetadataUrl());
 
         // Test with trailing slash - should produce same result (no double slash)
         MetadataProvider::resetForTesting();
-        MetadataProvider::getInstance(self::API_URL . '/', $httpClient);
+        ApiClient::resetForTesting();
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL . '/',
+            'httpClient' => $httpClient
+        ]);
+        MetadataProvider::getInstance();
         $this->assertSame(self::API_URL . '/calendars', MetadataProvider::getMetadataUrl());
         $this->assertStringNotContainsString('//calendars', MetadataProvider::getMetadataUrl());
     }
@@ -326,8 +429,14 @@ class MetadataProviderTest extends TestCase
     public function testApiUrlTrailingSlashNormalization()
     {
         $httpClient = $this->createMockHttpClient();
-        $provider   = MetadataProvider::getInstance(self::API_URL . '/', $httpClient);
 
+        // Initialize ApiClient with trailing slash
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL . '/',
+            'httpClient' => $httpClient
+        ]);
+
+        $provider = MetadataProvider::getInstance();
         $provider->getMetadata();
         // Should strip trailing slash and cache under normalized URL
         $this->assertTrue(MetadataProvider::isCached());
@@ -336,7 +445,14 @@ class MetadataProviderTest extends TestCase
     public function testIsValidDioceseForNationReturnsTrueForValidDiocese()
     {
         $httpClient = $this->createMockHttpClient();
-        MetadataProvider::getInstance(self::API_URL, $httpClient);
+
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        MetadataProvider::getInstance();
 
         $this->assertTrue(
             MetadataProvider::isValidDioceseForNation('boston_us', 'US'),
@@ -351,7 +467,14 @@ class MetadataProviderTest extends TestCase
     public function testIsValidDioceseForNationReturnsFalseForInvalidDiocese()
     {
         $httpClient = $this->createMockHttpClient();
-        MetadataProvider::getInstance(self::API_URL, $httpClient);
+
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        MetadataProvider::getInstance();
 
         $this->assertFalse(
             MetadataProvider::isValidDioceseForNation('invalid_diocese', 'US'),
@@ -362,7 +485,14 @@ class MetadataProviderTest extends TestCase
     public function testIsValidDioceseForNationReturnsFalseForInvalidNation()
     {
         $httpClient = $this->createMockHttpClient();
-        MetadataProvider::getInstance(self::API_URL, $httpClient);
+
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        MetadataProvider::getInstance();
 
         $this->assertFalse(
             MetadataProvider::isValidDioceseForNation('boston_us', 'INVALID'),
@@ -373,7 +503,14 @@ class MetadataProviderTest extends TestCase
     public function testIsValidDioceseForNationReturnsFalseForNationWithoutDioceses()
     {
         $httpClient = $this->createMockHttpClient();
-        MetadataProvider::getInstance(self::API_URL, $httpClient);
+
+        // Initialize ApiClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        MetadataProvider::getInstance();
 
         $this->assertFalse(
             MetadataProvider::isValidDioceseForNation('some_diocese', 'VA'),
@@ -404,12 +541,17 @@ class MetadataProviderTest extends TestCase
             return true; // Suppress the warning
         }, E_USER_WARNING);
 
-        MetadataProvider::getInstance(self::API_URL, $httpClient, $cache);
+        // This warning now comes from ApiClient, not MetadataProvider
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient,
+            'cache'      => $cache
+        ]);
 
         restore_error_handler();
 
         $this->assertTrue($warningIssued, 'Expected warning was not issued');
-        $this->assertStringContainsString('double-wrapping', $warningMessage);
+        $this->assertStringContainsString('cache/logger configuration will be ignored', $warningMessage);
     }
 
     public function testWarnsAboutDoubleWrappingWhenBothClientAndLoggerProvided()
@@ -426,12 +568,17 @@ class MetadataProviderTest extends TestCase
             return true; // Suppress the warning
         }, E_USER_WARNING);
 
-        MetadataProvider::getInstance(self::API_URL, $httpClient, null, $logger);
+        // This warning now comes from ApiClient, not MetadataProvider
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient,
+            'logger'     => $logger
+        ]);
 
         restore_error_handler();
 
         $this->assertTrue($warningIssued, 'Expected warning was not issued');
-        $this->assertStringContainsString('double-wrapping', $warningMessage);
+        $this->assertStringContainsString('cache/logger configuration will be ignored', $warningMessage);
     }
 
     public function testWarnsAboutDoubleWrappingWhenClientAndBothCacheAndLoggerProvided()
@@ -449,11 +596,199 @@ class MetadataProviderTest extends TestCase
             return true; // Suppress the warning
         }, E_USER_WARNING);
 
-        MetadataProvider::getInstance(self::API_URL, $httpClient, $cache, $logger);
+        // This warning now comes from ApiClient, not MetadataProvider
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient,
+            'cache'      => $cache,
+            'logger'     => $logger
+        ]);
 
         restore_error_handler();
 
         $this->assertTrue($warningIssued, 'Expected warning was not issued');
-        $this->assertStringContainsString('double-wrapping', $warningMessage);
+        $this->assertStringContainsString('cache/logger configuration will be ignored', $warningMessage);
+    }
+
+    /**
+     * @group apiclient
+     */
+    public function testUsesApiClientConfigurationWhenNoParametersProvided()
+    {
+        $httpClient = $this->createMockHttpClient();
+        $cache      = new ArrayCache();
+        $logger     = $this->createMock(LoggerInterface::class);
+
+        // Suppress double-wrapping warning for this test (intentional test scenario)
+        set_error_handler(function () {
+            return true;
+        }, E_USER_WARNING);
+
+        // Initialize ApiClient first
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient,
+            'cache'      => $cache,
+            'logger'     => $logger,
+            'cacheTtl'   => 3600
+        ]);
+
+        restore_error_handler();
+
+        // Create MetadataProvider without parameters - should use ApiClient config
+        $provider = MetadataProvider::getInstance();
+
+        $this->assertInstanceOf(MetadataProvider::class, $provider);
+        $this->assertEquals(self::API_URL, MetadataProvider::getApiUrl());
+    }
+
+    /**
+     * @group apiclient
+     */
+    public function testSubsequentApiClientCallsIgnored()
+    {
+        $httpClient1 = $this->createMockHttpClient();
+        $httpClient2 = $this->createMockHttpClient();
+
+        // Initialize ApiClient with first configuration
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient1
+        ]);
+
+        // Create MetadataProvider - uses first ApiClient config
+        MetadataProvider::getInstance();
+
+        // Try to reconfigure ApiClient (should be ignored)
+        ApiClient::getInstance([
+            'apiUrl'     => 'https://different-url.com',
+            'httpClient' => $httpClient2
+        ]);
+
+        // Verify original configuration is preserved
+        $this->assertEquals(self::API_URL, MetadataProvider::getApiUrl());
+        $this->assertSame($httpClient1, ApiClient::getHttpClient());
+    }
+
+    /**
+     * @group apiclient
+     */
+    public function testUsesDefaultsWhenNeitherApiClientNorParametersProvided()
+    {
+        // Don't initialize ApiClient
+        // Create MetadataProvider without parameters
+        $provider = MetadataProvider::getInstance();
+
+        $this->assertInstanceOf(MetadataProvider::class, $provider);
+        $this->assertEquals(self::API_URL, MetadataProvider::getApiUrl());
+    }
+
+    /**
+     * @group apiclient
+     */
+    public function testApiClientCacheTtlConfigurationIsAccessible()
+    {
+        $httpClient = $this->createMockHttpClient();
+        $cache      = new ArrayCache();
+        $customTtl  = 7200;
+
+        // Suppress double-wrapping warning for this test (intentional test scenario)
+        set_error_handler(function () {
+            return true;
+        }, E_USER_WARNING);
+
+        // Initialize ApiClient with custom TTL
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient,
+            'cache'      => $cache,
+            'cacheTtl'   => $customTtl
+        ]);
+
+        restore_error_handler();
+
+        // Create MetadataProvider - ApiClient TTL should be available
+        MetadataProvider::getInstance();
+
+        // Verify ApiClient's TTL configuration is preserved and accessible
+        // Note: This doesn't verify MetadataProvider actually uses it internally,
+        // only that the ApiClient configuration is intact
+        $this->assertEquals($customTtl, ApiClient::getCacheTtl());
+    }
+
+    /**
+     * @group apiclient
+     */
+    public function testMetadataProviderAutoInitializesApiClient()
+    {
+        // Ensure ApiClient is NOT initialized
+        $this->assertFalse(ApiClient::isInitialized());
+
+        // Create MetadataProvider without initializing ApiClient first
+        // Should auto-initialize ApiClient with defaults
+        $provider = MetadataProvider::getInstance();
+
+        // Verify ApiClient was auto-initialized
+        $this->assertTrue(ApiClient::isInitialized());
+        $this->assertInstanceOf(MetadataProvider::class, $provider);
+    }
+
+    /**
+     * @group apiclient
+     */
+    public function testApiClientApiUrlIsUsedWhenProvided()
+    {
+        $customApiUrl = 'https://api-client-url.example.com';
+        $httpClient   = $this->createMockHttpClient();
+
+        // Initialize ApiClient with custom URL
+        ApiClient::getInstance([
+            'apiUrl'     => $customApiUrl,
+            'httpClient' => $httpClient
+        ]);
+
+        // Create MetadataProvider without apiUrl parameter
+        MetadataProvider::getInstance();
+
+        // Verify ApiClient URL is used
+        $this->assertEquals($customApiUrl, MetadataProvider::getApiUrl());
+    }
+
+    /**
+     * @group apiclient
+     */
+    public function testNoWarningWhenBothHttpClientAndCacheFromApiClient()
+    {
+        $httpClient    = $this->createMockHttpClient();
+        $cache         = new ArrayCache();
+        $warningIssued = false;
+
+        // Set up error handler to suppress any ApiClient warnings
+        set_error_handler(function (int $_errno, string $_errstr): bool {
+            return true; // Suppress ApiClient warnings
+        }, E_USER_WARNING);
+
+        // Initialize ApiClient with BOTH httpClient AND cache
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient,
+            'cache'      => $cache
+        ]);
+
+        restore_error_handler();
+
+        // Set up error handler to catch MetadataProvider warnings
+        set_error_handler(function (int $_errno, string $_errstr) use (&$warningIssued): bool {
+            $warningIssued = true;
+            return true;
+        }, E_USER_WARNING);
+
+        // Create MetadataProvider without parameters - both come from ApiClient
+        // This should NOT trigger warning (recommended pattern)
+        MetadataProvider::getInstance();
+
+        restore_error_handler();
+
+        $this->assertFalse($warningIssued, 'Warning should NOT be issued when both httpClient and cache come from ApiClient');
     }
 }

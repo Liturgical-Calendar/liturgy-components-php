@@ -2,7 +2,8 @@
 
 ## Executive Summary
 
-This document outlines the strategy for implementing PSR-compliant HTTP client functionality in the liturgy-components-php library, replacing current `file_get_contents()` usage with PSR-7, PSR-17, and PSR-18 standards.
+This document outlines the strategy for implementing PSR-compliant HTTP client functionality in the liturgy-components-php library,
+replacing current `file_get_contents()` usage with PSR-7, PSR-17, and PSR-18 standards.
 
 ## Current State Analysis
 
@@ -13,7 +14,7 @@ This document outlines the strategy for implementing PSR-compliant HTTP client f
    - Single GET request to metadata URL
    - Error handling: throws exception on failure
 
-2. **src/ApiOptions/Input/Locale.php** (line 126)
+1. **src/ApiOptions/Input/Locale.php** (line 126)
    - Fetches locale information from API
    - Single GET request to `/calendars` endpoint
    - Error handling: throws exception on failure
@@ -32,27 +33,33 @@ This document outlines the strategy for implementing PSR-compliant HTTP client f
 ## PSR Standards Overview
 
 ### PSR-7: HTTP Message Interfaces
+
 Defines interfaces for HTTP messages (requests/responses), URIs, and streams.
 
 **Key Interfaces:**
+
 - `RequestInterface` - HTTP request
 - `ResponseInterface` - HTTP response
 - `UriInterface` - URI/URL representation
 - `StreamInterface` - Message body stream
 
 ### PSR-17: HTTP Factories
+
 Defines factory interfaces for creating PSR-7 objects.
 
 **Key Interfaces:**
+
 - `RequestFactoryInterface` - Creates PSR-7 requests
 - `ResponseFactoryInterface` - Creates PSR-7 responses
 - `StreamFactoryInterface` - Creates PSR-7 streams
 - `UriFactoryInterface` - Creates PSR-7 URIs
 
 ### PSR-18: HTTP Client
+
 Defines interface for sending PSR-7 requests and returning PSR-7 responses.
 
 **Key Interface:**
+
 - `ClientInterface::sendRequest(RequestInterface): ResponseInterface`
 
 ---
@@ -77,6 +84,7 @@ This section provides a comprehensive view of all PSR standards we'll implement:
 ### 1. PSR-7 & PSR-17 Implementation: `nyholm/psr7`
 
 **Why Nyholm PSR-7:**
+
 - ✅ User preference
 - ✅ Lightweight (no dependencies)
 - ✅ Implements both PSR-7 and PSR-17
@@ -86,19 +94,20 @@ This section provides a comprehensive view of all PSR standards we'll implement:
 - ✅ Performance-optimized
 
 **Installation:**
+
 ```bash
 composer require nyholm/psr7
-```
-
+```text
 ### 2. PSR-18 HTTP Client: **Decision Required**
 
 #### Option A: Guzzle 7+ (Recommended)
+
 ```bash
 composer require guzzlehttp/guzzle:^7.0
 composer require guzzlehttp/psr7  # For Guzzle's PSR-7 implementation
-```
-
+```text
 **Pros:**
+
 - Industry standard, most popular PHP HTTP client
 - Feature-rich (middleware, async, streaming, etc.)
 - Excellent documentation and community support
@@ -107,16 +116,18 @@ composer require guzzlehttp/psr7  # For Guzzle's PSR-7 implementation
 - Works seamlessly with Nyholm PSR-7
 
 **Cons:**
+
 - Larger dependency footprint
 - More features than needed for simple GET requests
 
 #### Option B: Symfony HTTP Client
+
 ```bash
 composer require symfony/http-client
 composer require nyholm/psr7  # Already included above
-```
-
+```text
 **Pros:**
+
 - Part of Symfony ecosystem
 - PSR-18 compliant
 - Native async support
@@ -124,44 +135,50 @@ composer require nyholm/psr7  # Already included above
 - Scoped clients for configuration isolation
 
 **Cons:**
+
 - Symfony dependency (though standalone package)
 - Less popular than Guzzle
 
 #### Option C: php-http/curl-client (HTTPlug)
+
 ```bash
 composer require php-http/curl-client
 composer require nyholm/psr7
-```
-
+```text
 **Pros:**
+
 - Lightweight, minimal dependencies
 - Uses cURL extension (widely available)
 - Part of HTTPlug ecosystem
 - Good for simple use cases
 
 **Cons:**
+
 - Requires cURL extension
 - Less feature-rich than Guzzle
 - HTTPlug 2 is primarily an abstraction layer
 
 #### Option D: PHP-HTTP Discovery + Adapter Pattern
+
 ```bash
 composer require php-http/discovery
 composer require psr/http-client-implementation  # Virtual package
-```
-
+```text
 **Pros:**
+
 - Client-agnostic approach
 - Auto-discovers available HTTP client
 - Maximum flexibility for library users
 
 **Cons:**
+
 - Requires users to install their own HTTP client
 - More complex setup
 
 ### Recommendation: **Guzzle 7+ (Option A)**
 
 **Rationale:**
+
 - Most battle-tested and reliable
 - Best error handling out of the box
 - Middleware ecosystem for future extensibility (caching, logging, retry)
@@ -173,11 +190,12 @@ composer require psr/http-client-implementation  # Virtual package
 ### 3. PSR-3 Logging Implementation: **Decision Required**
 
 #### Option A: Monolog (Recommended)
+
 ```bash
 composer require monolog/monolog:^3.0
-```
-
+```text
 **Pros:**
+
 - Industry standard for PHP logging
 - PSR-3 compliant
 - Multiple handlers (file, syslog, email, Slack, etc.)
@@ -187,10 +205,12 @@ composer require monolog/monolog:^3.0
 - PHPStan level 10 compatible
 
 **Cons:**
+
 - Larger dependency footprint
 - More features than needed for basic logging
 
 **Configuration Example:**
+
 ```php
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -201,56 +221,62 @@ $logger = new Logger('liturgical-calendar');
 $logger->pushHandler(new StreamHandler('php://stderr', Logger::WARNING));
 $logger->pushHandler(new RotatingFileHandler('/var/log/litcal/app.log', 7, Logger::DEBUG));
 $logger->pushProcessor(new IntrospectionProcessor());
-```
-
+```text
 #### Option B: Symfony Logger
+
 ```bash
 composer require symfony/monolog-bundle  # Or standalone
-```
-
+```text
 **Pros:**
+
 - Part of Symfony ecosystem
 - PSR-3 compliant
 - Good integration with Symfony components
 - Flexible configuration
 
 **Cons:**
+
 - Symfony dependency
 - More complex setup outside Symfony apps
 
 #### Option C: No Logging (PSR-3 Interface Only)
+
 ```bash
 composer require psr/log:^3.0
-```
-
+```text
 **Pros:**
+
 - Minimal dependency
 - Users can inject their own logger
 - Library stays lightweight
 
 **Cons:**
+
 - No out-of-the-box logging
 - Requires users to provide implementation
 
 #### Option D: PSR-3 NullLogger (Development Placeholder)
+
 ```php
 use Psr\Log\NullLogger;
 
 // Default fallback
 $logger = $logger ?? new NullLogger();
-```
-
+```text
 **Pros:**
+
 - Built into PSR-3 package
 - No-op implementation (silent)
 - Safe default when no logger configured
 
 **Cons:**
+
 - No actual logging happens
 
 ### Recommendation: **Monolog (Option A)** + **NullLogger Fallback**
 
 **Rationale:**
+
 - Monolog as suggested dependency in composer.json
 - NullLogger as default when not installed
 - Maximum flexibility for library users
@@ -262,11 +288,12 @@ $logger = $logger ?? new NullLogger();
 ### 4. PSR-6/PSR-16 Caching Implementation: **Decision Required**
 
 #### Option A: Symfony Cache (Recommended)
+
 ```bash
 composer require symfony/cache:^6.0 || ^7.0
-```
-
+```text
 **Pros:**
+
 - Implements both PSR-6 (CacheItemPoolInterface) and PSR-16 (CacheInterface)
 - Multiple adapters: APCu, Redis, Memcached, Filesystem, PDO, etc.
 - Chain adapter for multi-level caching
@@ -276,10 +303,12 @@ composer require symfony/cache:^6.0 || ^7.0
 - Well-documented
 
 **Cons:**
+
 - Symfony dependency
 - Larger package
 
 **Supported Backends:**
+
 - **APCu**: In-memory, PHP process level, very fast
 - **Redis**: Distributed, persistent, recommended for production
 - **Filesystem**: File-based, no extensions required, good for dev
@@ -287,6 +316,7 @@ composer require symfony/cache:^6.0 || ^7.0
 - **ChainAdapter**: Fallback chain (e.g., APCu → Redis → Filesystem)
 
 **Configuration Example:**
+
 ```php
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
@@ -303,33 +333,35 @@ $cache = new ChainAdapter([
     new RedisAdapter($redis, 'litcal', 7200),
     new FilesystemAdapter('litcal', 86400)
 ]);
-```
-
+```text
 #### Option B: PSR-6/PSR-16 Simple Implementations
 
 **For PSR-6:**
+
 ```bash
 composer require cache/filesystem-adapter
 composer require cache/redis-adapter
 composer require cache/apcu-adapter
-```
-
+```text
 **For PSR-16:**
+
 ```bash
 composer require symfony/cache  # Includes PSR-16 SimpleCache
-```
-
+```text
 **Pros:**
+
 - Lightweight, focused packages
 - PSR-6 compliant
 - Multiple backend options
 
 **Cons:**
+
 - Less feature-rich than Symfony Cache
 - Requires separate packages per adapter
 - May have different APIs across adapters
 
 #### Option C: Custom In-Memory Cache (Minimal)
+
 ```php
 namespace LiturgicalCalendar\Components\Cache;
 
@@ -352,36 +384,40 @@ class ArrayCache implements CacheInterface
 
     // ... implement other PSR-16 methods
 }
-```
-
+```text
 **Pros:**
+
 - No dependencies
 - Simple implementation
 - Good for testing
 
 **Cons:**
+
 - Request-scoped only (no persistence)
 - No advanced features
 - Not suitable for production caching
 
 #### Option D: No Caching (Interface Only)
+
 ```bash
 composer require psr/simple-cache:^3.0
 composer require psr/cache:^3.0
-```
-
+```text
 **Pros:**
+
 - Minimal dependencies
 - Users provide their own cache implementation
 - Library stays lightweight
 
 **Cons:**
+
 - No out-of-the-box caching
 - Requires user configuration
 
 ### Recommendation: **Symfony Cache (Option A)** + **Array Cache Fallback**
 
 **Rationale:**
+
 - Symfony Cache as suggested dependency
 - Implements both PSR-6 and PSR-16
 - Multiple production-ready adapters
@@ -442,8 +478,7 @@ interface HttpClientInterface
      */
     public function post(string $url, array|string $body, array $headers = []): ResponseInterface;
 }
-```
-
+```text
 #### 1.2 Create PSR-18 Implementation
 
 **Location:** `src/Http/PsrHttpClient.php`
@@ -507,8 +542,7 @@ class PsrHttpClient implements HttpClientInterface
         }
     }
 }
-```
-
+```text
 #### 1.3 Create Custom Exception
 
 **Location:** `src/Http/HttpException.php`
@@ -520,8 +554,7 @@ namespace LiturgicalCalendar\Components\Http;
 class HttpException extends \Exception
 {
 }
-```
-
+```text
 #### 1.4 Create Legacy Adapter (Backward Compatibility)
 
 **Location:** `src/Http/FileGetContentsClient.php`
@@ -625,8 +658,7 @@ class FileGetContentsClient implements HttpClientInterface
         return $parsed;
     }
 }
-```
-
+```text
 ### Phase 2: Dependency Injection Setup (Week 1)
 
 #### 2.1 Create HTTP Client Factory
@@ -706,22 +738,22 @@ class HttpClientFactory
         return new PsrHttpClient($guzzle, $psr17Factory, $psr17Factory);
     }
 }
-```
-
+```text
 ### Phase 3: Refactor Existing Code (Week 2)
 
 #### 3.1 Update CalendarSelect.php
 
 **Before:**
+
 ```php
 $metadataRaw = file_get_contents($url);
 if ($metadataRaw === false) {
     throw new \Exception("Error fetching metadata from {$this->metadataUrl}");
 }
 $metadataJSON = json_decode($metadataRaw, true);
-```
-
+```text
 **After:**
+
 ```php
 $response = $this->httpClient->get($url);
 
@@ -734,9 +766,9 @@ if ($response->getStatusCode() !== 200) {
 
 $metadataRaw = $response->getBody()->getContents();
 $metadataJSON = json_decode($metadataRaw, true);
-```
-
+```text
 **Constructor changes:**
+
 ```php
 public function __construct(
     ?array $options = null,
@@ -745,8 +777,7 @@ public function __construct(
     $this->httpClient = $httpClient ?? HttpClientFactory::create();
     // ... existing constructor code
 }
-```
-
+```text
 #### 3.2 Update ApiOptions/Input/Locale.php
 
 Similar refactoring pattern as CalendarSelect.php
@@ -805,8 +836,7 @@ class CalendarSelectTest extends TestCase
         // ... test assertions
     }
 }
-```
-
+```text
 ---
 
 ### Phase 5: Logging Integration (Week 3)
@@ -836,8 +866,7 @@ trait LoggerAwareTrait
         return $this->logger ?? new NullLogger();
     }
 }
-```
-
+```text
 #### 5.2 Logging HTTP Client Decorator
 
 **Location:** `src/Http/LoggingHttpClient.php`
@@ -929,8 +958,7 @@ class LoggingHttpClient implements HttpClientInterface
         }
     }
 }
-```
-
+```text
 #### 5.3 Update HttpClientFactory with Logging
 
 **Location:** `src/Http/HttpClientFactory.php` (enhancement)
@@ -944,8 +972,7 @@ public static function createWithLogging(
 
     return new LoggingHttpClient($baseClient, $logger);
 }
-```
-
+```text
 #### 5.4 Update CalendarSelect with Logger Support
 
 **Location:** `src/CalendarSelect.php` (enhancement)
@@ -973,22 +1000,24 @@ class CalendarSelect
         // ... existing constructor code
     }
 }
-```
-
+```text
 #### 5.5 Logging Events to Track
 
 **HTTP Operations:**
+
 - Request initiated (URL, method, headers)
 - Response received (status code, duration, size)
 - Request failed (error, duration, exception type)
 
 **Business Logic:**
+
 - Metadata fetched successfully
 - Cache hit/miss
 - Locale validation
 - Configuration changes
 
 **Errors:**
+
 - Network failures
 - Invalid JSON responses
 - Configuration errors
@@ -1010,9 +1039,10 @@ The library uses `Psr\SimpleCache\CacheInterface` directly rather than creating 
 - **Keeps domain logic in decorators**: HTTP caching logic lives in `CachingHttpClient`, not in cache implementations
 
 The caching strategy is implemented through:
+
 1. **PSR-16 implementations**: ArrayCache (in-memory), or consumer-provided implementations
-2. **HTTP client decorator**: `CachingHttpClient` handles domain-specific caching logic
-3. **Factory methods**: `HttpClientFactory::createWithCaching()` for convenient setup
+1. **HTTP client decorator**: `CachingHttpClient` handles domain-specific caching logic
+1. **Factory methods**: `HttpClientFactory::createWithCaching()` for convenient setup
 
 #### 6.2 Caching HTTP Client Decorator
 
@@ -1140,8 +1170,7 @@ class CachingHttpClient implements HttpClientInterface
         ]);
     }
 }
-```
-
+```text
 #### 6.3 In-Memory Array Cache Implementation
 
 **Location:** `src/Cache/ArrayCache.php`
@@ -1234,8 +1263,7 @@ class ArrayCache implements CacheInterface
         return $this->get($key) !== null;
     }
 }
-```
-
+```text
 #### 6.4 Update HttpClientFactory with Caching Support
 
 **Location:** `src/Http/HttpClientFactory.php` (enhancement)
@@ -1254,8 +1282,7 @@ public static function createWithCaching(
     $cachedClient = new CachingHttpClient($baseClient, $cache, $ttl, $logger);
     return new LoggingHttpClient($cachedClient, $logger);
 }
-```
-
+```text
 #### 6.5 Update CalendarSelect with Cache Support
 
 **Location:** `src/CalendarSelect.php` (enhancement)
@@ -1287,22 +1314,24 @@ class CalendarSelect
         // ... existing constructor code
     }
 }
-```
-
+```text
 #### 6.6 Cache Strategy Configuration
 
 **Recommended Cache TTLs:**
+
 - Calendar metadata: **1 hour** (changes infrequently)
 - Locale information: **24 hours** (very stable)
 - API responses: **5-15 minutes** (balances freshness vs. performance)
 
 **Cache Invalidation Triggers:**
+
 - Manual cache clear via admin interface
 - Metadata URL change
 - Time-based expiration
 - On deployment/version update
 
 **Multi-Level Caching Example:**
+
 ```php
 use Symfony\Component\Cache\Adapter\ChainAdapter;
 use Symfony\Component\Cache\Adapter\ApcuAdapter;
@@ -1319,8 +1348,7 @@ $cache = new Psr16Cache(
 
 $httpClient = HttpClientFactory::createWithCaching($cache, 3600);
 $calendar = new CalendarSelect(null, $httpClient);
-```
-
+```text
 ---
 
 ### Phase 7: Middleware & Polish (Week 4)
@@ -1404,13 +1432,13 @@ class CircuitBreakerHttpClient implements HttpClientInterface
         }
     }
 }
-```
-
+```text
 ---
 
 ## Migration Timeline
 
 ### Week 1: HTTP Client Foundation
+
 - [x] Add PSR dependencies to composer.json (PSR-7, PSR-17, PSR-18)
 - [x] Create HTTP abstraction layer (interfaces and implementations)
 - [x] Create PSR-18 client implementation with Guzzle + Nyholm PSR-7
@@ -1419,6 +1447,7 @@ class CircuitBreakerHttpClient implements HttpClientInterface
 - [x] Update README with PSR-18 benefits and configuration
 
 ### Week 2: Integration & Testing
+
 - [x] Refactor CalendarSelect to use HTTP client
 - [x] Refactor ApiOptions/Input/Locale to use HTTP client
 - [x] Add comprehensive unit tests for HTTP clients
@@ -1427,6 +1456,7 @@ class CircuitBreakerHttpClient implements HttpClientInterface
 - [x] Update documentation (README.md + UPGRADE.md)
 
 ### Week 3: Logging & Caching
+
 - [x] Add PSR-3 (logging) dependencies
 - [x] Implement LoggingHttpClient decorator
 - [x] Add PSR-6/PSR-16 (caching) dependencies
@@ -1442,6 +1472,7 @@ class CircuitBreakerHttpClient implements HttpClientInterface
 - [ ] Integration tests for caching (optional)
 
 ### Week 4: Advanced Features & Polish
+
 - [x] Implement RetryHttpClient middleware
 - [x] Implement CircuitBreakerHttpClient
 - [x] Update HttpClientFactory with retry and circuit breaker support
@@ -1460,6 +1491,7 @@ class CircuitBreakerHttpClient implements HttpClientInterface
 ### composer.json Updates
 
 **Option 1: Soft Dependencies (Recommended)**
+
 ```json
 {
     "require": {
@@ -1481,15 +1513,16 @@ class CircuitBreakerHttpClient implements HttpClientInterface
         "php-http/discovery": "^1.0 - Automatic PSR implementation discovery"
     }
 }
-```
-
+```text
 **Benefits:**
+
 - Library remains lightweight
 - Users can choose their own PSR implementations
 - Falls back to file_get_contents if PSR packages not installed
 - No breaking changes for existing users
 
 **Option 2: Hard Dependencies**
+
 ```json
 {
     "require": {
@@ -1503,9 +1536,9 @@ class CircuitBreakerHttpClient implements HttpClientInterface
         "symfony/cache": "^6.0 || ^7.0"
     }
 }
-```
-
+```text
 **Benefits:**
+
 - Guaranteed PSR compliance out of the box
 - Professional error handling and logging included
 - HTTP response caching available immediately
@@ -1519,32 +1552,38 @@ class CircuitBreakerHttpClient implements HttpClientInterface
 ## Benefits of PSR Implementation
 
 ### 1. **Testability**
+
 - Mock HTTP clients easily in unit tests
 - No need for complex stream wrappers or VCR libraries
 - Predictable, isolated test environments
 
 ### 2. **Flexibility**
+
 - Users can inject their own HTTP clients
 - Easy to add middleware (caching, logging, rate limiting)
 - Swap implementations without code changes
 
 ### 3. **Reliability**
+
 - Professional error handling
 - Timeout configuration
 - Retry logic support
 - Better exception handling
 
 ### 4. **Performance**
+
 - Connection pooling (with Guzzle)
 - Async requests (future enhancement)
 - HTTP/2 support (client-dependent)
 
 ### 5. **Standards Compliance**
+
 - Industry-standard interfaces
 - Interoperability with other PSR-compliant libraries
 - Future-proof architecture
 
 ### 6. **Advanced Features (Future)**
+
 - Response caching middleware
 - Request logging middleware
 - Authentication middleware
@@ -1558,25 +1597,25 @@ class CircuitBreakerHttpClient implements HttpClientInterface
 ### For Library Users
 
 #### Existing Code (No Changes Required)
+
 ```php
 $calendar = new CalendarSelect();
 // Works exactly as before with file_get_contents fallback
-```
-
+```text
 #### With PSR Client (Optional)
+
 ```php
 $httpClient = HttpClientFactory::createWithGuzzle();
 $calendar = new CalendarSelect(null, $httpClient);
 // Uses PSR-18 HTTP client
-```
-
+```text
 #### Custom Client Injection
+
 ```php
 $myCustomClient = new MyCustomPsrClient();
 $calendar = new CalendarSelect(null, $myCustomClient);
 // Maximum flexibility
-```
-
+```text
 ### Breaking Changes: **NONE**
 
 All changes are additive. Existing code continues to work unchanged.
@@ -1586,16 +1625,19 @@ All changes are additive. Existing code continues to work unchanged.
 ## Documentation Updates Required
 
 ### 1. README.md
+
 - Add PSR-18 section explaining benefits
 - Installation instructions for recommended packages
 - Example configurations
 
 ### 2. UPGRADE.md (New File)
+
 - Migration guide for users wanting PSR benefits
 - Code examples showing before/after
 - Performance comparison
 
 ### 3. API Documentation
+
 - Document HttpClientInterface
 - Document factory methods
 - Middleware examples
@@ -1607,6 +1649,7 @@ All changes are additive. Existing code continues to work unchanged.
 ### Phase 4: Middleware Support (Future)
 
 #### Caching Middleware
+
 ```php
 use Psr\Cache\CacheItemPoolInterface;
 
@@ -1636,9 +1679,9 @@ class CachingHttpClient implements HttpClientInterface
         return $response;
     }
 }
-```
-
+```text
 #### Retry Middleware
+
 ```php
 class RetryHttpClient implements HttpClientInterface
 {
@@ -1665,8 +1708,7 @@ class RetryHttpClient implements HttpClientInterface
         }
     }
 }
-```
-
+```text
 ### Phase 5: Async Support (Future)
 
 For future async calendar data fetching when multiple API calls needed.
@@ -1676,15 +1718,19 @@ For future async calendar data fetching when multiple API calls needed.
 ## Security Considerations
 
 ### 1. SSL/TLS Verification
+
 Ensure HTTP clients verify SSL certificates by default
 
 ### 2. Timeout Configuration
+
 Prevent indefinite hangs with reasonable timeouts
 
 ### 3. URL Validation
+
 Validate URLs before making requests
 
 ### 4. Response Size Limits
+
 Prevent memory exhaustion from large responses
 
 ---
@@ -1692,12 +1738,14 @@ Prevent memory exhaustion from large responses
 ## Performance Benchmarks (To Be Measured)
 
 ### Metrics to Track
+
 - Request latency comparison
 - Memory usage comparison
 - Connection pooling benefits
 - Cache hit rates (with middleware)
 
 ### Expected Results
+
 - Similar or better performance with Guzzle
 - Memory usage increase minimal (~1-2MB)
 - Significant gains with connection pooling and caching
@@ -1721,24 +1769,26 @@ This comprehensive implementation plan provides a clear path to full PSR complia
 ### Key Benefits of This Approach
 
 1. **Backward Compatibility**: Zero breaking changes for existing users
-2. **Flexibility**: Users can inject their own implementations
-3. **Professional Features**: Logging, caching, retry, circuit breaker
-4. **Testability**: Easy mocking and unit testing
-5. **Standards Compliance**: Industry-standard PSR interfaces
-6. **Performance**: HTTP response caching, connection pooling
-7. **Observability**: Structured logging for debugging and monitoring
-8. **Reliability**: Better error handling, retry logic, circuit breaker pattern
+1. **Flexibility**: Users can inject their own implementations
+1. **Professional Features**: Logging, caching, retry, circuit breaker
+1. **Testability**: Easy mocking and unit testing
+1. **Standards Compliance**: Industry-standard PSR interfaces
+1. **Performance**: HTTP response caching, connection pooling
+1. **Observability**: Structured logging for debugging and monitoring
+1. **Reliability**: Better error handling, retry logic, circuit breaker pattern
 
 ### Architecture Highlights
 
 **Decorator Pattern Benefits:**
+
 - Composable HTTP client functionality
 - Clean separation of concerns
 - Easy to add/remove features
 - Testable in isolation
 
 **Middleware Stack Example:**
-```
+
+```text
 User Code
     ↓
 LoggingHttpClient (logs requests/responses)
@@ -1752,25 +1802,24 @@ CircuitBreakerHttpClient (prevents cascading failures)
 PsrHttpClient (PSR-18 implementation)
     ↓
 Guzzle (actual HTTP requests)
-```
-
+```text
 ### Next Steps
 
 1. **Review and Approve** this comprehensive game plan
-2. **Decide on Dependency Strategy**:
+1. **Decide on Dependency Strategy**:
    - Option 1 (Soft Dependencies) - Recommended for backward compatibility
    - Option 2 (Hard Dependencies) - For guaranteed PSR compliance
-3. **Create Feature Branch**: `feature/psr-compliance`
-4. **Phase 1 (Week 1)**: HTTP Client abstraction and implementation
-5. **Phase 2 (Week 1)**: Dependency injection and factory setup
-6. **Phase 3 (Week 2)**: Refactor existing code to use HTTP client
-7. **Phase 4 (Week 2)**: Comprehensive testing and PHPStan validation
-8. **Phase 5 (Week 3)**: Logging integration with PSR-3
-9. **Phase 6 (Week 3-4)**: Caching integration with PSR-6/PSR-16
-10. **Phase 7 (Week 4)**: Advanced middleware and polish
-11. **Documentation**: Update README, create UPGRADE.md, API docs
-12. **Benchmarking**: Performance comparison before/after
-13. **Release**: New minor version (e.g., v1.2.0 - no breaking changes)
+1. **Create Feature Branch**: `feature/psr-compliance`
+1. **Phase 1 (Week 1)**: HTTP Client abstraction and implementation
+1. **Phase 2 (Week 1)**: Dependency injection and factory setup
+1. **Phase 3 (Week 2)**: Refactor existing code to use HTTP client
+1. **Phase 4 (Week 2)**: Comprehensive testing and PHPStan validation
+1. **Phase 5 (Week 3)**: Logging integration with PSR-3
+1. **Phase 6 (Week 3-4)**: Caching integration with PSR-6/PSR-16
+1. **Phase 7 (Week 4)**: Advanced middleware and polish
+1. **Documentation**: Update README, create UPGRADE.md, API docs
+1. **Benchmarking**: Performance comparison before/after
+1. **Release**: New minor version (e.g., v1.2.0 - no breaking changes)
 
 ### Success Metrics
 
@@ -1787,6 +1836,7 @@ Guzzle (actual HTTP requests)
 ## Additional Resources
 
 ### PSR Specifications
+
 - [PSR-7: HTTP Message Interfaces](https://www.php-fig.org/psr/psr-7/)
 - [PSR-17: HTTP Factories](https://www.php-fig.org/psr/psr-17/)
 - [PSR-18: HTTP Client](https://www.php-fig.org/psr/psr-18/)
@@ -1795,6 +1845,7 @@ Guzzle (actual HTTP requests)
 - [PSR-16: Simple Cache](https://www.php-fig.org/psr/psr-16/)
 
 ### Library Documentation
+
 - [Guzzle Documentation](https://docs.guzzlephp.org/)
 - [Nyholm PSR-7 Documentation](https://github.com/Nyholm/psr7)
 - [Monolog Documentation](https://github.com/Seldaek/monolog)
@@ -1802,6 +1853,7 @@ Guzzle (actual HTTP requests)
 - [HTTPlug Documentation](https://docs.php-http.org/)
 
 ### Design Patterns
+
 - [Decorator Pattern](https://refactoring.guru/design-patterns/decorator)
 - [Circuit Breaker Pattern](https://martinfowler.com/bliki/CircuitBreaker.html)
 - [Retry Pattern](https://docs.microsoft.com/en-us/azure/architecture/patterns/retry)
@@ -1822,6 +1874,7 @@ Guzzle (actual HTTP requests)
 **Status**: Phase 1 fully implemented and tested
 
 **Completed Items**:
+
 - ✅ Added PSR interface dependencies to composer.json (psr/http-client, psr/http-factory, psr/http-message, psr/log, psr/simple-cache)
 - ✅ Added `nyholm/psr7` ^1.0 for PSR-7/PSR-17 implementation
 - ✅ Created HTTP abstraction layer in `src/Http/`:
@@ -1837,47 +1890,52 @@ Guzzle (actual HTTP requests)
 - ✅ Fixed pre-existing bug in `HolyDaysOfObligation.php` (missing `data-param` attribute)
 
 **Architecture**:
+
 - Backward compatible: existing code works without changes
 - Dependency injection: optional `HttpClientInterface` parameter in constructors
 - Auto-discovery: automatically uses available PSR-18 clients or falls back to native PHP
 - Type-safe: maintains strict PHPStan level 10 compliance
 
 **Files Created**:
-```
+
+```text
 src/Http/
 ├── HttpClientInterface.php
 ├── HttpException.php
 ├── PsrHttpClient.php
 ├── FileGetContentsClient.php
 └── HttpClientFactory.php
-```
-
+```text
 **Files Modified**:
+
 - `composer.json` - Added PSR dependencies
 - `src/CalendarSelect.php` - Now accepts optional `HttpClientInterface`
 - `src/ApiOptions/Input/Locale.php` - Now accepts optional `HttpClientInterface`
 - `src/ApiOptions/Input/HolyDaysOfObligation.php` - Fixed missing `data` property
 
 **Test Results**:
-```
+
+```text
 PHPUnit 12.4.3
 OK (54 tests, 224 assertions, 1 skipped)
 PHPStan Level 10: No errors
-```
-
+```text
 **Unit Tests Created** (2025-11-15):
+
 - `tests/Http/HttpExceptionTest.php` - 5 tests for exception handling
 - `tests/Http/FileGetContentsClientTest.php` - 13 tests for fallback client
 - `tests/Http/PsrHttpClientTest.php` - 10 tests for PSR-18 client with mocks
 - `tests/Http/HttpClientFactoryTest.php` - 13 tests for factory methods
 
 **Test Coverage**:
+
 - ✅ HttpException: Constructor variants, throwable behavior
 - ✅ FileGetContentsClient: GET/POST, headers, error handling, response parsing
 - ✅ PsrHttpClient: Request creation, header handling, JSON encoding, exception wrapping
 - ✅ HttpClientFactory: Auto-discovery, fallback logic, Guzzle integration
 
 **Next Steps**:
+
 - Update README with usage examples and benefits
 - Begin Phase 6: Caching Integration (PSR-6/PSR-16)
 - Consider adding integration tests with live HTTP endpoints
@@ -1889,6 +1947,7 @@ PHPStan Level 10: No errors
 **Status**: Phase 5 fully implemented and tested
 
 **Completed Items**:
+
 - ✅ Created logging abstraction layer in `src/Logging/`:
   - `LoggerAwareTrait.php` - PSR-3 logger dependency injection trait
 - ✅ Created `LoggingHttpClient.php` decorator in `src/Http/`:
@@ -1903,7 +1962,8 @@ PHPStan Level 10: No errors
 - ✅ Created comprehensive unit tests for LoggingHttpClient
 
 **Files Created**:
-```
+
+```text
 src/Logging/
 └── LoggerAwareTrait.php
 
@@ -1912,14 +1972,15 @@ src/Http/
 
 tests/Http/
 └── LoggingHttpClientTest.php (9 tests)
-```
-
+```text
 **Files Modified**:
+
 - `src/Http/HttpClientFactory.php` - Added `createWithLogging()` method
 - `src/CalendarSelect.php` - Added LoggerAwareTrait and logger injection
 - `src/ApiOptions/Input/Locale.php` - Added logger injection support
 
 **Architecture**:
+
 - Decorator pattern: LoggingHttpClient wraps any HttpClientInterface
 - PSR-3 compliant: Uses LoggerInterface with NullLogger fallback
 - Security: Automatically sanitizes sensitive headers in logs
@@ -1927,19 +1988,21 @@ tests/Http/
 - Error tracking: Logs exceptions with full context
 
 **Logging Capabilities**:
+
 - **Request Logging**: URL, method, headers (sanitized), body size
 - **Response Logging**: Status code, duration, response size
 - **Error Logging**: Exception message, duration, exception class
 - **Header Sanitization**: Redacts Authorization, API-Key, Cookie headers
 
 **Test Results**:
-```
+
+```text
 PHPUnit 12.4.3
 OK (63 tests, 274 assertions, 1 skipped)
 PHPStan Level 10: No errors
-```
-
+```text
 **Usage Example**:
+
 ```php
 use LiturgicalCalendar\Components\CalendarSelect;
 use Monolog\Logger;
@@ -1953,9 +2016,9 @@ $logger->pushHandler(new StreamHandler('php://stderr', Logger::INFO));
 $calendar = new CalendarSelect([], null, $logger);
 
 // All HTTP requests will now be logged automatically
-```
-
+```text
 **Next Steps**:
+
 - Update README with logging examples
 - Consider adding structured logging formats (JSON)
 
@@ -1966,6 +2029,7 @@ $calendar = new CalendarSelect([], null, $logger);
 **Status**: Phase 6 fully implemented and tested
 
 **Completed Items**:
+
 - ✅ Added PSR-6 and PSR-16 dependencies to composer.json
 - ✅ Created `ArrayCache` - PSR-16 in-memory cache implementation
 - ✅ Created `CachingHttpClient` decorator in `src/Http/`:
@@ -1982,7 +2046,8 @@ $calendar = new CalendarSelect([], null, $logger);
 - ✅ Created comprehensive unit tests for CachingHttpClient (8 tests)
 
 **Files Created**:
-```
+
+```text
 src/Cache/
 └── ArrayCache.php (PSR-16 implementation)
 
@@ -1994,15 +2059,16 @@ tests/Cache/
 
 tests/Http/
 └── CachingHttpClientTest.php (8 tests)
-```
-
+```text
 **Files Modified**:
+
 - `composer.json` - Added psr/cache ^3.0
 - `src/Http/HttpClientFactory.php` - Added createWithCaching() method
 - `src/CalendarSelect.php` - Added cache injection support
 - `src/ApiOptions/Input/Locale.php` - Added cache injection support
 
 **Architecture**:
+
 - Decorator pattern: CachingHttpClient wraps any HttpClientInterface
 - PSR-16 Simple Cache compliant
 - Flexible cache backends: ArrayCache (in-memory), or any PSR-16 implementation (Redis, Filesystem, etc.)
@@ -2010,6 +2076,7 @@ tests/Http/
 - Automatic cache key generation using SHA-256 hash of URL + headers
 
 **Caching Capabilities**:
+
 - **GET Request Caching**: Caches successful GET responses (status 200-299)
 - **POST Bypass**: POST requests are never cached
 - **TTL Support**: Configurable time-to-live for cache entries
@@ -2018,6 +2085,7 @@ tests/Http/
 - **Type Safety**: Full PHPStan level 10 compliance
 
 **ArrayCache Features** (PSR-16):
+
 - In-memory cache for development/testing
 - Request-scoped (no persistence between requests)
 - TTL support with both integer seconds and DateInterval
@@ -2026,19 +2094,21 @@ tests/Http/
 - Supports all PHP data types (string, int, float, bool, array, object)
 
 **Test Results**:
-```
+
+```text
 PHPUnit 12.4.3
 OK (84 tests, 362 assertions, 1 skipped)
 PHPStan Level 10: No errors
-```
-
+```text
 **Test Coverage**:
+
 - ✅ ArrayCache: All PSR-16 methods, TTL expiry, data type support
 - ✅ CachingHttpClient: Cache miss/hit, TTL respect, non-2xx bypass, POST bypass, logging
 - ✅ Cache key uniqueness for different URLs and headers
 - ✅ Integration with HttpClientFactory
 
 **Usage Example**:
+
 ```php
 use LiturgicalCalendar\Components\CalendarSelect;
 use LiturgicalCalendar\Components\Cache\ArrayCache;
@@ -2061,9 +2131,9 @@ $html1 = $calendar->getSelect();
 
 // Second call - cache hit, no API request
 $html2 = $calendar->getSelect();
-```
-
+```text
 **Advanced Usage with Symfony Cache**:
+
 ```php
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Psr16Cache;
@@ -2079,14 +2149,15 @@ $httpClient = HttpClientFactory::createWithCaching($filesystemCache, 3600);
 
 // Use with CalendarSelect
 $calendar = new CalendarSelect([], $httpClient);
-```
-
+```text
 **Cache TTL Recommendations**:
+
 - **Calendar Metadata**: 1 hour (3600 seconds) - changes infrequently
 - **Locale Information**: 24 hours (86400 seconds) - very stable
 - **Calendar Data**: 5-15 minutes - balance between freshness and performance
 
 **Performance Benchmarking** (2025-11-15):
+
 - ✅ Created `benchmarks/http-caching.php` - Automated benchmark script
 - ✅ Benchmark Results:
   - **42.8% performance improvement** with caching enabled
@@ -2096,6 +2167,7 @@ $calendar = new CalendarSelect([], $httpClient);
 - ✅ Created `benchmarks/README.md` with documentation
 
 **Next Steps**:
+
 - Consider integration tests with live API endpoints (optional)
 
 ---
@@ -2105,6 +2177,7 @@ $calendar = new CalendarSelect([], $httpClient);
 **Status**: Phase 7 fully implemented and tested
 
 **Completed Items**:
+
 - ✅ Created `RetryHttpClient` middleware with exponential backoff
 - ✅ Created `CircuitBreakerHttpClient` for preventing cascading failures
 - ✅ Updated `HttpClientFactory` with three new methods:
@@ -2118,7 +2191,8 @@ $calendar = new CalendarSelect([], $httpClient);
 - ✅ PHPStan Level 10 validation - No errors
 
 **Files Created**:
-```
+
+```text
 src/Http/
 ├── RetryHttpClient.php (retry middleware)
 └── CircuitBreakerHttpClient.php (circuit breaker pattern)
@@ -2128,12 +2202,13 @@ tests/Http/
 └── CircuitBreakerHttpClientTest.php (11 tests)
 
 UPGRADE.md (comprehensive migration guide)
-```
-
+```text
 **Files Modified**:
+
 - `src/Http/HttpClientFactory.php` - Added `createWithRetry()`, `createWithCircuitBreaker()`, `createProductionClient()` methods
 
 **RetryHttpClient Features**:
+
 - **Configurable Retries**: Default 3 attempts, customizable
 - **Exponential Backoff**: Delays double with each retry (1s, 2s, 4s)
 - **Linear Backoff Option**: Fixed delay between retries
@@ -2143,6 +2218,7 @@ UPGRADE.md (comprehensive migration guide)
 - **Type Safe**: Full PHPStan level 10 compliance
 
 **CircuitBreakerHttpClient Features**:
+
 - **Three States**:
   - CLOSED (normal operation)
   - OPEN (failing fast, blocking requests)
@@ -2159,6 +2235,7 @@ UPGRADE.md (comprehensive migration guide)
 **HttpClientFactory Enhancements**:
 
 1. **createWithRetry()** - Simple retry logic:
+
 ```php
 $httpClient = HttpClientFactory::createWithRetry(
     maxRetries: 3,
@@ -2166,18 +2243,18 @@ $httpClient = HttpClientFactory::createWithRetry(
     useExponentialBackoff: true,
     retryStatusCodes: [500, 502, 503, 504]
 );
-```
+```text
+1. **createWithCircuitBreaker()** - Prevent cascading failures:
 
-2. **createWithCircuitBreaker()** - Prevent cascading failures:
 ```php
 $httpClient = HttpClientFactory::createWithCircuitBreaker(
     failureThreshold: 5,
     recoveryTimeout: 60,
     successThreshold: 2
 );
-```
+```text
+1. **createProductionClient()** - Full middleware stack:
 
-3. **createProductionClient()** - Full middleware stack:
 ```php
 $httpClient = HttpClientFactory::createProductionClient(
     cache: $cache,
@@ -2186,10 +2263,10 @@ $httpClient = HttpClientFactory::createProductionClient(
     maxRetries: 3,
     failureThreshold: 5
 );
-```
-
+```text
 **Middleware Stack Architecture** (createProductionClient):
-```
+
+```text
 ┌─────────────────────────────────────┐
 │ LoggingHttpClient (Layer 4)        │ ← Logs all operations
 │  ↓                                   │
@@ -2201,10 +2278,10 @@ $httpClient = HttpClientFactory::createProductionClient(
 │  ↓                                   │
 │ Base HTTP Client (Guzzle/Native)   │ ← Makes actual requests
 └─────────────────────────────────────┘
-```
-
+```text
 **Test Results**:
-```
+
+```text
 PHPUnit 12.4.3
 OK (104 tests, 468 assertions, 1 skipped)
 PHPStan Level 10: No errors
@@ -2215,29 +2292,29 @@ Test Coverage:
 ✅ Integration with logging
 ✅ Proper exception handling
 ✅ Timing verification (backoff strategies)
-```
-
+```text
 **Usage Examples**:
 
 **Basic Retry:**
+
 ```php
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
 use LiturgicalCalendar\Components\CalendarSelect;
 
 $httpClient = HttpClientFactory::createWithRetry(maxRetries: 3);
 $calendar = new CalendarSelect([], $httpClient);
-```
-
+```text
 **Circuit Breaker:**
+
 ```php
 $httpClient = HttpClientFactory::createWithCircuitBreaker(
     failureThreshold: 5,
     recoveryTimeout: 60
 );
 $calendar = new CalendarSelect([], $httpClient);
-```
-
+```text
 **Production Setup with All Features:**
+
 ```php
 use Symfony\Component\Cache\Adapter\RedisAdapter;
 use Symfony\Component\Cache\Psr16Cache;
@@ -2256,9 +2333,9 @@ $httpClient = HttpClientFactory::createProductionClient(
 );
 
 $calendar = new CalendarSelect([], $httpClient, $logger, $cache);
-```
-
+```text
 **Migration Guide**:
+
 - Created comprehensive UPGRADE.md with examples
 - Backward compatibility maintained - no breaking changes
 - Step-by-step migration instructions
@@ -2266,6 +2343,7 @@ $calendar = new CalendarSelect([], $httpClient, $logger, $cache);
 - Performance improvement guidelines
 
 **Benefits**:
+
 - **Reliability**: Automatic retries handle transient failures
 - **Resilience**: Circuit breaker prevents cascading failures
 - **Performance**: Caching reduces API calls by 80-95%
@@ -2274,6 +2352,7 @@ $calendar = new CalendarSelect([], $httpClient, $logger, $cache);
 - **Type-Safe**: PHPStan Level 10 ensures no type errors
 
 **Next Steps** (Optional):
+
 - Add comprehensive examples to README
 - Performance benchmarking report
 - Integration tests with live API endpoints
@@ -2283,6 +2362,7 @@ $calendar = new CalendarSelect([], $httpClient, $logger, $cache);
 ### Change Log
 
 **Version 2.0 (2025-11-15)**:
+
 - Added comprehensive PSR-3 (Logging) implementation plan
 - Added comprehensive PSR-6/PSR-16 (Caching) implementation plan
 - Added Phase 5 (Logging Integration)
@@ -2297,6 +2377,7 @@ $calendar = new CalendarSelect([], $httpClient, $logger, $cache);
 - Added success metrics and benchmarking criteria
 
 **Version 1.0 (2025-11-15)**:
+
 - Initial PSR-18 HTTP Client implementation plan
 - Basic PSR-7/PSR-17 recommendations
 - HTTP client abstraction layer design

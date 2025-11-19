@@ -4,6 +4,8 @@
 
 This is a PHP library providing reusable frontend components for the Liturgical Calendar API. It includes:
 
+- `ApiClient`: Centralized singleton for API configuration and request management
+- `CalendarRequest`: Fluent API for fetching calendar data from the API
 - `MetadataProvider`: Centralized singleton for calendar metadata fetching and caching
 - `CalendarSelect`: Dropdown components for selecting liturgical calendars
 - `ApiOptions`: Form inputs for API request parameters
@@ -40,10 +42,14 @@ This is a PHP library providing reusable frontend components for the Liturgical 
 ### Markdown Standards
 
 - **CRITICAL**: All markdown files must adhere to the .markdownlint.yml rules defined in this project
+- **IMPORTANT**: Always run `composer lint:md` after editing or creating markdown files
 - Key rules include:
   - Maximum line length: 180 characters (excluding code blocks and tables)
-  - Use fenced code blocks (triple backticks)
+  - Use fenced code blocks (triple backticks) with language identifiers
+  - Fenced code blocks must be surrounded by blank lines
   - Ordered lists use consistent numbering style
+  - Lists must be surrounded by blank lines
+  - Headings must be surrounded by blank lines
   - Inline HTML is allowed for specific elements (img, a, b, table, etc.)
 
 ### Before Committing
@@ -51,13 +57,60 @@ This is a PHP library providing reusable frontend components for the Liturgical 
 Always run these commands to ensure code quality:
 
 ```bash
+# PHP Quality Checks
 composer lint              # Check coding standards (phpcs)
 composer lint:fix          # Auto-fix coding standards (phpcbf)
 composer analyse           # Run static analysis (phpstan)
 composer parallel-lint     # Check PHP syntax
 composer test              # Run full test suite
 composer test:quick        # Run tests excluding slow tests
+
+# Markdown Quality Checks
+composer lint:md           # Check markdown formatting (markdownlint)
+composer lint:md:fix       # Auto-fix markdown formatting
 ```
+
+**CRITICAL**: When you create or edit markdown files (*.md), you MUST run `composer lint:md:fix` before committing to ensure proper formatting.
+The pre-commit hook will block commits with markdown formatting errors.
+
+### Markdown File Workflow
+
+When creating or editing markdown files, follow this workflow:
+
+1. **Create/Edit** the markdown file
+1. **Auto-fix formatting**: Run `composer lint:md:fix` immediately after editing
+1. **Verify**: Run `composer lint:md` to check for any remaining issues
+1. **Fix manually** if auto-fix couldn't resolve all issues
+1. **Commit**: The pre-commit hook will verify formatting
+
+**Common markdown linting errors**:
+
+- **MD031**: Fenced code blocks need blank lines before and after
+- **MD040**: Fenced code blocks must specify language (e.g., ` ```php ` not just ` ``` `)
+- **MD032**: Lists must be surrounded by blank lines
+- **MD022**: Headings must be surrounded by blank lines
+- **MD013**: Line length must not exceed 180 characters (excluding code blocks and tables)
+
+**Example of properly formatted markdown**:
+
+````markdown
+## Heading
+
+Some text here.
+
+- List item 1
+- List item 2
+
+More text here.
+
+```bash
+command --flag value
+```
+
+Final paragraph.
+````
+
+See [MARKDOWN_LINTING.md](MARKDOWN_LINTING.md) for complete documentation.
 
 ## Project Structure
 
@@ -80,13 +133,20 @@ composer test:quick        # Run tests excluding slow tests
 1. Maintain backward compatibility - this is a published Composer package
 1. Follow existing patterns for method naming and structure
 1. Update relevant tests when modifying component behavior
-1. Ensure phpcs compliance before committing
+1. Ensure phpcs compliance before committing (run `composer lint`)
+1. **Ensure markdown linting compliance** when editing .md files (run `composer lint:md:fix`)
 1. Use type hints and return types (PHP 8.1+ features)
 1. Document public methods with clear docblocks
 
 ## Quality Assurance
 
 - **Pre-commit hooks**: Managed via CaptainHook
+  - PHP syntax linting (built-in)
+  - PHP code style checking (phpcs) - runs when `.php` files are staged
+  - Markdown formatting (markdownlint) - runs when `.md` files are staged
+- **Pre-push hooks**: Managed via CaptainHook
+  - PHP parallel syntax checking - runs when `.php` files are staged
+  - PHPStan static analysis (Level 10) - runs when `.php` files are staged
 - **CI/CD**: Ensure all quality checks pass before creating pull requests
 - **Code Coverage**: Maintain or improve test coverage with new features
 
@@ -125,15 +185,11 @@ $calendarSelect2 = new CalendarSelect();
 $locale = new Locale();
 ```
 
-**⚠️ IMPORTANT**: If you're using `HttpClientFactory::createProductionClient()` or any pre-decorated HTTP client, **DO NOT** pass `cache` or `logger` parameters again to
-`MetadataProvider::getInstance()`. See the "Avoiding Double-Wrapping" section below for details.
+### HTTP Client Configuration Patterns
 
-### Avoiding Double-Wrapping (Important!)
+MetadataProvider supports three configuration patterns for HTTP client setup:
 
-**WARNING**: If you use `HttpClientFactory::createProductionClient()` or any pre-decorated HTTP client, **DO NOT** also pass `cache` or `logger` parameters to
-`MetadataProvider::getInstance()`. This will cause double-wrapping and duplicate logging/caching.
-
-**Correct (with production client):**
+#### Pattern 1: Provide Pre-Configured Client (Recommended for Production)
 
 ```php
 // Production client already includes cache, logger, retry, circuit breaker
@@ -145,32 +201,69 @@ $httpClient = HttpClientFactory::createProductionClient(
     failureThreshold: 5
 );
 
-// Only pass the httpClient - it's already decorated
+// Pass the httpClient only - it's used as-is without additional wrapping
 MetadataProvider::getInstance(
     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-    httpClient: $httpClient  // ← Already decorated, don't pass cache/logger again
+    httpClient: $httpClient
 );
 ```
 
-**Incorrect (double-wrapping):**
+#### Pattern 2: Let MetadataProvider Create and Configure Client
 
 ```php
-$httpClient = HttpClientFactory::createProductionClient(
-    cache: $cache,
-    logger: $logger,
-    cacheTtl: 3600
-);
-
-// ❌ DON'T DO THIS - causes double-wrapping warning
+// Don't pass httpClient - MetadataProvider creates and wraps it for you
 MetadataProvider::getInstance(
     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-    httpClient: $httpClient,
-    cache: $cache,     // ← Already in $httpClient!
-    logger: $logger    // ← Already in $httpClient!
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 86400
 );
 ```
 
-If you pass both an HTTP client AND cache/logger parameters, a runtime warning will be triggered to alert you of potential double-wrapping.
+#### Pattern 3: Use ApiClient for Shared Configuration
+
+```php
+// Initialize ApiClient once at bootstrap
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $decoratedClient
+]);
+
+// MetadataProvider pulls configuration from ApiClient
+MetadataProvider::getInstance();
+```
+
+### Avoiding Double-Wrapping (Important!)
+
+**Rule:** When you provide an `httpClient` parameter, it is used **as-is** without additional wrapping.
+
+**✅ CORRECT** - Provide httpClient OR cache/logger (not both):
+
+```php
+// Option A: Pre-configured client only
+MetadataProvider::getInstance(
+    httpClient: $client  // Used as-is
+);
+
+// Option B: Cache/logger only (client created internally)
+MetadataProvider::getInstance(
+    cache: $cache,
+    logger: $logger
+);
+```
+
+**❌ INCORRECT** - Providing both triggers a warning:
+
+```php
+// Don't do this - the cache/logger will be ignored
+MetadataProvider::getInstance(
+    httpClient: $client,  // Used as-is
+    cache: $cache,        // ← Ignored to prevent double-wrapping
+    logger: $logger       // ← Ignored to prevent double-wrapping
+);
+```
+
+A runtime warning (`E_USER_WARNING`) will be triggered if you provide both an httpClient and cache/logger parameters.
 
 ### Immutable Configuration
 
@@ -305,6 +398,327 @@ MetadataProvider::clearCache();
 ```
 
 **Note**: `clearCache()` only clears the metadata cache, not the singleton instance itself.
+
+## ApiClient Architecture
+
+### ApiClient - Centralized Singleton Pattern
+
+**IMPORTANT**: The library uses a centralized singleton `ApiClient` class for API configuration and request management. This ensures:
+
+- **Single source of truth** for API configuration across all components and requests
+- **Immutable configuration** - API URL, HTTP client, cache, and logger are set once on first initialization
+- **Shared resources** - All requests use the same HTTP client, cache, and logger instances
+- **Factory methods** - Create CalendarRequest instances via `$apiClient->calendar()`
+
+### ApiClient - Initialization Pattern
+
+**Initialize ApiClient ONCE at application bootstrap:**
+
+```php
+use LiturgicalCalendar\Components\ApiClient;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Cache\ArrayCache;
+
+// Initialize ApiClient once with all configuration
+$apiClient = ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient,
+    'cache' => $cache,
+    'logger' => $logger,
+    'cacheTtl' => 86400  // 24 hours
+]);
+
+// All subsequent requests use this configuration
+$calendar1 = $apiClient->calendar()->nation('IT')->year(2024)->get();
+$calendar2 = $apiClient->calendar()->diocese('BOSTON_US')->year(2024)->get();
+```
+
+### Factory Methods for API Endpoints
+
+ApiClient provides factory methods for creating API request instances:
+
+```php
+// Calendar data requests (returns fresh CalendarRequest instance each time)
+$calendarData = $apiClient->calendar()
+    ->nation('IT')
+    ->year(2024)
+    ->locale('it')
+    ->epiphany('JAN6')
+    ->ascension('THURSDAY')
+    ->get();
+
+// Metadata access (returns MetadataProvider singleton)
+$metadata = $apiClient->metadata()->getMetadata();
+```
+
+**Key Benefits:**
+
+- **Single entry point**: Only need to know about `ApiClient`
+- **IDE autocomplete**: Typing `$apiClient->` shows all available endpoints
+- **Type safety**: Return types ensure correct usage
+- **Fresh instances**: `calendar()` returns new instances (no state pollution)
+- **Consistent configuration**: All requests use the same HTTP client, cache, and logger
+
+### CalendarRequest Fluent API
+
+The `CalendarRequest` class provides a fluent API for building calendar data requests:
+
+```php
+use LiturgicalCalendar\Components\ApiClient;
+
+$apiClient = ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev'
+]);
+
+// General Roman Calendar with custom settings
+$calendar = $apiClient->calendar()
+    ->year(2024)
+    ->locale('en')
+    ->epiphany('SUNDAY_JAN2_JAN8')
+    ->ascension('SUNDAY')
+    ->corpusChristi('SUNDAY')
+    ->eternalHighPriest(true)
+    ->get();
+
+// National Calendar (inherits national settings)
+$calendar = $apiClient->calendar()
+    ->nation('US')
+    ->year(2024)
+    ->locale('en')
+    ->get();
+
+// Diocesan Calendar (inherits diocesan settings)
+$calendar = $apiClient->calendar()
+    ->diocese('BOSTON_US')
+    ->year(2024)
+    ->locale('en')
+    ->get();
+```
+
+### ApiClient - HTTP Client Configuration Patterns
+
+ApiClient supports multiple configuration patterns for HTTP client setup:
+
+#### ApiClient Pattern 1: Provide Pre-Configured Client (Recommended for Production)
+
+```php
+// Production client already includes cache, logger, retry, circuit breaker
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600,
+    maxRetries: 3,
+    failureThreshold: 5
+);
+
+// Initialize ApiClient with the already-decorated production client
+// Note: Don't pass cache/logger again - they're already in the production client
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient  // Used as-is without additional wrapping
+]);
+```
+
+#### ApiClient Pattern 2: Let ApiClient Create and Configure Client
+
+```php
+// Don't pass httpClient - ApiClient creates production client for you
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'cache' => $cache,
+    'logger' => $logger,
+    'cacheTtl' => 86400
+]);
+```
+
+### ApiClient - Avoiding Double-Wrapping (Important!)
+
+**Rule:** When you provide an `httpClient` parameter, it is used **as-is** without additional wrapping.
+
+**✅ CORRECT** - Provide httpClient OR cache/logger (not both):
+
+```php
+// Option A: Pre-configured client only
+ApiClient::getInstance([
+    'httpClient' => $client  // Used as-is
+]);
+
+// Option B: Cache/logger only (client created internally)
+ApiClient::getInstance([
+    'cache' => $cache,
+    'logger' => $logger
+]);
+```
+
+**❌ INCORRECT** - Providing both triggers a warning:
+
+```php
+// Don't do this - the cache/logger will be ignored
+ApiClient::getInstance([
+    'httpClient' => $client,  // Used as-is
+    'cache' => $cache,        // ← Ignored to prevent double-wrapping
+    'logger' => $logger       // ← Ignored to prevent double-wrapping
+]);
+```
+
+A runtime warning (`E_USER_WARNING`) will be triggered if you provide both an httpClient and cache/logger parameters.
+
+### ApiClient - Immutable Configuration
+
+Once `ApiClient::getInstance()` is called with configuration, **all subsequent calls ignore parameters** and return the same singleton:
+
+```php
+// First call - initializes with these parameters
+ApiClient::getInstance([
+    'apiUrl' => 'https://example.com/api',
+    'httpClient' => $client1
+]);
+
+// Second call - parameters are IGNORED, returns same instance
+ApiClient::getInstance([
+    'apiUrl' => 'https://different-url.com',  // ← Ignored
+    'httpClient' => $client2                   // ← Ignored
+]);
+
+// API URL remains 'https://example.com/api'
+```
+
+### Static Configuration Accessors
+
+Access configuration without creating new instances:
+
+```php
+// Get configured HTTP client
+$httpClient = ApiClient::getHttpClient();
+
+// Get configured API URL
+$apiUrl = ApiClient::getApiUrl();
+
+// Get configured cache
+$cache = ApiClient::getCache();
+
+// Get configured logger
+$logger = ApiClient::getLogger();
+
+// Check if ApiClient is initialized
+if (ApiClient::isInitialized()) {
+    // Use shared configuration
+}
+```
+
+### Complete Production Example with ApiClient
+
+```php
+use LiturgicalCalendar\Components\ApiClient;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\WebCalendar;
+use Symfony\Component\Cache\Adapter\RedisAdapter;
+use Symfony\Component\Cache\Psr16Cache;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+// 1. Setup cache and logger
+$redis = RedisAdapter::createConnection('redis://localhost');
+$cache = new Psr16Cache(new RedisAdapter($redis, 'litcal', 3600));
+$logger = new Logger('litcal');
+$logger->pushHandler(new StreamHandler('/var/log/litcal.log', Logger::WARNING));
+
+// 2. Create HTTP client with all features
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600,
+    maxRetries: 3,
+    failureThreshold: 5
+);
+
+// 3. Initialize ApiClient ONCE at application bootstrap
+// Note: Don't pass cache/logger again - they're already in the production client
+$apiClient = ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient
+]);
+
+// 4. Create UI components - they automatically use ApiClient configuration
+$calendarSelect = new CalendarSelect();
+
+// 5. Fetch calendar data via factory method
+$calendarData = $apiClient->calendar()
+    ->nation('US')
+    ->year(2024)
+    ->locale('en')
+    ->get();
+
+// 6. Display the calendar
+$webCalendar = new WebCalendar($calendarData);
+echo $webCalendar->buildTable();
+
+// 7. Access metadata
+$metadata = $apiClient->metadata()->getMetadata();
+```
+
+### ApiClient - Component Integration
+
+When `ApiClient` is initialized, all components automatically use its configuration:
+
+- `CalendarSelect` uses `ApiClient` configuration for API URL and HTTP client
+- `ApiOptions` uses `ApiClient` configuration for API URL and HTTP client
+- `MetadataProvider` pulls configuration from `ApiClient` if not explicitly initialized
+- `CalendarRequest` instances created via `$apiClient->calendar()` inherit all configuration
+
+```php
+// Initialize ApiClient once
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient
+]);
+
+// NO need to pass HTTP client, cache, logger, or URL to components
+// They automatically use ApiClient's configuration
+$calendarSelect = new CalendarSelect(['locale' => 'en']);
+$apiOptions = new ApiOptions(['locale' => 'it']);
+
+// Fetch calendar data - automatically uses ApiClient configuration
+$request = new CalendarRequest();
+$calendar = $request->nation('IT')->year(2024)->get();
+
+// Or use the factory method (recommended)
+$calendar = ApiClient::getInstance()->calendar()->nation('IT')->year(2024)->get();
+```
+
+### ApiClient - Testing
+
+For test isolation, use `resetForTesting()`:
+
+```php
+protected function setUp(): void
+{
+    // Reset singleton before each test
+    ApiClient::resetForTesting();
+}
+
+public function testSomething()
+{
+    // Fresh initialization for this test
+    ApiClient::getInstance([
+        'apiUrl' => 'http://test-api.local',
+        'httpClient' => $mockClient
+    ]);
+
+    // Test code...
+}
+```
+
+**WARNING**: `resetForTesting()` is for **tests only**. Never use in production code.
+
+### ApiClient - Best Practices
+
+1. **Initialize once at bootstrap**: Configure ApiClient in your application's initialization code
+1. **Use factory methods**: Prefer `$apiClient->calendar()` over `new CalendarRequest()`
+1. **Avoid double-wrapping**: Don't pass both `httpClient` AND `cache`/`logger` to getInstance()
+1. **Testing**: Use `resetForTesting()` in test setup for isolation
+1. **Future extensibility**: The factory pattern makes it easy to add new endpoints like `$apiClient->events()` or `$apiClient->missals()`
 
 ## API Endpoint & Structure
 
