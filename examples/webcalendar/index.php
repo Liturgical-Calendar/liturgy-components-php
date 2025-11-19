@@ -570,7 +570,7 @@ if (isset($_POST) && !empty($_POST)) {
                     echo '</tr>';
                     ?>
                     </table>
-                    <button type="submit" class="btn btn-primary mt-2">Submit</button></button>
+                    <button type="submit" class="btn btn-primary mt-2">Submit</button>
                 </form>
             </div>
         </div>
