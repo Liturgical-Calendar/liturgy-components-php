@@ -31,8 +31,24 @@ ini_set('display_errors', '1');
 //       Run `composer install` (not `composer install --no-dev`) to use them.
 // ============================================================================
 
-// Debug mode from environment (configure in .env file)
-$debugMode = filter_var($_ENV['DEBUG_MODE'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
+// ============================================================================
+// Environment Configuration (load FIRST so DEBUG_MODE is available)
+// ============================================================================
+
+// Load environment variables if Dotenv is available
+if (class_exists('Dotenv\Dotenv')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.production'], false);
+    $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
+    $dotenv->ifPresent(['API_PORT'])->isInteger();
+    $dotenv->safeLoad();
+}
+
+// Set default environment variables for production (only if not already set)
+$debugMode             = filter_var($_ENV['DEBUG_MODE'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
+$_ENV['API_PROTOCOL']  = $_ENV['API_PROTOCOL'] ?? 'https';
+$_ENV['API_HOST']      = $_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com';
+$_ENV['API_PORT']      = $_ENV['API_PORT'] ?? '';
+$_ENV['API_BASE_PATH'] = $_ENV['API_BASE_PATH'] ?? '/api/dev';
 
 // 1. Setup Logger (Monolog) - if available
 $logger = null;
@@ -101,24 +117,6 @@ $httpClient = HttpClientFactory::createProductionClient(
     maxRetries: 3,           // Retry up to 3 times
     failureThreshold: 5      // Circuit breaker opens after 5 failures
 );
-
-// ============================================================================
-// Environment Configuration
-// ============================================================================
-
-// Load environment variables if Dotenv is available
-if (class_exists('Dotenv\Dotenv')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.production'], false);
-    $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
-    $dotenv->ifPresent(['API_PORT'])->isInteger();
-    $dotenv->safeLoad();
-}
-
-// Set default environment variables for production (only if not already set)
-$_ENV['API_PROTOCOL']  = $_ENV['API_PROTOCOL'] ?? 'https';
-$_ENV['API_HOST']      = $_ENV['API_HOST'] ?? 'litcal.johnromanodorazio.com';
-$_ENV['API_PORT']      = $_ENV['API_PORT'] ?? '';
-$_ENV['API_BASE_PATH'] = $_ENV['API_BASE_PATH'] ?? '/api/dev';
 
 // ============================================================================
 // Build Base API URL (used by ApiClient for all API interactions)
