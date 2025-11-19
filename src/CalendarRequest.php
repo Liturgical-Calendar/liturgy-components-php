@@ -170,11 +170,24 @@ class CalendarRequest
     /**
      * Set locale for localized content
      *
+     * **Security Note**: The locale value is validated to prevent header injection attacks.
+     * Locale values containing CR or LF characters are rejected.
+     *
      * @param string $locale IETF language code (e.g., 'en', 'it', 'la', 'es')
      * @return self
+     * @throws \InvalidArgumentException If locale contains CR/LF characters
      */
     public function locale(string $locale): self
     {
+        // Validate locale: reject CR/LF characters to prevent header injection
+        // (locale is used in Accept-Language header)
+        if (str_contains($locale, "\r") || str_contains($locale, "\n")) {
+            throw new \InvalidArgumentException(
+                'Invalid locale value: ' .
+                'Locale cannot contain CR or LF characters (possible header injection attempt).'
+            );
+        }
+
         $this->locale = $locale;
         return $this;
     }

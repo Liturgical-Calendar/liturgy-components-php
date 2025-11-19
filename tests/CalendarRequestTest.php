@@ -111,4 +111,42 @@ class CalendarRequestTest extends TestCase
             'Request URL should handle trailing slash in base URL'
         );
     }
+
+    public function testLocaleRejectsCarriageReturn(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid locale value');
+        $this->expectExceptionMessage('header injection');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->locale("en\rMalicious-Header: value");
+    }
+
+    public function testLocaleRejectsLineFeed(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid locale value');
+        $this->expectExceptionMessage('header injection');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->locale("en\nMalicious-Header: value");
+    }
+
+    public function testLocaleRejectsCRLF(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid locale value');
+        $this->expectExceptionMessage('header injection');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->locale("en\r\nMalicious-Header: value");
+    }
+
+    public function testLocaleAcceptsValidValue(): void
+    {
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $result  = $request->locale('en-US');
+
+        $this->assertSame($request, $result, 'locale() should return self for chaining');
+    }
 }
