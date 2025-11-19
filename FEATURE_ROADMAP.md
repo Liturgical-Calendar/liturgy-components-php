@@ -217,34 +217,37 @@ $calendar = ApiClient::createCalendarRequest()
     ->get();
 ```
 
-**Backward Compatibility**:
+**Simplified Usage**:
 
 ```php
-// Still works - MetadataProvider falls back to own configuration if ApiClient not initialized
-MetadataProvider::getInstance(
-    apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-    httpClient: $httpClient
-);
+// MetadataProvider pulls configuration from ApiClient singleton
+// If ApiClient is not initialized, it auto-initializes with defaults
+$metadata = MetadataProvider::getInstance();  // No params needed!
+
+// Or configure ApiClient first for custom settings
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient
+]);
+$metadata = MetadataProvider::getInstance();
 ```
 
 ### CalendarRequest Integration
 
-**CalendarRequest** checks for ApiClient configuration in this order:
+**CalendarRequest** pulls configuration from ApiClient singleton:
 
-1. **Explicit constructor params** (highest priority)
 1. **ApiClient shared config** (if initialized)
-1. **Default values** (fallback)
+1. **Auto-initialized defaults** (fallback)
 
 ```php
 // Option 1: Use ApiClient configuration (recommended)
 ApiClient::getInstance(['apiUrl' => 'https://api.example.com']);
 $request = ApiClient::createCalendarRequest();
 
-// Option 2: Explicit dependencies (testing, custom config)
-$request = new CalendarRequest($customHttpClient, $customLogger, $customCache);
+// Option 2: Direct instantiation (auto-initializes ApiClient if needed)
+$request = new CalendarRequest();
 
-// Option 3: Defaults (quick prototyping)
-$request = new CalendarRequest();  // Uses ApiClient if available, else creates defaults
+// Both approaches use the same ApiClient singleton configuration
 ```
 
 ### Implementation Plan
@@ -323,6 +326,16 @@ class ApiClient
         $this->cache = $cache;
         $this->logger = $logger ?? new NullLogger();
         $this->cacheTtl = $cacheTtl;
+
+        // Warn about ambiguous configuration if both client and decorators are provided
+        if ($httpClient !== null && ( $cache !== null || $logger !== null )) {
+            trigger_error(
+                'ApiClient::__construct() called with both httpClient and cache/logger parameters. ' .
+                'Since a custom httpClient is provided, cache/logger configuration will be ignored. ' .
+                'Pass either httpClient OR cache/logger, not both.',
+                E_USER_WARNING
+            );
+        }
 
         // If httpClient provided, use it; otherwise create one with optional cache/logger
         if ($httpClient !== null) {
@@ -417,6 +430,9 @@ class ApiClient
     /**
      * Create a CalendarRequest with shared configuration
      *
+     * CalendarRequest automatically pulls configuration from ApiClient singleton.
+     * If ApiClient is not initialized, CalendarRequest will auto-initialize it with defaults.
+     *
      * @return CalendarRequest
      */
     public static function createCalendarRequest(): CalendarRequest
@@ -428,12 +444,8 @@ class ApiClient
             );
         }
 
-        return new CalendarRequest(
-            httpClient: self::$instance->httpClient,
-            logger: self::$instance->logger,
-            cache: self::$instance->cache,
-            apiUrl: self::$instance->apiUrl
-        );
+        // CalendarRequest pulls configuration from ApiClient singleton
+        return new CalendarRequest();
     }
 
     /**
