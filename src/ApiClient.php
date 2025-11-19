@@ -176,7 +176,11 @@ class ApiClient
     /**
      * Create a CalendarRequest with shared configuration
      *
+     * CalendarRequest will automatically use the configuration from ApiClient singleton.
+     * This method requires ApiClient to be initialized first.
+     *
      * @return CalendarRequest
+     * @throws \RuntimeException if ApiClient is not initialized
      */
     public static function createCalendarRequest(): CalendarRequest
     {
@@ -187,12 +191,8 @@ class ApiClient
             );
         }
 
-        return new CalendarRequest(
-            httpClient: self::$instance->httpClient,
-            logger: self::$instance->logger,
-            cache: self::$instance->cache,
-            apiUrl: self::$instance->apiUrl
-        );
+        // CalendarRequest automatically pulls config from ApiClient
+        return new CalendarRequest();
     }
 
     /**

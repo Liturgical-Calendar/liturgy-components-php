@@ -72,52 +72,33 @@ class CalendarRequest
     /**
      * Create a new CalendarRequest instance
      *
-     * Dependency resolution priority:
-     * 1. Explicit constructor parameters (highest priority)
-     * 2. ApiClient configuration (if initialized)
-     * 3. Default values (fallback)
+     * Uses shared configuration from ApiClient singleton. If ApiClient is not yet
+     * initialized, it will be auto-initialized with default values.
      *
-     * Note: The $cache parameter exists for API consistency but is not used directly.
-     * Caching is handled by the HttpClient middleware that's already configured.
+     * To customize configuration, initialize ApiClient before creating CalendarRequest:
      *
-     * @param HttpClientInterface|null $httpClient HTTP client for requests
-     * @param LoggerInterface|null $logger PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache PSR-16 cache (for API consistency, not used directly)
-     * @param string|null $apiUrl Base API URL
+     * ```php
+     * ApiClient::getInstance([
+     *     'apiUrl' => 'https://custom-api.example.com',
+     *     'httpClient' => $customClient,
+     *     'logger' => $logger,
+     *     'cache' => $cache
+     * ]);
+     *
+     * $request = new CalendarRequest(); // Uses ApiClient config
+     * ```
      */
-    public function __construct(
-        ?HttpClientInterface $httpClient = null,
-        ?LoggerInterface $logger = null,
-        ?CacheInterface $cache = null,
-        ?string $apiUrl = null
-    ) {
-        unset($cache); // Intentionally unused - caching handled by HttpClient middleware
-        // Priority: explicit params > ApiClient > defaults
-        $this->baseUrl = $apiUrl
-            ?? ApiClient::getApiUrl()
-            ?? $this->baseUrl;
-
-        $finalHttpClient = $httpClient
-            ?? ApiClient::getHttpClient();
-
-        $finalLogger = $logger
-            ?? ApiClient::getLogger()
-            ?? new NullLogger();
-
-        $this->httpClient = $finalHttpClient ?? HttpClientFactory::create();
-        $this->logger     = $finalLogger;
-    }
-
-    /**
-     * Set base API URL
-     *
-     * @param string $url Base API URL (without trailing slash)
-     * @return self
-     */
-    public function baseUrl(string $url): self
+    public function __construct()
     {
-        $this->baseUrl = rtrim($url, '/');
-        return $this;
+        // Ensure ApiClient is initialized (auto-initialize with defaults if needed)
+        if (!ApiClient::isInitialized()) {
+            ApiClient::getInstance(); // Uses default values
+        }
+
+        // Pull all configuration from ApiClient singleton
+        $this->baseUrl    = ApiClient::getApiUrl() ?? $this->baseUrl;
+        $this->httpClient = ApiClient::getHttpClient() ?? HttpClientFactory::create();
+        $this->logger     = ApiClient::getLogger() ?? new NullLogger();
     }
 
     /**

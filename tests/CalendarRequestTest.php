@@ -14,11 +14,16 @@ class CalendarRequestTest extends TestCase
     {
         // Reset singletons before each test
         ApiClient::resetForTesting();
+
+        // Initialize ApiClient with test API URL
+        ApiClient::getInstance([
+            'apiUrl' => self::API_URL
+        ]);
     }
 
     public function testGetRequestUrlForGeneralCalendar(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $url     = $request->getRequestUrl();
 
         $this->assertEquals(
@@ -30,7 +35,7 @@ class CalendarRequestTest extends TestCase
 
     public function testGetRequestUrlForNationalCalendar(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $url     = $request->nation('US')->getRequestUrl();
 
         $this->assertEquals(
@@ -42,7 +47,7 @@ class CalendarRequestTest extends TestCase
 
     public function testGetRequestUrlForDiocesanCalendar(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $url     = $request->diocese('boston_us')->getRequestUrl();
 
         $this->assertEquals(
@@ -54,7 +59,7 @@ class CalendarRequestTest extends TestCase
 
     public function testGetRequestUrlWithYear(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $url     = $request->year(2024)->getRequestUrl();
 
         $this->assertEquals(
@@ -66,7 +71,7 @@ class CalendarRequestTest extends TestCase
 
     public function testGetRequestUrlForNationalCalendarWithYear(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $url     = $request->nation('US')->year(2025)->getRequestUrl();
 
         $this->assertEquals(
@@ -78,7 +83,7 @@ class CalendarRequestTest extends TestCase
 
     public function testGetRequestUrlForDiocesanCalendarWithYear(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $url     = $request->diocese('boston_us')->year(2025)->getRequestUrl();
 
         $this->assertEquals(
@@ -90,7 +95,7 @@ class CalendarRequestTest extends TestCase
 
     public function testGetRequestUrlEncodesSpecialCharacters(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $url     = $request->diocese('test diocese')->getRequestUrl();
 
         $this->assertEquals(
@@ -102,7 +107,13 @@ class CalendarRequestTest extends TestCase
 
     public function testGetRequestUrlTrimsTrailingSlash(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL . '/');
+        // Reset and reinitialize ApiClient with trailing slash
+        ApiClient::resetForTesting();
+        ApiClient::getInstance([
+            'apiUrl' => self::API_URL . '/'
+        ]);
+
+        $request = new CalendarRequest();
         $url     = $request->getRequestUrl();
 
         $this->assertEquals(
@@ -118,7 +129,7 @@ class CalendarRequestTest extends TestCase
         $this->expectExceptionMessage('Invalid locale value');
         $this->expectExceptionMessage('header injection');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->locale("en\rMalicious-Header: value");
     }
 
@@ -128,7 +139,7 @@ class CalendarRequestTest extends TestCase
         $this->expectExceptionMessage('Invalid locale value');
         $this->expectExceptionMessage('header injection');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->locale("en\nMalicious-Header: value");
     }
 
@@ -138,13 +149,13 @@ class CalendarRequestTest extends TestCase
         $this->expectExceptionMessage('Invalid locale value');
         $this->expectExceptionMessage('header injection');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->locale("en\r\nMalicious-Header: value");
     }
 
     public function testLocaleAcceptsValidValue(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $result  = $request->locale('en-US');
 
         $this->assertSame($request, $result, 'locale() should return self for chaining');
@@ -155,7 +166,7 @@ class CalendarRequestTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Year must be between 1970 and 9999');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->year(1969);
     }
 
@@ -164,13 +175,13 @@ class CalendarRequestTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Year must be between 1970 and 9999');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->year(10000);
     }
 
     public function testYearAcceptsBoundaryValues(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
 
         // Test lower boundary
         $result1 = $request->year(1970);
@@ -186,7 +197,7 @@ class CalendarRequestTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid header name');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->header('Invalid Header!', 'value');
     }
 
@@ -195,7 +206,7 @@ class CalendarRequestTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid header name');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->header('X Custom Header', 'value');
     }
 
@@ -205,7 +216,7 @@ class CalendarRequestTest extends TestCase
         $this->expectExceptionMessage('Invalid header value');
         $this->expectExceptionMessage('header injection');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->header('X-Custom', "value\rMalicious-Header: injected");
     }
 
@@ -215,7 +226,7 @@ class CalendarRequestTest extends TestCase
         $this->expectExceptionMessage('Invalid header value');
         $this->expectExceptionMessage('header injection');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->header('X-Custom', "value\nMalicious-Header: injected");
     }
 
@@ -225,13 +236,13 @@ class CalendarRequestTest extends TestCase
         $this->expectExceptionMessage('Invalid header value');
         $this->expectExceptionMessage('header injection');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->header('X-Custom', "value\r\nMalicious-Header: injected");
     }
 
     public function testHeaderAcceptsValidNameAndValue(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
 
         // Test valid header names
         $result1 = $request->header('X-Custom-Header', 'value1');
@@ -246,7 +257,7 @@ class CalendarRequestTest extends TestCase
 
     public function testAcceptLanguageDelegatesToHeaderAndIsChainable(): void
     {
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
 
         // Test that acceptLanguage() returns self for chaining
         $result = $request->acceptLanguage('en-US');
@@ -266,7 +277,7 @@ class CalendarRequestTest extends TestCase
         $this->expectExceptionMessage('Invalid header value');
         $this->expectExceptionMessage('header injection');
 
-        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request = new CalendarRequest();
         $request->acceptLanguage("en\r\nMalicious-Header: injected");
     }
 
@@ -296,10 +307,30 @@ class CalendarRequestTest extends TestCase
 
     public function testCreateCalendarRequestWithoutApiClientInitialization(): void
     {
+        // ApiClient::createCalendarRequest() still requires ApiClient to be initialized
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('ApiClient must be initialized before creating CalendarRequest');
 
-        // Don't initialize ApiClient - this should throw
+        // Reset ApiClient (setUp() initializes it)
+        ApiClient::resetForTesting();
+
+        // Try to create CalendarRequest via ApiClient without initialization - should throw
         ApiClient::createCalendarRequest();
+    }
+
+    public function testCalendarRequestAutoInitializesApiClient(): void
+    {
+        // Reset ApiClient (setUp() initializes it)
+        ApiClient::resetForTesting();
+
+        // Don't initialize ApiClient manually
+        // CalendarRequest should auto-initialize with defaults
+        $request = new CalendarRequest();
+
+        // Verify it works and uses default API URL
+        $url = $request->getRequestUrl();
+
+        $this->assertStringContainsString('/calendar', $url, 'Auto-initialized CalendarRequest should have valid URL');
+        $this->assertTrue(ApiClient::isInitialized(), 'ApiClient should be auto-initialized');
     }
 }

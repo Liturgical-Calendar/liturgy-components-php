@@ -110,31 +110,17 @@ class MetadataProvider
     /**
      * Get or create the MetadataProvider singleton instance
      *
-     * Returns a singleton instance configured with the provided dependencies.
+     * Uses shared configuration from ApiClient singleton. If ApiClient is not yet
+     * initialized, it will be auto-initialized with default values.
+     *
      * Configuration is set once on first call and becomes immutable thereafter.
      *
-     * **IMPORTANT: Immutable Configuration**
-     *
-     * All parameters are only used on the FIRST call to getInstance(). Subsequent
-     * calls will ignore all parameters and return the already-configured singleton.
-     *
-     * This ensures consistent configuration across the entire application:
-     * - API URL is set once and cannot be changed
-     * - HTTP client configuration is set once
-     * - Cache and logger are set once
-     * - Cache TTL is set once
-     *
-     * **Dependency Resolution Priority**:
-     * 1. Explicit parameters passed to this method (highest priority)
-     * 2. ApiClient configuration (if initialized)
-     * 3. Default values (fallback)
-     *
-     * **Typical Usage (Recommended - with ApiClient):**
+     * **Usage:**
      * ```php
-     * // Initialize ApiClient once at application bootstrap
+     * // Initialize ApiClient once at application bootstrap (recommended)
      * ApiClient::getInstance([
      *     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
-     *     'httpClient' => $httpClient,
+     *     'httpClient' => $httpClient,  // Already decorated with cache/logger
      *     'cache' => $cache,
      *     'logger' => $logger
      * ]);
@@ -144,112 +130,34 @@ class MetadataProvider
      * $metadata = $provider->getMetadata();
      * ```
      *
-     * **Alternative: Provide dependencies directly (no wrapping):**
-     * ```php
-     * // Provide a pre-configured client - used as-is without wrapping
-     * $client = HttpClientFactory::createProductionClient(
-     *     cache: $cache,
-     *     logger: $logger,
-     *     cacheTtl: 3600
-     * );
+     * **Automatic Initialization:**
+     * If ApiClient is not initialized, MetadataProvider will auto-initialize it
+     * with default values (default API URL, basic HTTP client, null logger).
      *
-     * MetadataProvider::getInstance(
-     *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-     *     httpClient: $client  // Used as-is, no additional wrapping
-     * );
-     * ```
-     *
-     * **Alternative: Let MetadataProvider handle client creation:**
-     * ```php
-     * // Provide cache/logger but no httpClient - client is created and wrapped
-     * MetadataProvider::getInstance(
-     *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-     *     cache: $cache,
-     *     logger: $logger,
-     *     cacheTtl: 86400
-     * );
-     * ```
-     *
-     * **Important:** When an httpClient is provided (either via parameter or ApiClient),
-     * it is used as-is without additional wrapping. Only provide `cache`/`logger` parameters
-     * when NOT providing an httpClient. If you provide both an httpClient AND cache/logger,
-     * a warning will be triggered and the cache/logger will be ignored to prevent
-     * double-wrapping.
-     *
-     * @param string|null $apiUrl Optional API base URL. Only used on first call.
-     * @param HttpClientInterface|null $httpClient Optional HTTP client. Only used on first call.
-     * @param CacheInterface|null $cache Optional PSR-16 cache. Only used on first call.
-     * @param LoggerInterface|null $logger Optional PSR-3 logger. Only used on first call.
-     * @param int|null $cacheTtl Cache TTL in seconds. Only used on first call.
      * @return self Singleton instance
      */
-    public static function getInstance(
-        ?string $apiUrl = null,
-        ?HttpClientInterface $httpClient = null,
-        ?CacheInterface $cache = null,
-        ?LoggerInterface $logger = null,
-        ?int $cacheTtl = null
-    ): self {
+    public static function getInstance(): self
+    {
         // Return existing instance if already initialized
         if (self::$instance !== null) {
             return self::$instance;
         }
 
-        // First initialization - set global configuration (immutable)
-        // Priority: explicit params > ApiClient > defaults
-        self::$globalApiUrl = $apiUrl
-            ?? ApiClient::getApiUrl()
-            ?? self::DEFAULT_API_URL;
-
-        self::$globalHttpClient = $httpClient
-            ?? ApiClient::getHttpClient();
-
-        self::$globalCache = $cache
-            ?? ApiClient::getCache();
-
-        self::$globalLogger = $logger
-            ?? ApiClient::getLogger();
-
-        self::$globalCacheTtl = $cacheTtl
-            ?? ApiClient::getCacheTtl()
-            ?? ApiClient::DEFAULT_CACHE_TTL;
-
-        // Warn about potential double-wrapping if httpClient from any source + explicit cache/logger
-        // Note: We check self::$globalHttpClient (resolved from any source) not just $httpClient param
-        // This catches both: explicit httpClient + cache/logger AND ApiClient httpClient + cache/logger
-        if (self::$globalHttpClient !== null && ( $cache !== null || $logger !== null )) {
-            trigger_error(
-                'MetadataProvider::getInstance() called with both httpClient and cache/logger parameters. ' .
-                'HttpClient is provided (either explicitly or from ApiClient), and cache/logger are also provided. ' .
-                'If httpClient is already decorated, this will cause double-wrapping. ' .
-                'Only pass httpClient OR cache/logger, not both.',
-                E_USER_WARNING
-            );
+        // Ensure ApiClient is initialized (auto-initialize with defaults if needed)
+        if (!ApiClient::isInitialized()) {
+            ApiClient::getInstance(); // Uses default values
         }
 
-        // Initialize HTTP client with auto-discovery if not provided
+        // First initialization - pull all configuration from ApiClient
+        self::$globalApiUrl     = ApiClient::getApiUrl() ?? self::DEFAULT_API_URL;
+        self::$globalHttpClient = ApiClient::getHttpClient();
+        self::$globalCache      = ApiClient::getCache();
+        self::$globalLogger     = ApiClient::getLogger();
+        self::$globalCacheTtl   = ApiClient::getCacheTtl() ?? ApiClient::DEFAULT_CACHE_TTL;
+
+        // Use HttpClient from ApiClient (already decorated) or create default
         $baseClient  = self::$globalHttpClient ?? HttpClientFactory::create();
         $finalLogger = self::$globalLogger ?? new NullLogger();
-
-        // Determine if we should skip wrapping:
-        // If ANY httpClient is provided (from ApiClient OR explicit), assume it's already configured
-        // Only wrap if we're creating our own client (no httpClient provided)
-        $shouldSkipWrapping = self::$globalHttpClient !== null;
-
-        // Wrap with caching if cache provided AND we're not skipping wrapping
-        if (self::$globalCache !== null && !$shouldSkipWrapping) {
-            $baseClient = new CachingHttpClient(
-                $baseClient,
-                self::$globalCache,
-                self::$globalCacheTtl,
-                $finalLogger
-            );
-        }
-
-        // Wrap with logging if logger provided AND we're not skipping wrapping
-        if (!( $finalLogger instanceof NullLogger ) && !$shouldSkipWrapping) {
-            $baseClient = new LoggingHttpClient($baseClient, $finalLogger);
-        }
 
         self::$instance = new self($baseClient, $finalLogger);
 
