@@ -46,18 +46,18 @@ use Psr\Log\NullLogger;
  *
  * Usage:
  * ```php
- * // Simple usage with defaults
- * $provider = MetadataProvider::getInstance(
- *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev'
- * );
+ * // Simple usage with defaults (ApiClient auto-initialized)
+ * $provider = MetadataProvider::getInstance();
  * $metadata = $provider->getMetadata();
  *
- * // With custom cache and logger
- * $provider = MetadataProvider::getInstance(
- *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
- *     cache: $cache,
- *     logger: $logger
- * );
+ * // With custom configuration (recommended - initialize ApiClient first)
+ * ApiClient::getInstance([
+ *     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+ *     'httpClient' => $httpClient,
+ *     'cache' => $cache,
+ *     'logger' => $logger,
+ * ]);
+ * $provider = MetadataProvider::getInstance();
  * $metadata = $provider->getMetadata();
  *
  * // In long-running processes, refresh metadata when needed
@@ -178,8 +178,7 @@ class MetadataProvider
         if (self::$globalApiUrl === null) {
             throw new \Exception(
                 'MetadataProvider API URL not configured. ' .
-                'Initialize via ApiClient::getInstance([\'apiUrl\' => ...]) (recommended) ' .
-                'or call MetadataProvider::getInstance(apiUrl: ...) directly.'
+                'Initialize via ApiClient::getInstance([\'apiUrl\' => ...]) before calling getMetadata().'
             );
         }
 
@@ -324,15 +323,15 @@ class MetadataProvider
      *
      * **Usage:**
      * ```php
-     * // First, initialize the MetadataProvider (typically in bootstrap)
-     * MetadataProvider::getInstance(
-     *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-     *     httpClient: $httpClient,
-     *     cache: $cache,
-     *     logger: $logger
-     * );
+     * // First, initialize ApiClient (typically in bootstrap)
+     * ApiClient::getInstance([
+     *     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+     *     'httpClient' => $httpClient,
+     *     'cache' => $cache,
+     *     'logger' => $logger
+     * ]);
      *
-     * // Then use validation anywhere without parameters
+     * // Then use validation anywhere
      * $isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
      * ```
      *
