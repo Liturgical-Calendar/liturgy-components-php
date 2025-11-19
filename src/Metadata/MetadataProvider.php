@@ -81,14 +81,8 @@ class MetadataProvider
     /** @var HttpClientInterface|null Global HTTP client (immutable after first initialization) */
     private static ?HttpClientInterface $globalHttpClient = null;
 
-    /** @var CacheInterface|null Global cache (immutable after first initialization) */
-    private static ?CacheInterface $globalCache = null;
-
     /** @var LoggerInterface|null Global logger (immutable after first initialization) */
     private static ?LoggerInterface $globalLogger = null;
-
-    /** @var int|null Global cache TTL (immutable after first initialization) */
-    private static ?int $globalCacheTtl = null;
 
     private HttpClientInterface $httpClient;
     private LoggerInterface $logger;
@@ -151,9 +145,7 @@ class MetadataProvider
         // First initialization - pull all configuration from ApiClient
         self::$globalApiUrl     = ApiClient::getApiUrl() ?? self::DEFAULT_API_URL;
         self::$globalHttpClient = ApiClient::getHttpClient();
-        self::$globalCache      = ApiClient::getCache();
         self::$globalLogger     = ApiClient::getLogger();
-        self::$globalCacheTtl   = ApiClient::getCacheTtl() ?? ApiClient::DEFAULT_CACHE_TTL;
 
         // Use HttpClient from ApiClient (already decorated) or create default
         $baseClient  = self::$globalHttpClient ?? HttpClientFactory::create();
@@ -304,9 +296,7 @@ class MetadataProvider
         self::$metadataCache    = [];
         self::$globalApiUrl     = null;
         self::$globalHttpClient = null;
-        self::$globalCache      = null;
         self::$globalLogger     = null;
-        self::$globalCacheTtl   = null;
     }
 
     /**
