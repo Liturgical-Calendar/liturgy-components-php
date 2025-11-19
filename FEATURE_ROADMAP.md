@@ -70,7 +70,6 @@ $response = $calendarRequest
 - ❌ Phase 2: Typed response models (CalendarResponse, CalendarSettings, CalendarMetadata)
 - ❌ Phase 2: Helper methods for common queries (getEvent(), eventsByGrade(), etc.)
 - ❌ Phase 3: Smart cache keys with TTL logic based on year
-- ⚠️ Phase 4: CalendarResponseBuilder tests and example integration (implementation complete)
 - ❌ Phase 5: Batch request support (CalendarBatchRequest)
 - ❌ Phase 5: Response formatters (iCal, PDF)
 - ❌ Phase 5: Calendar comparison tools
@@ -1179,155 +1178,10 @@ class CalendarResponse
 }
 ```
 
-#### Phase 3: Calendar Response Builder
+#### Phase 3: Calendar Response Builder ❌ **REMOVED**
 
-**File:** `src/CalendarResponseBuilder.php`
-
-```php
-<?php
-
-namespace LiturgicalCalendar\Components;
-
-use LiturgicalCalendar\Components\Http\HttpClientInterface;
-use Psr\Log\LoggerInterface;
-use Psr\SimpleCache\CacheInterface;
-
-/**
- * Builder for creating CalendarRequest instances with common configurations
- *
- * Provides convenient static methods for fetching calendar data without manually
- * constructing CalendarRequest objects. All methods accept optional HTTP client,
- * logger, and cache dependencies for full control over the request configuration.
- *
- * IMPORTANT: The $cache parameter is accepted for API consistency but is NOT used
- * by CalendarRequest. To enable caching, configure it via ApiClient or provide a
- * pre-decorated HttpClient.
- */
-class CalendarResponseBuilder
-{
-    /**
-     * Quick request for General Roman Calendar
-     *
-     * Caching: The $cache parameter is accepted for API consistency but is NOT
-     * used. Configure caching via ApiClient::getInstance(['cache' => $cache])
-     * or provide a pre-decorated HttpClient.
-     *
-     * @param int $year The liturgical year to fetch
-     * @param string $locale The locale for localized content (default: 'en')
-     * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
-     * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Accepted for API consistency but NOT used
-     * @return \stdClass Calendar response object
-     * @throws \Exception If request fails or response is invalid
-     */
-    public static function generalCalendar(
-        int $year,
-        string $locale = 'en',
-        ?HttpClientInterface $httpClient = null,
-        ?LoggerInterface $logger = null,
-        ?CacheInterface $cache = null
-    ): \stdClass {
-        return (new CalendarRequest($httpClient, $logger, $cache))
-            ->year($year)
-            ->locale($locale)
-            ->get();
-    }
-
-    /**
-     * Quick request for National Calendar
-     *
-     * Caching: The $cache parameter is accepted for API consistency but is NOT
-     * used. Configure caching via ApiClient::getInstance(['cache' => $cache])
-     * or provide a pre-decorated HttpClient.
-     *
-     * @param string $nation The national calendar ID (e.g., 'IT', 'US', 'FR')
-     * @param int $year The liturgical year to fetch
-     * @param string $locale The locale for localized content (default: 'en')
-     * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
-     * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Accepted for API consistency but NOT used
-     * @return \stdClass Calendar response object
-     * @throws \Exception If request fails or response is invalid
-     */
-    public static function nationalCalendar(
-        string $nation,
-        int $year,
-        string $locale = 'en',
-        ?HttpClientInterface $httpClient = null,
-        ?LoggerInterface $logger = null,
-        ?CacheInterface $cache = null
-    ): \stdClass {
-        return (new CalendarRequest($httpClient, $logger, $cache))
-            ->nation($nation)
-            ->year($year)
-            ->locale($locale)
-            ->get();
-    }
-
-    /**
-     * Quick request for Diocesan Calendar
-     *
-     * Caching: The $cache parameter is accepted for API consistency but is NOT
-     * used. Configure caching via ApiClient::getInstance(['cache' => $cache])
-     * or provide a pre-decorated HttpClient.
-     *
-     * @param string $diocese The diocesan calendar ID (9-character format)
-     * @param int $year The liturgical year to fetch
-     * @param string $locale The locale for localized content (default: 'en')
-     * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
-     * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Accepted for API consistency but NOT used
-     * @return \stdClass Calendar response object
-     * @throws \Exception If request fails or response is invalid
-     */
-    public static function diocesanCalendar(
-        string $diocese,
-        int $year,
-        string $locale = 'en',
-        ?HttpClientInterface $httpClient = null,
-        ?LoggerInterface $logger = null,
-        ?CacheInterface $cache = null
-    ): \stdClass {
-        return (new CalendarRequest($httpClient, $logger, $cache))
-            ->diocese($diocese)
-            ->year($year)
-            ->locale($locale)
-            ->get();
-    }
-}
-```
-
-#### CalendarResponseBuilder Usage Examples
-
-```php
-// Minimal usage - all dependencies auto-discovered from ApiClient
-$calendar = CalendarResponseBuilder::generalCalendar(2024);
-
-// With custom locale
-$calendar = CalendarResponseBuilder::nationalCalendar('IT', 2024, 'it');
-
-// With HTTP client for testing/mocking
-$mockClient = new MockHttpClient();
-$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $mockClient);
-
-// With logger for debugging
-$logger = new Logger('calendar');
-$calendar = CalendarResponseBuilder::nationalCalendar('US', 2024, 'en', null, $logger);
-
-// CORRECT way to enable caching - Option 1: Configure via ApiClient
-ApiClient::getInstance([
-    'cache' => new FilesystemCache(),
-    'cacheTtl' => 3600
-]);
-$calendar = CalendarResponseBuilder::generalCalendar(2024);
-
-// CORRECT way to enable caching - Option 2: Pre-decorated HttpClient
-$httpClient = HttpClientFactory::createProductionClient(
-    cache: new FilesystemCache(),
-    cacheTtl: 3600
-);
-$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $httpClient);
-```
+**Removed in 2025-11**: This static helper class was removed as it provided no additional value over the already-clean CalendarRequest fluent API.
+CalendarRequest directly provides the same functionality with better flexibility.
 
 ### CalendarRequest Usage Examples
 
@@ -1363,16 +1217,16 @@ $calendar = $request->year(2024)
     ->locale('en')
     ->get();
 
-// Or even simpler with static helper
-$calendar = CalendarResponseBuilder::generalCalendar(2024);
-
 // Pattern B: Pre-decorated HttpClient (no ApiClient needed)
 $decoratedClient = HttpClientFactory::createProductionClient(
     cache: $cache,
     logger: $logger,
     cacheTtl: 3600
 );
-$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $decoratedClient);
+$request = new CalendarRequest($decoratedClient);
+$calendar = $request->year(2024)
+    ->locale('en')
+    ->get();
 ```
 
 ### CalendarRequest Benefits
@@ -1730,23 +1584,10 @@ $commonEvents = $comparison->getCommonEvents();
 - [ ] Performance benchmarking
 - [ ] Unit tests (10+ tests)
 
-### Phase 4: CalendarResponseBuilder ⚠️ **MOSTLY COMPLETED** (Tests & Examples Pending)
+### Phase 4: CalendarResponseBuilder ❌ **REMOVED** (Not Needed)
 
-- [x] Create `CalendarResponseBuilder` static helper class
-- [x] Implement static methods
-  - [x] generalCalendar()
-  - [x] nationalCalendar()
-  - [x] diocesanCalendar()
-- [ ] **Unit tests (10+ tests)** ⚠️ **PENDING**
-- [ ] **Update examples to use CalendarResponseBuilder** ⚠️ **PENDING**
-
-**Success Criteria**:
-
-- [x] CalendarResponseBuilder class exists with all three methods
-- [x] Methods integrate with CalendarRequest and ApiClient
-- [x] PHPStan Level 10 maintained
-- [ ] **Unit test coverage** ⚠️ **PENDING**
-- [ ] **Examples demonstrate usage** ⚠️ **PENDING**
+**Removed in 2025-11**: Static helper class deemed unnecessary. CalendarRequest already provides a clean fluent API, making CalendarResponseBuilder redundant.
+Since no tests or examples were written and no release was published, removed to keep codebase clean.
 
 ### Phase 5: Advanced Features (Week 6 - Priority 6)
 
@@ -1826,13 +1667,17 @@ $req = new CalendarRequest($httpClient, $logger, $cache);
 
 **Document Version**: 3.1
 **Last Updated**: 2025-11-19
-**Status**: Partially Implemented - Phases 0, 1, & 4 Complete (Tests Needed)
+**Status**: Partially Implemented - Phases 0 & 1 Complete
 **Priority**: Medium (Core features complete, advanced features remain)
+**Changes in v3.2** (2025-11):
+
+- Removed CalendarResponseBuilder (Phase 4) - deemed unnecessary since CalendarRequest already provides clean fluent API
+
 **Changes in v3.1**:
 
-- Updated Phase 4 status to reflect CalendarResponseBuilder implementation completion
-- Marked CalendarResponseBuilder unit tests and example integration as pending
-- Updated "What's Still Missing" to show Phase 4 implementation complete, tests pending
+- ~~Updated Phase 4 status to reflect CalendarResponseBuilder implementation completion~~
+- ~~Marked CalendarResponseBuilder unit tests and example integration as pending~~
+- ~~Updated "What's Still Missing" to show Phase 4 implementation complete, tests pending~~
 
 **Changes in v3.0**:
 
