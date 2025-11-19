@@ -689,6 +689,11 @@ class MetadataProviderTest extends TestCase
         $cache         = new ArrayCache();
         $warningIssued = false;
 
+        // Set up error handler to suppress any ApiClient warnings
+        set_error_handler(function (int $_errno, string $_errstr): bool {
+            return true; // Suppress ApiClient warnings
+        }, E_USER_WARNING);
+
         // Initialize ApiClient with BOTH httpClient AND cache
         ApiClient::getInstance([
             'apiUrl'     => self::API_URL,
@@ -696,7 +701,9 @@ class MetadataProviderTest extends TestCase
             'cache'      => $cache
         ]);
 
-        // Set up error handler to catch any warnings
+        restore_error_handler();
+
+        // Set up error handler to catch MetadataProvider warnings
         set_error_handler(function (int $_errno, string $_errstr) use (&$warningIssued): bool {
             $warningIssued = true;
             return true;
