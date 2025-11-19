@@ -87,6 +87,12 @@ This document summarizes the coordinated API client architecture for the liturgy
 - Factory method for creating CalendarRequest instances
 - Ensure configuration is immutable after initialization
 
+**HttpClient Configuration Behavior**:
+
+- If `httpClient` is provided: Use it as-is (assumes it's already decorated)
+- If `httpClient` is NOT provided: Create production client using `cache`/`logger` parameters
+- If BOTH `httpClient` AND `cache`/`logger` are provided: Triggers warning (likely configuration mistake)
+
 **Key Methods**:
 
 ```php
@@ -198,18 +204,57 @@ $provider = MetadataProvider::getInstance();
 
 ### ✅ Single Configuration Point
 
+#### Pattern 1: Provide pre-decorated HttpClient (RECOMMENDED)
+
 ```php
-// Initialize once at application bootstrap
+// Create production-ready HTTP client with all middleware
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 86400,
+    maxRetries: 3,
+    failureThreshold: 5
+);
+
+// Initialize ApiClient with decorated client
+// Note: Don't also pass cache/logger here - they're already in $httpClient
 ApiClient::getInstance([
     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
-    'httpClient' => $httpClient,
-    'cache' => $cache,
-    'logger' => $logger
+    'httpClient' => $httpClient  // Already decorated with cache/logger
 ]);
 
 // All components automatically use this configuration
 $metadata = MetadataProvider::getInstance();
 $calendar = ApiClient::createCalendarRequest()->year(2024)->get();
+```
+
+#### Pattern 2: Let ApiClient create the HttpClient
+
+```php
+// ApiClient creates production client with these dependencies
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'cache' => $cache,      // Used to create production client
+    'logger' => $logger,    // Used to create production client
+    'cacheTtl' => 86400
+]);
+
+// All components automatically use this configuration
+$metadata = MetadataProvider::getInstance();
+$calendar = ApiClient::createCalendarRequest()->year(2024)->get();
+```
+
+#### ⚠️ Warning: Don't Mix Both Patterns
+
+```php
+// ❌ BAD - Triggers double-wrapping warning
+ApiClient::getInstance([
+    'apiUrl' => 'https://...',
+    'httpClient' => $preDecoratedClient,  // Already has cache/logger
+    'cache' => $cache,                     // Will NOT decorate $preDecoratedClient
+    'logger' => $logger                    // Will NOT decorate $preDecoratedClient
+]);
+// This triggers a warning because it's unclear which behavior you want
 ```
 
 ### ✅ No Duplicate HttpClient Configuration
