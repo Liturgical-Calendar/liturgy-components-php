@@ -13,6 +13,28 @@ use Psr\SimpleCache\CacheInterface;
  * constructing CalendarRequest objects. All methods accept optional HTTP client,
  * logger, and cache dependencies for full control over the request configuration.
  *
+ * **IMPORTANT - Caching Configuration:**
+ *
+ * The `$cache` parameter is accepted for API consistency but is NOT used by
+ * CalendarRequest. To enable caching, configure it via ApiClient or provide a
+ * pre-decorated HttpClient:
+ *
+ * ```php
+ * // Option 1: Configure caching via ApiClient (recommended)
+ * ApiClient::getInstance([
+ *     'cache' => $cache,
+ *     'cacheTtl' => 3600
+ * ]);
+ * $calendar = CalendarResponseBuilder::generalCalendar(2024);
+ *
+ * // Option 2: Use pre-decorated HttpClient
+ * $httpClient = HttpClientFactory::createProductionClient(
+ *     cache: $cache,
+ *     cacheTtl: 3600
+ * );
+ * $calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $httpClient);
+ * ```
+ *
  * **Usage Examples:**
  *
  * ```php
@@ -29,23 +51,6 @@ use Psr\SimpleCache\CacheInterface;
  * // With logger for debugging
  * $logger = new Logger('calendar');
  * $calendar = CalendarResponseBuilder::nationalCalendar('US', 2024, 'en', null, $logger);
- *
- * // With cache for performance
- * $cache = new FilesystemCache();
- * $calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', null, null, $cache);
- *
- * // Full configuration with all dependencies
- * $httpClient = HttpClientFactory::create();
- * $logger = new Logger('calendar');
- * $cache = new ArrayCache();
- * $calendar = CalendarResponseBuilder::diocesanCalendar(
- *     'DIOCESE001',
- *     2024,
- *     'en',
- *     $httpClient,
- *     $logger,
- *     $cache
- * );
  * ```
  */
 class CalendarResponseBuilder
@@ -56,11 +61,16 @@ class CalendarResponseBuilder
      * Fetches the General Roman Calendar for a specific year with optional locale.
      * Dependencies are automatically resolved from ApiClient if not provided explicitly.
      *
+     * **Caching:** The `$cache` parameter is accepted for API consistency but is NOT
+     * used by CalendarRequest. To enable caching, configure it via
+     * `ApiClient::getInstance(['cache' => $cache])` or provide a pre-decorated
+     * HttpClient using `HttpClientFactory::createProductionClient(cache: $cache)`.
+     *
      * @param int $year The liturgical year to fetch (1970-9999)
      * @param string $locale The locale for localized content (default: 'en')
      * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
      * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
+     * @param CacheInterface|null $cache Accepted for API consistency but NOT used (see Caching note above)
      * @return \stdClass Calendar response object
      * @throws \Exception If request fails or response is invalid
      */
@@ -83,12 +93,17 @@ class CalendarResponseBuilder
      * Fetches a national calendar (e.g., US, IT, FR) for a specific year with optional locale.
      * Dependencies are automatically resolved from ApiClient if not provided explicitly.
      *
+     * **Caching:** The `$cache` parameter is accepted for API consistency but is NOT
+     * used by CalendarRequest. To enable caching, configure it via
+     * `ApiClient::getInstance(['cache' => $cache])` or provide a pre-decorated
+     * HttpClient using `HttpClientFactory::createProductionClient(cache: $cache)`.
+     *
      * @param string $nation The national calendar ID (ISO 3166-1 alpha-2 code)
      * @param int $year The liturgical year to fetch (1970-9999)
      * @param string $locale The locale for localized content (default: 'en')
      * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
      * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
+     * @param CacheInterface|null $cache Accepted for API consistency but NOT used (see Caching note above)
      * @return \stdClass Calendar response object
      * @throws \Exception If request fails or response is invalid
      */
@@ -113,12 +128,17 @@ class CalendarResponseBuilder
      * Fetches a diocesan calendar for a specific year with optional locale.
      * Dependencies are automatically resolved from ApiClient if not provided explicitly.
      *
+     * **Caching:** The `$cache` parameter is accepted for API consistency but is NOT
+     * used by CalendarRequest. To enable caching, configure it via
+     * `ApiClient::getInstance(['cache' => $cache])` or provide a pre-decorated
+     * HttpClient using `HttpClientFactory::createProductionClient(cache: $cache)`.
+     *
      * @param string $diocese The diocesan calendar ID (9-character format)
      * @param int $year The liturgical year to fetch (1970-9999)
      * @param string $locale The locale for localized content (default: 'en')
      * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
      * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
+     * @param CacheInterface|null $cache Accepted for API consistency but NOT used (see Caching note above)
      * @return \stdClass Calendar response object
      * @throws \Exception If request fails or response is invalid
      */
