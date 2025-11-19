@@ -183,15 +183,11 @@ $calendarSelect2 = new CalendarSelect();
 $locale = new Locale();
 ```
 
-**⚠️ IMPORTANT**: If you're using `HttpClientFactory::createProductionClient()` or any pre-decorated HTTP client, **DO NOT** pass `cache` or `logger` parameters again to
-`MetadataProvider::getInstance()`. See the "Avoiding Double-Wrapping" section below for details.
+### HTTP Client Configuration Patterns
 
-### Avoiding Double-Wrapping (Important!)
+MetadataProvider supports three configuration patterns for HTTP client setup:
 
-**WARNING**: If you use `HttpClientFactory::createProductionClient()` or any pre-decorated HTTP client, **DO NOT** also pass `cache` or `logger` parameters to
-`MetadataProvider::getInstance()`. This will cause double-wrapping and duplicate logging/caching.
-
-**Correct (with production client):**
+#### Pattern 1: Provide Pre-Configured Client (Recommended for Production)
 
 ```php
 // Production client already includes cache, logger, retry, circuit breaker
@@ -203,32 +199,69 @@ $httpClient = HttpClientFactory::createProductionClient(
     failureThreshold: 5
 );
 
-// Only pass the httpClient - it's already decorated
+// Pass the httpClient only - it's used as-is without additional wrapping
 MetadataProvider::getInstance(
     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-    httpClient: $httpClient  // ← Already decorated, don't pass cache/logger again
+    httpClient: $httpClient
 );
 ```
 
-**Incorrect (double-wrapping):**
+#### Pattern 2: Let MetadataProvider Create and Configure Client
 
 ```php
-$httpClient = HttpClientFactory::createProductionClient(
-    cache: $cache,
-    logger: $logger,
-    cacheTtl: 3600
-);
-
-// ❌ DON'T DO THIS - causes double-wrapping warning
+// Don't pass httpClient - MetadataProvider creates and wraps it for you
 MetadataProvider::getInstance(
     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-    httpClient: $httpClient,
-    cache: $cache,     // ← Already in $httpClient!
-    logger: $logger    // ← Already in $httpClient!
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 86400
 );
 ```
 
-If you pass both an HTTP client AND cache/logger parameters, a runtime warning will be triggered to alert you of potential double-wrapping.
+#### Pattern 3: Use ApiClient for Shared Configuration
+
+```php
+// Initialize ApiClient once at bootstrap
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $decoratedClient
+]);
+
+// MetadataProvider pulls configuration from ApiClient
+MetadataProvider::getInstance();
+```
+
+### Avoiding Double-Wrapping (Important!)
+
+**Rule:** When you provide an `httpClient` parameter, it is used **as-is** without additional wrapping.
+
+**✅ CORRECT** - Provide httpClient OR cache/logger (not both):
+
+```php
+// Option A: Pre-configured client only
+MetadataProvider::getInstance(
+    httpClient: $client  // Used as-is
+);
+
+// Option B: Cache/logger only (client created internally)
+MetadataProvider::getInstance(
+    cache: $cache,
+    logger: $logger
+);
+```
+
+**❌ INCORRECT** - Providing both triggers a warning:
+
+```php
+// Don't do this - the cache/logger will be ignored
+MetadataProvider::getInstance(
+    httpClient: $client,  // Used as-is
+    cache: $cache,        // ← Ignored to prevent double-wrapping
+    logger: $logger       // ← Ignored to prevent double-wrapping
+);
+```
+
+A runtime warning (`E_USER_WARNING`) will be triggered if you provide both an httpClient and cache/logger parameters.
 
 ### Immutable Configuration
 

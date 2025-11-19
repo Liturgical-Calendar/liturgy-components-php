@@ -144,21 +144,37 @@ class MetadataProvider
      * $metadata = $provider->getMetadata();
      * ```
      *
-     * **Legacy Usage (Still Supported):**
+     * **Alternative: Provide dependencies directly (no wrapping):**
      * ```php
-     * // Initialize with explicit parameters (backward compatible)
+     * // Provide a pre-configured client - used as-is without wrapping
+     * $client = HttpClientFactory::createProductionClient(
+     *     cache: $cache,
+     *     logger: $logger,
+     *     cacheTtl: 3600
+     * );
+     *
      * MetadataProvider::getInstance(
      *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
-     *     httpClient: $httpClient,
+     *     httpClient: $client  // Used as-is, no additional wrapping
+     * );
+     * ```
+     *
+     * **Alternative: Let MetadataProvider handle client creation:**
+     * ```php
+     * // Provide cache/logger but no httpClient - client is created and wrapped
+     * MetadataProvider::getInstance(
+     *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
      *     cache: $cache,
      *     logger: $logger,
      *     cacheTtl: 86400
      * );
      * ```
      *
-     * **Warning:** If you provide a pre-decorated client (e.g., from
-     * HttpClientFactory::createProductionClient), DO NOT also pass `$cache` or
-     * `$logger` parameters, as this will cause double-wrapping.
+     * **Important:** When an httpClient is provided (either via parameter or ApiClient),
+     * it is used as-is without additional wrapping. Only provide `cache`/`logger` parameters
+     * when NOT providing an httpClient. If you provide both an httpClient AND cache/logger,
+     * a warning will be triggered and the cache/logger will be ignored to prevent
+     * double-wrapping.
      *
      * @param string|null $apiUrl Optional API base URL. Only used on first call.
      * @param HttpClientInterface|null $httpClient Optional HTTP client. Only used on first call.
@@ -212,8 +228,13 @@ class MetadataProvider
         $baseClient  = self::$globalHttpClient ?? HttpClientFactory::create();
         $finalLogger = self::$globalLogger ?? new NullLogger();
 
-        // Wrap with caching if cache provided
-        if (self::$globalCache !== null) {
+        // Determine if we should skip wrapping:
+        // If ANY httpClient is provided (from ApiClient OR explicit), assume it's already configured
+        // Only wrap if we're creating our own client (no httpClient provided)
+        $shouldSkipWrapping = self::$globalHttpClient !== null;
+
+        // Wrap with caching if cache provided AND we're not skipping wrapping
+        if (self::$globalCache !== null && !$shouldSkipWrapping) {
             $baseClient = new CachingHttpClient(
                 $baseClient,
                 self::$globalCache,
@@ -222,8 +243,8 @@ class MetadataProvider
             );
         }
 
-        // Wrap with logging if logger provided (and not NullLogger)
-        if (!( $finalLogger instanceof NullLogger )) {
+        // Wrap with logging if logger provided AND we're not skipping wrapping
+        if (!( $finalLogger instanceof NullLogger ) && !$shouldSkipWrapping) {
             $baseClient = new LoggingHttpClient($baseClient, $finalLogger);
         }
 
