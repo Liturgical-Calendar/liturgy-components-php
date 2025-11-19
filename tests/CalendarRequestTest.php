@@ -243,4 +243,63 @@ class CalendarRequestTest extends TestCase
         $result3 = $request->header('X_Custom_Underscore', 'value3');
         $this->assertSame($request, $result3, 'header() should accept underscores in name');
     }
+
+    public function testAcceptLanguageDelegatesToHeaderAndIsChainable(): void
+    {
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+
+        // Test that acceptLanguage() returns self for chaining
+        $result = $request->acceptLanguage('en-US');
+        $this->assertSame($request, $result, 'acceptLanguage() should return self for chaining');
+
+        // Test with multiple chained calls
+        $result2 = $request
+            ->acceptLanguage('fr-FR')
+            ->nation('FR')
+            ->year(2025);
+        $this->assertSame($request, $result2, 'acceptLanguage() should support method chaining');
+    }
+
+    public function testAcceptLanguageRejectsInvalidValues(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid header value');
+        $this->expectExceptionMessage('header injection');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->acceptLanguage("en\r\nMalicious-Header: injected");
+    }
+
+    public function testCreateCalendarRequestViaApiClient(): void
+    {
+        // Initialize ApiClient with configuration
+        ApiClient::getInstance([
+            'apiUrl' => self::API_URL
+        ]);
+
+        // Create CalendarRequest via ApiClient (should use shared config)
+        $request = ApiClient::createCalendarRequest();
+
+        // Verify it uses the shared API URL configuration
+        $url = $request->nation('US')->year(2025)->getRequestUrl();
+
+        $this->assertEquals(
+            self::API_URL . '/calendar/nation/US/2025',
+            $url,
+            'CalendarRequest created via ApiClient should use shared API URL configuration'
+        );
+
+        // Verify it's chainable
+        $result = $request->locale('en-US');
+        $this->assertSame($request, $result, 'CalendarRequest from ApiClient should support method chaining');
+    }
+
+    public function testCreateCalendarRequestWithoutApiClientInitialization(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('ApiClient must be initialized before creating CalendarRequest');
+
+        // Don't initialize ApiClient - this should throw
+        ApiClient::createCalendarRequest();
+    }
 }
