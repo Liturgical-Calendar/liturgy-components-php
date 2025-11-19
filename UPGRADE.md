@@ -93,6 +93,82 @@ $isValid = CalendarSelect::isValidDioceseForNation('boston_us', 'US');
 
 See the **[MetadataProvider Architecture](#metadataprovider-architecture)** section below for complete documentation.
 
+### ApiClient & CalendarRequest Pattern (New in v1.x)
+
+**Starting from version 1.x**, the library introduced `ApiClient` as a centralized configuration point and `CalendarRequest` for fetching calendar data from the API.
+
+**Key Changes:**
+
+- `ApiClient` provides a singleton pattern for shared HTTP client, cache, logger, and API URL configuration
+- `CalendarRequest` provides a fluent API for building calendar data requests
+- Factory methods `$apiClient->calendar()` and `$apiClient->metadata()` are the recommended way to create requests
+- All components automatically use the `ApiClient` configuration when available
+
+**Migration:**
+
+Your existing code continues to work! However, for optimal use of the new architecture:
+
+**Old Pattern** (manual API calls):
+
+```php
+// Making raw API calls with curl or file_get_contents
+$url = 'https://litcal.johnromanodorazio.com/api/dev/calendar/nation/IT/2024';
+$response = file_get_contents($url);
+$calendarData = json_decode($response);
+```
+
+**New Pattern** (recommended):
+
+```php
+use LiturgicalCalendar\Components\ApiClient;
+
+// Initialize ApiClient once at application bootstrap
+$apiClient = ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev'
+]);
+
+// Use factory method to create calendar requests
+$calendarData = $apiClient->calendar()
+    ->nation('IT')
+    ->year(2024)
+    ->locale('it')
+    ->get();
+```
+
+**Factory Methods:**
+
+```php
+// Fetch calendar data (returns fresh CalendarRequest instance each time)
+$calendar = $apiClient->calendar()
+    ->nation('US')
+    ->year(2024)
+    ->get();
+
+// Access metadata (returns MetadataProvider singleton)
+$metadata = $apiClient->metadata()->getMetadata();
+```
+
+**Direct Instantiation** (still supported):
+
+```php
+// CalendarRequest automatically uses ApiClient configuration if initialized
+$request = new CalendarRequest();
+$calendar = $request->nation('IT')->year(2024)->get();
+
+// Or with explicit dependencies (for testing/custom configuration)
+$request = new CalendarRequest($httpClient, $logger, $cache, $apiUrl);
+```
+
+**Benefits of Factory Method Pattern:**
+
+- **Single entry point**: Only need to know about `ApiClient`
+- **IDE autocomplete**: Typing `$apiClient->` shows all available endpoints
+- **Type safety**: Return types ensure correct usage
+- **Fresh instances**: `calendar()` returns new instances (no state pollution)
+- **Consistent configuration**: All requests use the same HTTP client, cache, and logger
+
+See the **[ApiClient Architecture](#apiclient-architecture)** section below for complete documentation.
+
 ---
 
 ## New Features
@@ -632,6 +708,202 @@ $anotherSelect = new CalendarSelect();
 1. **Use static methods**: Prefer `MetadataProvider::isValidDioceseForNation()` over instance methods
 1. **Long-running processes**: Call `clearCache()` periodically to refresh metadata
 1. **Testing**: Use `resetForTesting()` in test setup for isolation
+
+---
+
+## ApiClient Architecture
+
+The `ApiClient` class provides centralized management of API configuration with the following features:
+
+### ApiClient - Singleton Pattern with Immutable Configuration
+
+All configuration is set **once** on first initialization and becomes **immutable** for the application lifetime:
+
+```php
+use LiturgicalCalendar\Components\ApiClient;
+
+// First call - initializes with configuration
+$apiClient = ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient,
+    'cache' => $cache,
+    'logger' => $logger,
+    'cacheTtl' => 86400  // 24 hours
+]);
+
+// All subsequent calls return the same singleton (parameters ignored)
+$sameClient = ApiClient::getInstance();
+```
+
+### Factory Methods for API Endpoints
+
+Use factory methods to create API request instances:
+
+```php
+// Calendar data requests (returns fresh CalendarRequest instance)
+$calendarData = $apiClient->calendar()
+    ->nation('IT')
+    ->year(2024)
+    ->locale('it')
+    ->epiphany('JAN6')
+    ->ascension('THURSDAY')
+    ->get();
+
+// Metadata access (returns MetadataProvider singleton)
+$metadata = $apiClient->metadata()->getMetadata();
+```
+
+### CalendarRequest Fluent API
+
+The `CalendarRequest` class provides a fluent API for building calendar data requests:
+
+```php
+use LiturgicalCalendar\Components\ApiClient;
+
+$apiClient = ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev'
+]);
+
+// General Roman Calendar
+$calendar = $apiClient->calendar()
+    ->year(2024)
+    ->locale('en')
+    ->epiphany('SUNDAY_JAN2_JAN8')
+    ->ascension('SUNDAY')
+    ->corpusChristi('SUNDAY')
+    ->eternalHighPriest(true)
+    ->get();
+
+// National Calendar
+$calendar = $apiClient->calendar()
+    ->nation('US')
+    ->year(2024)
+    ->locale('en')
+    ->get();
+
+// Diocesan Calendar
+$calendar = $apiClient->calendar()
+    ->diocese('BOSTON_US')
+    ->year(2024)
+    ->locale('en')
+    ->get();
+```
+
+### Complete Production Example with ApiClient
+
+```php
+use LiturgicalCalendar\Components\ApiClient;
+use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\WebCalendar;
+use Symfony\Component\Cache\Adapter\RedisAdapter;
+use Symfony\Component\Cache\Psr16Cache;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+// 1. Setup cache and logger
+$redis = RedisAdapter::createConnection('redis://localhost');
+$cache = new Psr16Cache(new RedisAdapter($redis, 'litcal', 3600));
+$logger = new Logger('litcal');
+$logger->pushHandler(new StreamHandler('/var/log/litcal.log', Logger::WARNING));
+
+// 2. Create HTTP client with all features
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600,
+    maxRetries: 3,
+    failureThreshold: 5
+);
+
+// 3. Initialize ApiClient ONCE at application bootstrap
+$apiClient = ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient
+]);
+
+// 4. Create UI components - they automatically use ApiClient configuration
+$calendarSelect = new CalendarSelect();
+
+// 5. Fetch calendar data via factory method
+$calendarData = $apiClient->calendar()
+    ->nation('US')
+    ->year(2024)
+    ->locale('en')
+    ->get();
+
+// 6. Display the calendar
+$webCalendar = new WebCalendar($calendarData);
+echo $webCalendar->buildTable();
+
+// 7. Access metadata
+$metadata = $apiClient->metadata()->getMetadata();
+```
+
+### Static Configuration Accessors
+
+Access configuration without creating new instances:
+
+```php
+// Get configured HTTP client
+$httpClient = ApiClient::getHttpClient();
+
+// Get configured API URL
+$apiUrl = ApiClient::getApiUrl();
+
+// Get configured cache
+$cache = ApiClient::getCache();
+
+// Get configured logger
+$logger = ApiClient::getLogger();
+
+// Check if ApiClient is initialized
+if (ApiClient::isInitialized()) {
+    // Use shared config
+}
+```
+
+### Configuration Patterns
+
+#### Pattern 1: Provide Pre-Decorated HTTP Client (Recommended for Production)
+
+```php
+// Create production-ready HTTP client with all middleware
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600,
+    maxRetries: 3,
+    failureThreshold: 5
+);
+
+// Initialize ApiClient with decorated client
+// Note: Don't also pass cache/logger - they're already in $httpClient
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient  // Already decorated
+]);
+```
+
+#### Pattern 2: Let ApiClient Create the HTTP Client
+
+```php
+// ApiClient creates production client using cache/logger
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'cache' => $cache,
+    'logger' => $logger,
+    'cacheTtl' => 86400
+]);
+```
+
+### ApiClient - Best Practices
+
+1. **Initialize once at bootstrap**: Configure ApiClient in your application's initialization code
+1. **Use factory methods**: Prefer `$apiClient->calendar()` over `new CalendarRequest()`
+1. **Avoid double-wrapping**: Don't pass both `httpClient` AND `cache`/`logger` to getInstance()
+1. **Testing**: Use `ApiClient::resetForTesting()` in test setup for isolation
+1. **Future endpoints**: The factory pattern makes it easy to add new endpoints like `$apiClient->events()` or `$apiClient->missals()`
 
 ---
 
