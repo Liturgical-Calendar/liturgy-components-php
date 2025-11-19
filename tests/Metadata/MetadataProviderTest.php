@@ -539,7 +539,7 @@ class MetadataProviderTest extends TestCase
     /**
      * @group apiclient
      */
-    public function testApiClientCacheTtlIsRespected()
+    public function testApiClientCacheTtlConfigurationIsAccessible()
     {
         $httpClient = $this->createMockHttpClient();
         $cache      = new ArrayCache();
@@ -560,10 +560,12 @@ class MetadataProviderTest extends TestCase
 
         restore_error_handler();
 
-        // Create MetadataProvider - should use ApiClient's TTL
+        // Create MetadataProvider - ApiClient TTL should be available
         MetadataProvider::getInstance();
 
-        // Verify the TTL was used (indirectly via ApiClient)
+        // Verify ApiClient's TTL configuration is preserved and accessible
+        // Note: This doesn't verify MetadataProvider actually uses it internally,
+        // only that the ApiClient configuration is intact
         $this->assertEquals($customTtl, ApiClient::getCacheTtl());
     }
 
