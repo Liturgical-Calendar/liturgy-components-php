@@ -149,4 +149,98 @@ class CalendarRequestTest extends TestCase
 
         $this->assertSame($request, $result, 'locale() should return self for chaining');
     }
+
+    public function testYearRejectsTooLowValue(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Year must be between 1970 and 9999');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->year(1969);
+    }
+
+    public function testYearRejectsTooHighValue(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Year must be between 1970 and 9999');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->year(10000);
+    }
+
+    public function testYearAcceptsBoundaryValues(): void
+    {
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+
+        // Test lower boundary
+        $result1 = $request->year(1970);
+        $this->assertSame($request, $result1, 'year(1970) should return self for chaining');
+
+        // Test upper boundary
+        $result2 = $request->year(9999);
+        $this->assertSame($request, $result2, 'year(9999) should return self for chaining');
+    }
+
+    public function testHeaderRejectsInvalidName(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid header name');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->header('Invalid Header!', 'value');
+    }
+
+    public function testHeaderRejectsNameWithSpaces(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid header name');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->header('X Custom Header', 'value');
+    }
+
+    public function testHeaderRejectsValueWithCarriageReturn(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid header value');
+        $this->expectExceptionMessage('header injection');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->header('X-Custom', "value\rMalicious-Header: injected");
+    }
+
+    public function testHeaderRejectsValueWithLineFeed(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid header value');
+        $this->expectExceptionMessage('header injection');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->header('X-Custom', "value\nMalicious-Header: injected");
+    }
+
+    public function testHeaderRejectsValueWithCRLF(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid header value');
+        $this->expectExceptionMessage('header injection');
+
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+        $request->header('X-Custom', "value\r\nMalicious-Header: injected");
+    }
+
+    public function testHeaderAcceptsValidNameAndValue(): void
+    {
+        $request = new CalendarRequest(apiUrl: self::API_URL);
+
+        // Test valid header names
+        $result1 = $request->header('X-Custom-Header', 'value1');
+        $this->assertSame($request, $result1, 'header() should return self for chaining');
+
+        $result2 = $request->header('Accept', 'application/xml');
+        $this->assertSame($request, $result2, 'header() should return self for chaining');
+
+        $result3 = $request->header('X_Custom_Underscore', 'value3');
+        $this->assertSame($request, $result3, 'header() should accept underscores in name');
+    }
 }
