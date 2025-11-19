@@ -40,7 +40,10 @@ This document summarizes the coordinated API client architecture for the liturgy
 │  • getCache() → CacheInterface                              │
 │  • getLogger() → LoggerInterface                            │
 │  • getCacheTtl() → int                                      │
-│  • createCalendarRequest() → CalendarRequest                │
+│                                                             │
+│  Instance Methods (Factory):                                │
+│  • calendar() → CalendarRequest                             │
+│  • metadata() → MetadataProvider                            │
 └─────────────────────────────────────────────────────────────┘
                               │
                               │ Provides dependencies to
@@ -84,7 +87,6 @@ This document summarizes the coordinated API client architecture for the liturgy
 
 - Store shared HttpClient, Cache, Logger, API URL, Cache TTL
 - Provide static accessors for all dependencies
-- Factory method for creating CalendarRequest instances
 - Ensure configuration is immutable after initialization
 
 **HttpClient Configuration Behavior**:
@@ -107,8 +109,9 @@ ApiClient::getLogger(): ?LoggerInterface
 ApiClient::getCacheTtl(): ?int
 ApiClient::isInitialized(): bool
 
-// Factory
-ApiClient::createCalendarRequest(): CalendarRequest
+// Factory methods (instance)
+$apiClient->calendar(): CalendarRequest
+$apiClient->metadata(): MetadataProvider
 
 // Testing
 ApiClient::resetForTesting(): void
@@ -153,8 +156,9 @@ $provider = MetadataProvider::getInstance(
 **Behavior**:
 
 ```php
-// Option 1: Via ApiClient factory (recommended)
-$request = ApiClient::createCalendarRequest();
+// Option 1: Via ApiClient factory method (recommended)
+$apiClient = ApiClient::getInstance();
+$request = $apiClient->calendar();
 
 // Option 2: Direct instantiation with ApiClient fallback
 $request = new CalendarRequest();  // Uses ApiClient if initialized
@@ -224,8 +228,8 @@ ApiClient::getInstance([
 ]);
 
 // All components automatically use this configuration
-$metadata = MetadataProvider::getInstance();
-$calendar = ApiClient::createCalendarRequest()->year(2024)->get();
+$metadata = $apiClient->metadata()->getMetadata();
+$calendar = $apiClient->calendar()->year(2024)->get();
 ```
 
 #### Pattern 2: Let ApiClient create the HttpClient
@@ -240,8 +244,8 @@ ApiClient::getInstance([
 ]);
 
 // All components automatically use this configuration
-$metadata = MetadataProvider::getInstance();
-$calendar = ApiClient::createCalendarRequest()->year(2024)->get();
+$metadata = $apiClient->metadata()->getMetadata();
+$calendar = $apiClient->calendar()->year(2024)->get();
 ```
 
 #### ⚠️ Warning: Don't Mix Both Patterns
@@ -288,10 +292,10 @@ ApiClient::getInstance(['httpClient' => $mockClient]);
 ### ✅ Future-Proof
 
 ```php
-// Easy to add more API endpoint components
-ApiClient::createEventsRequest();
-ApiClient::createMissalsRequest();
-ApiClient::createLectionaryRequest();
+// Easy to add more API endpoint components via factory methods
+$events = $apiClient->events();
+$missals = $apiClient->missals();
+$lectionary = $apiClient->lectionary();
 ```
 
 ## Migration Path
@@ -342,7 +346,7 @@ ApiClient::getInstance([
 
 // Application code
 $calendarSelect = new CalendarSelect();
-$calendar = ApiClient::createCalendarRequest()
+$calendar = $apiClient->calendar()
     ->year(2024)
     ->nation('US')
     ->get();
@@ -355,8 +359,8 @@ $calendar = ApiClient::createCalendarRequest()
 ApiClient::getInstance(['apiUrl' => 'https://litcal.../api/dev']);
 
 // Components work immediately
-$metadata = MetadataProvider::getInstance();
-$calendar = ApiClient::createCalendarRequest()->year(2024)->get();
+$metadata = $apiClient->metadata()->getMetadata();
+$calendar = $apiClient->calendar()->year(2024)->get();
 ```
 
 ### Pattern 3: Testing (Explicit Mocks)
@@ -372,8 +376,8 @@ ApiClient::getInstance([
 ]);
 
 // All components use mock
-$metadata = MetadataProvider::getInstance();
-$calendar = ApiClient::createCalendarRequest()->year(2024)->get();
+$metadata = $apiClient->metadata()->getMetadata();
+$calendar = $apiClient->calendar()->year(2024)->get();
 ```
 
 ### Pattern 4: Legacy/Independent Use (Backward Compatible)

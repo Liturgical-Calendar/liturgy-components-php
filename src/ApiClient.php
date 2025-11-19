@@ -4,6 +4,7 @@ namespace LiturgicalCalendar\Components;
 
 use LiturgicalCalendar\Components\Http\HttpClientInterface;
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use Psr\SimpleCache\CacheInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -22,17 +23,16 @@ use Psr\Log\NullLogger;
  * Usage:
  * ```php
  * // Initialize once at application bootstrap
- * ApiClient::getInstance([
+ * $apiClient = ApiClient::getInstance([
  *     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
- *     'httpClient' => $httpClient,
  *     'cache' => $cache,
  *     'logger' => $logger,
  *     'cacheTtl' => ApiClient::DEFAULT_CACHE_TTL  // Or custom value
  * ]);
  *
- * // All components use this configuration
- * $metadata = MetadataProvider::getInstance();
- * $request = ApiClient::createCalendarRequest();
+ * // Use factory methods for API requests (recommended)
+ * $calendar = $apiClient->calendar()->nation('IT')->year(2024)->get();
+ * $metadata = $apiClient->metadata()->getMetadata();
  * ```
  */
 class ApiClient
@@ -174,25 +174,29 @@ class ApiClient
     }
 
     /**
-     * Create a CalendarRequest with shared configuration
+     * Create a new calendar data request
      *
-     * CalendarRequest will automatically use the configuration from ApiClient singleton.
-     * This method requires ApiClient to be initialized first.
+     * Factory method for creating CalendarRequest instances that automatically
+     * use the ApiClient's shared configuration.
      *
-     * @return CalendarRequest
-     * @throws \RuntimeException if ApiClient is not initialized
+     * @return CalendarRequest Fresh CalendarRequest instance
      */
-    public static function createCalendarRequest(): CalendarRequest
+    public function calendar(): CalendarRequest
     {
-        if (self::$instance === null) {
-            throw new \RuntimeException(
-                'ApiClient must be initialized before creating CalendarRequest. ' .
-                'Call ApiClient::getInstance() first.'
-            );
-        }
-
-        // CalendarRequest automatically pulls config from ApiClient
         return new CalendarRequest();
+    }
+
+    /**
+     * Access the metadata provider
+     *
+     * Returns the MetadataProvider singleton which automatically uses the
+     * ApiClient's shared configuration.
+     *
+     * @return MetadataProvider MetadataProvider singleton instance
+     */
+    public function metadata(): MetadataProvider
+    {
+        return MetadataProvider::getInstance();
     }
 
     /**

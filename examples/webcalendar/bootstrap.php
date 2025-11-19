@@ -139,7 +139,7 @@ $apiBaseUrl = rtrim("{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}{$apiPort}{$_E
 // Note: $httpClient from createProductionClient() is already decorated with
 // cache/logger middleware, so we only pass the httpClient to avoid double-wrapping.
 
-ApiClient::getInstance([
+$apiClient = ApiClient::getInstance([
     'apiUrl'     => $apiBaseUrl,
     'httpClient' => $httpClient  // Already decorated - don't pass cache/logger
 ]);
@@ -270,14 +270,15 @@ if (isset($_POST) && !empty($_POST)) {
     // ========================================================================
     // Make Calendar Request using PSR-18 HTTP Client (via CalendarRequest)
     // ========================================================================
-    // CalendarRequest automatically uses the ApiClient configuration
-    // (HTTP client, logger, cache, API URL) that we initialized earlier.
+    // Use ApiClient factory method to create CalendarRequest.
+    // This ensures the request uses the shared HTTP client, logger, cache,
+    // and API URL that we initialized earlier.
     $webCalendarHtml = '';
     $requestUrl      = '';
 
     try {
-        // Create CalendarRequest instance (automatically pulls from ApiClient)
-        $calendarRequest = new CalendarRequest();
+        // Create CalendarRequest via ApiClient factory method (recommended)
+        $calendarRequest = $apiClient->calendar();
 
         // Build the request using fluent API
         if ($selectedDiocese) {

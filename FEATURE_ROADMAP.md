@@ -54,9 +54,9 @@ This document outlines planned features and enhancements for the Liturgical Cale
 **Current Modern Approach** (from examples/webcalendar/index.php):
 
 ```php
-// CalendarRequest with fluent API - uses ApiClient configuration
-$calendarRequest = new CalendarRequest();
-$response = $calendarRequest
+// CalendarRequest via ApiClient factory method (recommended)
+$apiClient = ApiClient::getInstance();
+$response = $apiClient->calendar()
     ->nation('US')
     ->year(2024)
     ->locale('en')
@@ -169,16 +169,15 @@ if (ApiClient::isInitialized()) {
 }
 ```
 
-#### Factory Methods
+#### Using CalendarRequest
 
 ```php
-// Create a CalendarRequest with shared configuration
-$request = ApiClient::createCalendarRequest();
-$calendar = $request->year(2024)->nation('US')->get();
+// Create CalendarRequest via ApiClient factory method (recommended)
+$apiClient = ApiClient::getInstance();
+$calendar = $apiClient->calendar()->year(2024)->nation('US')->get();
 
-// MetadataProvider automatically uses ApiClient configuration
-$metadata = MetadataProvider::getInstance();  // No params needed!
-$index = $metadata->getMetadata();
+// Access metadata via ApiClient factory method
+$metadata = $apiClient->metadata()->getMetadata();
 ```
 
 ### MetadataProvider Integration
@@ -210,8 +209,8 @@ ApiClient::getInstance([
 // MetadataProvider automatically uses ApiClient configuration
 $calendarSelect = new CalendarSelect();
 
-// CalendarRequest also uses ApiClient configuration
-$calendar = ApiClient::createCalendarRequest()
+// CalendarRequest via ApiClient factory method (recommended)
+$calendar = $apiClient->calendar()
     ->year(2024)
     ->nation('US')
     ->get();
@@ -240,14 +239,12 @@ $metadata = MetadataProvider::getInstance();
 1. **Auto-initialized defaults** (fallback)
 
 ```php
-// Option 1: Use ApiClient configuration (recommended)
-ApiClient::getInstance(['apiUrl' => 'https://api.example.com']);
-$request = ApiClient::createCalendarRequest();
+// Use ApiClient factory method (recommended)
+$apiClient = ApiClient::getInstance(['apiUrl' => 'https://api.example.com']);
+$request = $apiClient->calendar();
 
-// Option 2: Direct instantiation (auto-initializes ApiClient if needed)
+// Or direct instantiation (still supported - uses ApiClient configuration)
 $request = new CalendarRequest();
-
-// Both approaches use the same ApiClient singleton configuration
 ```
 
 ### Implementation Plan
@@ -285,8 +282,8 @@ use Psr\Log\NullLogger;
  * ]);
  *
  * // All components use this configuration
- * $metadata = MetadataProvider::getInstance();
- * $request = ApiClient::createCalendarRequest();
+ * $metadata = $apiClient->metadata()->getMetadata();
+ * $calendar = $apiClient->calendar()->year(2024)->get();
  * ```
  */
 class ApiClient
@@ -428,27 +425,6 @@ class ApiClient
     }
 
     /**
-     * Create a CalendarRequest with shared configuration
-     *
-     * CalendarRequest automatically pulls configuration from ApiClient singleton.
-     * If ApiClient is not initialized, CalendarRequest will auto-initialize it with defaults.
-     *
-     * @return CalendarRequest
-     */
-    public static function createCalendarRequest(): CalendarRequest
-    {
-        if (self::$instance === null) {
-            throw new \RuntimeException(
-                'ApiClient must be initialized before creating CalendarRequest. ' .
-                'Call ApiClient::getInstance() first.'
-            );
-        }
-
-        // CalendarRequest pulls configuration from ApiClient singleton
-        return new CalendarRequest();
-    }
-
-    /**
      * Reset singleton instance (for testing only)
      *
      * @internal
@@ -548,7 +524,7 @@ ApiClient::getInstance([
 
 // All components automatically use shared configuration
 $calendarSelect = new CalendarSelect();
-$calendar = ApiClient::createCalendarRequest()->year(2024)->get();
+$calendar = $apiClient->calendar()->year(2024)->get();
 ```
 
 ---
@@ -1501,7 +1477,7 @@ $commonEvents = $comparison->getCommonEvents();
   - [x] Implement getInstance() with config array parameter
   - [x] Add static getters: getHttpClient(), getApiUrl(), getCache(), getLogger(), getCacheTtl()
   - [x] Add isInitialized() check
-  - [x] Add createCalendarRequest() factory method
+  - [x] ~~Add createCalendarRequest() factory method~~ (removed as redundant)
   - [x] Add resetForTesting() for test isolation
 - [x] Update `MetadataProvider` to use ApiClient
   - [x] Modify getInstance() to check ApiClient first (priority: explicit params > ApiClient > defaults)
@@ -1566,7 +1542,7 @@ $commonEvents = $comparison->getCommonEvents();
     - [x] Valid header names accepted
   - [x] Test year bounds validation (1970-9999)
   - [x] Test integration with ApiClient
-    - [x] `ApiClient::createCalendarRequest()` factory method
+    - [x] ~~`ApiClient::createCalendarRequest()` factory method~~ (removed as redundant)
     - [x] Shared configuration from ApiClient
     - [x] Error when ApiClient not initialized
   - [ ] Test POST data construction ⚠️ **Remaining gap**

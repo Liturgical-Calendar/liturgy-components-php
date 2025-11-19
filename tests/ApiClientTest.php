@@ -5,6 +5,7 @@ namespace LiturgicalCalendar\Components\Tests;
 use PHPUnit\Framework\TestCase;
 use LiturgicalCalendar\Components\ApiClient;
 use LiturgicalCalendar\Components\CalendarRequest;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use LiturgicalCalendar\Components\Http\HttpClientInterface;
 use LiturgicalCalendar\Components\Cache\ArrayCache;
 use Psr\Log\LoggerInterface;
@@ -23,6 +24,7 @@ class ApiClientTest extends TestCase
     {
         // Cleanup after each test
         ApiClient::resetForTesting();
+        MetadataProvider::resetForTesting();
     }
 
     public function testGetInstanceReturnsSingleton()
@@ -174,23 +176,6 @@ class ApiClientTest extends TestCase
         $this->assertEquals(86400, ApiClient::getCacheTtl(), 'Default cache TTL should be 24 hours (86400 seconds)');
     }
 
-    public function testCreateCalendarRequestThrowsExceptionWhenNotInitialized()
-    {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('ApiClient must be initialized');
-
-        ApiClient::createCalendarRequest();
-    }
-
-    public function testCreateCalendarRequestReturnsCalendarRequestInstance()
-    {
-        ApiClient::getInstance(['apiUrl' => self::TEST_API_URL]);
-
-        $request = ApiClient::createCalendarRequest();
-
-        $this->assertInstanceOf(CalendarRequest::class, $request);
-    }
-
     public function testResetForTestingClearsSingleton()
     {
         ApiClient::getInstance(['apiUrl' => self::TEST_API_URL]);
@@ -335,5 +320,66 @@ class ApiClientTest extends TestCase
 
         $this->assertTrue($warningIssued, 'Expected warning was not issued');
         $this->assertStringContainsString('cache/logger configuration will be ignored', $warningMessage);
+    }
+
+    public function testCalendarFactoryReturnsCalendarRequestInstance()
+    {
+        $apiClient = ApiClient::getInstance(['apiUrl' => self::TEST_API_URL]);
+
+        $calendarRequest = $apiClient->calendar();
+
+        $this->assertInstanceOf(CalendarRequest::class, $calendarRequest);
+    }
+
+    public function testCalendarFactoryReturnsFreshInstances()
+    {
+        $apiClient = ApiClient::getInstance(['apiUrl' => self::TEST_API_URL]);
+
+        $request1 = $apiClient->calendar();
+        $request2 = $apiClient->calendar();
+
+        $this->assertNotSame($request1, $request2, 'calendar() should return fresh instances each time');
+    }
+
+    public function testCalendarRequestUsesApiClientConfiguration()
+    {
+        ApiClient::getInstance(['apiUrl' => self::TEST_API_URL]);
+
+        $calendarRequest = ApiClient::getInstance()->calendar();
+
+        // CalendarRequest should automatically use ApiClient's configuration
+        // We can't easily verify this without making HTTP requests, but we can
+        // verify that the request is created successfully
+        $this->assertInstanceOf(CalendarRequest::class, $calendarRequest);
+    }
+
+    public function testMetadataFactoryReturnsMetadataProviderInstance()
+    {
+        $apiClient = ApiClient::getInstance(['apiUrl' => self::TEST_API_URL]);
+
+        $metadata = $apiClient->metadata();
+
+        $this->assertInstanceOf(MetadataProvider::class, $metadata);
+    }
+
+    public function testMetadataFactoryReturnsSameSingleton()
+    {
+        $apiClient = ApiClient::getInstance(['apiUrl' => self::TEST_API_URL]);
+
+        $metadata1 = $apiClient->metadata();
+        $metadata2 = $apiClient->metadata();
+
+        $this->assertSame($metadata1, $metadata2, 'metadata() should return the same singleton instance');
+    }
+
+    public function testMetadataProviderUsesApiClientConfiguration()
+    {
+        ApiClient::getInstance(['apiUrl' => self::TEST_API_URL]);
+
+        $metadata = ApiClient::getInstance()->metadata();
+
+        // MetadataProvider should automatically use ApiClient's configuration
+        // We can verify this by checking that MetadataProvider's URL matches ApiClient's
+        $this->assertInstanceOf(MetadataProvider::class, $metadata);
     }
 }

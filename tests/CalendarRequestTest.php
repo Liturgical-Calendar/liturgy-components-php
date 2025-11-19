@@ -281,44 +281,6 @@ class CalendarRequestTest extends TestCase
         $request->acceptLanguage("en\r\nMalicious-Header: injected");
     }
 
-    public function testCreateCalendarRequestViaApiClient(): void
-    {
-        // Reset and re-initialize ApiClient for this specific test
-        ApiClient::resetForTesting();
-        ApiClient::getInstance([
-            'apiUrl' => self::API_URL
-        ]);
-
-        // Create CalendarRequest via ApiClient (should use shared config)
-        $request = ApiClient::createCalendarRequest();
-
-        // Verify it uses the shared API URL configuration
-        $url = $request->nation('US')->year(2025)->getRequestUrl();
-
-        $this->assertEquals(
-            self::API_URL . '/calendar/nation/US/2025',
-            $url,
-            'CalendarRequest created via ApiClient should use shared API URL configuration'
-        );
-
-        // Verify it's chainable
-        $result = $request->locale('en-US');
-        $this->assertSame($request, $result, 'CalendarRequest from ApiClient should support method chaining');
-    }
-
-    public function testCreateCalendarRequestWithoutApiClientInitialization(): void
-    {
-        // ApiClient::createCalendarRequest() still requires ApiClient to be initialized
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('ApiClient must be initialized before creating CalendarRequest');
-
-        // Reset ApiClient (setUp() initializes it)
-        ApiClient::resetForTesting();
-
-        // Try to create CalendarRequest via ApiClient without initialization - should throw
-        ApiClient::createCalendarRequest();
-    }
-
     public function testCalendarRequestAutoInitializesApiClient(): void
     {
         // Reset ApiClient (setUp() initializes it)
