@@ -214,6 +214,11 @@ class ApiClientTest extends TestCase
         $logger     = $this->createMock(LoggerInterface::class);
         $ttl        = 7200;
 
+        // Suppress double-wrapping warning for this test (intentional test scenario)
+        set_error_handler(function () {
+            return true;
+        }, E_USER_WARNING);
+
         ApiClient::getInstance([
             'apiUrl'     => self::TEST_API_URL,
             'httpClient' => $httpClient,
@@ -221,6 +226,8 @@ class ApiClientTest extends TestCase
             'logger'     => $logger,
             'cacheTtl'   => $ttl
         ]);
+
+        restore_error_handler();
 
         $this->assertEquals(self::TEST_API_URL, ApiClient::getApiUrl());
         $this->assertSame($httpClient, ApiClient::getHttpClient());
@@ -257,5 +264,76 @@ class ApiClientTest extends TestCase
 
         $this->assertSame($httpClient, ApiClient::getHttpClient());
         $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev', ApiClient::getApiUrl());
+    }
+
+    public function testWarnsAboutDoubleWrappingWhenBothClientAndCacheProvided()
+    {
+        $httpClient     = $this->createMock(HttpClientInterface::class);
+        $cache          = new ArrayCache();
+        $warningIssued  = false;
+        $warningMessage = '';
+
+        // Set up error handler to catch the warning
+        set_error_handler(function (int $_errno, string $errstr) use (&$warningIssued, &$warningMessage): bool {
+            $warningIssued  = true;
+            $warningMessage = $errstr;
+            return true; // Suppress the warning
+        }, E_USER_WARNING);
+
+        ApiClient::getInstance(['httpClient' => $httpClient, 'cache' => $cache]);
+
+        restore_error_handler();
+
+        $this->assertTrue($warningIssued, 'Expected warning was not issued');
+        $this->assertStringContainsString('double-wrapping', $warningMessage);
+    }
+
+    public function testWarnsAboutDoubleWrappingWhenBothClientAndLoggerProvided()
+    {
+        $httpClient     = $this->createMock(HttpClientInterface::class);
+        $logger         = $this->createMock(LoggerInterface::class);
+        $warningIssued  = false;
+        $warningMessage = '';
+
+        // Set up error handler to catch the warning
+        set_error_handler(function (int $_errno, string $errstr) use (&$warningIssued, &$warningMessage): bool {
+            $warningIssued  = true;
+            $warningMessage = $errstr;
+            return true; // Suppress the warning
+        }, E_USER_WARNING);
+
+        ApiClient::getInstance(['httpClient' => $httpClient, 'logger' => $logger]);
+
+        restore_error_handler();
+
+        $this->assertTrue($warningIssued, 'Expected warning was not issued');
+        $this->assertStringContainsString('double-wrapping', $warningMessage);
+    }
+
+    public function testWarnsAboutDoubleWrappingWhenClientAndBothCacheAndLoggerProvided()
+    {
+        $httpClient     = $this->createMock(HttpClientInterface::class);
+        $cache          = new ArrayCache();
+        $logger         = $this->createMock(LoggerInterface::class);
+        $warningIssued  = false;
+        $warningMessage = '';
+
+        // Set up error handler to catch the warning
+        set_error_handler(function (int $_errno, string $errstr) use (&$warningIssued, &$warningMessage): bool {
+            $warningIssued  = true;
+            $warningMessage = $errstr;
+            return true; // Suppress the warning
+        }, E_USER_WARNING);
+
+        ApiClient::getInstance([
+            'httpClient' => $httpClient,
+            'cache'      => $cache,
+            'logger'     => $logger
+        ]);
+
+        restore_error_handler();
+
+        $this->assertTrue($warningIssued, 'Expected warning was not issued');
+        $this->assertStringContainsString('double-wrapping', $warningMessage);
     }
 }

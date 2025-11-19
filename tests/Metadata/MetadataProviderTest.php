@@ -468,6 +468,11 @@ class MetadataProviderTest extends TestCase
         $cache      = new ArrayCache();
         $logger     = $this->createMock(LoggerInterface::class);
 
+        // Suppress double-wrapping warning for this test (intentional test scenario)
+        set_error_handler(function () {
+            return true;
+        }, E_USER_WARNING);
+
         // Initialize ApiClient first
         ApiClient::getInstance([
             'apiUrl'     => self::API_URL,
@@ -476,6 +481,8 @@ class MetadataProviderTest extends TestCase
             'logger'     => $logger,
             'cacheTtl'   => 3600
         ]);
+
+        restore_error_handler();
 
         // Create MetadataProvider without parameters - should use ApiClient config
         $provider = MetadataProvider::getInstance();
@@ -538,6 +545,11 @@ class MetadataProviderTest extends TestCase
         $cache      = new ArrayCache();
         $customTtl  = 7200;
 
+        // Suppress double-wrapping warning for this test (intentional test scenario)
+        set_error_handler(function () {
+            return true;
+        }, E_USER_WARNING);
+
         // Initialize ApiClient with custom TTL
         ApiClient::getInstance([
             'apiUrl'     => self::API_URL,
@@ -545,6 +557,8 @@ class MetadataProviderTest extends TestCase
             'cache'      => $cache,
             'cacheTtl'   => $customTtl
         ]);
+
+        restore_error_handler();
 
         // Create MetadataProvider - should use ApiClient's TTL
         MetadataProvider::getInstance();
