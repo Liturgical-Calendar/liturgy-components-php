@@ -2,6 +2,8 @@
 
 require '../../vendor/autoload.php';
 
+use LiturgicalCalendar\Components\ApiClient;
+use LiturgicalCalendar\Components\CalendarRequest;
 use LiturgicalCalendar\Components\ApiOptions;
 use LiturgicalCalendar\Components\ApiOptions\Input;
 use LiturgicalCalendar\Components\ApiOptions\PathType;
@@ -14,7 +16,6 @@ use LiturgicalCalendar\Components\WebCalendar\Column;
 use LiturgicalCalendar\Components\WebCalendar\ColumnOrder;
 use LiturgicalCalendar\Components\WebCalendar\DateFormat;
 use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
-use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 
 // PSR-compliant HTTP Client with caching and logging
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
@@ -120,26 +121,29 @@ $_ENV['API_PORT']      = $_ENV['API_PORT'] ?? '';
 $_ENV['API_BASE_PATH'] = $_ENV['API_BASE_PATH'] ?? '/api/dev';
 
 // ============================================================================
-// Build Base API URL (used by both MetadataProvider and calendar requests)
+// Build Base API URL (used by ApiClient for all API interactions)
 // ============================================================================
-// Centralize URL construction to ensure metadata and calendar requests stay in sync.
-// Both use the same base URL, preventing drift between MetadataProvider and manual requests.
+// Centralize URL construction to ensure all API requests use the same base URL.
+// ApiClient distributes this configuration to MetadataProvider, CalendarRequest,
+// and any other components that need API access.
 
 $apiPort    = !empty($_ENV['API_PORT']) ? ":{$_ENV['API_PORT']}" : '';
 $apiBaseUrl = rtrim("{$_ENV['API_PROTOCOL']}://{$_ENV['API_HOST']}{$apiPort}{$_ENV['API_BASE_PATH']}", '/');
 
 // ============================================================================
-// Initialize MetadataProvider (Centralized Singleton Configuration)
+// Initialize ApiClient (Centralized API Configuration)
 // ============================================================================
-// Initialize MetadataProvider once with all configuration. This becomes immutable
-// for the lifetime of the application. All components will use this configuration.
-// Note: $httpClient from createProductionClient() is already decorated with cache/logger,
-// so we only pass the httpClient to avoid double-wrapping.
+// Initialize ApiClient once with all configuration. This becomes immutable
+// for the lifetime of the application. All components (MetadataProvider,
+// CalendarRequest, etc.) will use this shared configuration.
+//
+// Note: $httpClient from createProductionClient() is already decorated with
+// cache/logger middleware, so we only pass the httpClient to avoid double-wrapping.
 
-MetadataProvider::getInstance(
-    apiUrl: $apiBaseUrl,
-    httpClient: $httpClient  // Already decorated - don't pass cache/logger
-);
+ApiClient::getInstance([
+    'apiUrl'     => $apiBaseUrl,
+    'httpClient' => $httpClient  // Already decorated - don't pass cache/logger
+]);
 
 // ============================================================================
 // Initialize Components
@@ -235,7 +239,7 @@ if (isset($_POST) && !empty($_POST)) {
         $requestHeaders[] = 'Accept-Language: ' . $selectedLocale;
     }
 
-    if ($selectedDiocese && $selectedNation && false === MetadataProvider::isValidDioceseForNation($selectedDiocese, $selectedNation)) {
+    if ($selectedDiocese && $selectedNation && false === CalendarSelect::isValidDioceseForNation($selectedDiocese, $selectedNation)) {
         $selectedDiocese = false;
         unset($_POST['diocesan_calendar']);
     }
@@ -270,28 +274,79 @@ if (isset($_POST) && !empty($_POST)) {
         $apiOptions->localeInput->setOptionsForCalendar('nation', $selectedNation);
     }
 
-    // Build request URL using the centralized base URL
-    // This ensures the calendar request uses the same base as MetadataProvider
-    $requestUrl = "{$apiBaseUrl}/calendar{$requestPath}{$requestYear}";
-
     // ========================================================================
-    // Make HTTP POST Request using PSR-18 HTTP Client
-    // TODO: This manual curl request should be replaced with a dedicated
-    //       CalendarRequest component. See FEATURE_ROADMAP.md for details.
+    // Make Calendar Request using PSR-18 HTTP Client (via CalendarRequest)
     // ========================================================================
+    // CalendarRequest automatically uses the ApiClient configuration
+    // (HTTP client, logger, cache, API URL) that we initialized earlier.
     $webCalendarHtml = '';
-    $ch              = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $requestUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($requestData));
-    $response = curl_exec($ch);
-    curl_close($ch);
-    if ($response) {
-        //echo '<pre>' . $response . '</pre>';
-        $LiturgicalCalendar = json_decode($response);
-        if (JSON_ERROR_NONE === json_last_error()) {
+    $requestUrl      = '';
+
+    try {
+        // Create CalendarRequest instance (automatically pulls from ApiClient)
+        $calendarRequest = new CalendarRequest();
+
+        // Build the request using fluent API
+        if ($selectedDiocese) {
+            $calendarRequest->diocese($selectedDiocese);
+        } elseif ($selectedNation) {
+            $calendarRequest->nation($selectedNation);
+        }
+
+        // Set year if provided
+        if (!empty($requestData['year'] ?? null)) {
+            $calendarRequest->year((int) $requestData['year']);
+        } elseif (isset($_POST['year']) && is_numeric($_POST['year'])) {
+            $calendarRequest->year((int) $_POST['year']);
+        }
+
+        // Set locale if provided
+        if ($selectedLocale) {
+            $calendarRequest->locale($selectedLocale);
+        }
+
+        // Set year type if provided
+        if (!empty($requestData['year_type'] ?? null)) {
+            $calendarRequest->yearType($requestData['year_type']);
+        }
+
+        // Set mobile feast settings (only for General Roman Calendar)
+        if (!$selectedDiocese && !$selectedNation) {
+            if (!empty($requestData['epiphany'] ?? null)) {
+                $calendarRequest->epiphany($requestData['epiphany']);
+            }
+            if (!empty($requestData['ascension'] ?? null)) {
+                $calendarRequest->ascension($requestData['ascension']);
+            }
+            if (!empty($requestData['corpus_christi'] ?? null)) {
+                $calendarRequest->corpusChristi($requestData['corpus_christi']);
+            }
+            if (isset($requestData['eternal_high_priest'])) {
+                $calendarRequest->eternalHighPriest((bool) $requestData['eternal_high_priest']);
+            }
+            if (!empty($requestData['holydays_of_obligation'] ?? null)) {
+                $calendarRequest->holydaysOfObligation($requestData['holydays_of_obligation']);
+            }
+        }
+
+        // Execute the request
+        $LiturgicalCalendar = $calendarRequest->get();
+
+        // Build request URL for display purposes
+        $pathSegments = ['calendar'];
+        if ($selectedDiocese) {
+            $pathSegments[] = 'diocese';
+            $pathSegments[] = $selectedDiocese;
+        } elseif ($selectedNation) {
+            $pathSegments[] = 'nation';
+            $pathSegments[] = $selectedNation;
+        }
+        if (isset($_POST['year']) && is_numeric($_POST['year'])) {
+            $pathSegments[] = $_POST['year'];
+        }
+        $requestUrl = $apiBaseUrl . '/' . implode('/', $pathSegments);
+
+        if (true) {
             if (property_exists($LiturgicalCalendar, 'settings') && $LiturgicalCalendar->settings instanceof \stdClass) {
                 $apiOptions->epiphanyInput->selectedValue($LiturgicalCalendar->settings->epiphany);
                 $apiOptions->ascensionInput->selectedValue($LiturgicalCalendar->settings->ascension);
@@ -324,11 +379,18 @@ if (isset($_POST) && !empty($_POST)) {
                         ->gradeDisplay(GradeDisplay::ABBREVIATED);
             $webCalendarHtml  = $webCalendar->buildTable();
             $webCalendarHtml .=  '<div style="text-align:center;border:3px ridge Green;background-color:LightBlue;width:75%;margin:10px auto;padding:10px;">' . $webCalendar->daysCreated() . ' event days created</div>';
-        } else {
-            $webCalendarHtml = '<div class="col-12">JSON error: ' . json_last_error_msg() . '</div>';
         }
-    } else {
-        $webCalendarHtml = '<div class="col-12">No response</div>';
+    } catch (\Exception $e) {
+        // Handle any errors from CalendarRequest
+        $webCalendarHtml = '<div class="col-12">Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
+        if ($debugMode && $logger) {
+            $logger->error('Calendar request failed', [
+                'error'   => $e->getMessage(),
+                'diocese' => $selectedDiocese,
+                'nation'  => $selectedNation,
+                'year'    => $_POST['year'] ?? null
+            ]);
+        }
     }
 }
 

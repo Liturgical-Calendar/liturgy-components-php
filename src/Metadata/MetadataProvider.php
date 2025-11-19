@@ -2,6 +2,7 @@
 
 namespace LiturgicalCalendar\Components\Metadata;
 
+use LiturgicalCalendar\Components\ApiClient;
 use LiturgicalCalendar\Components\Models\Index\CalendarIndex;
 use LiturgicalCalendar\Components\Http\HttpClientInterface;
 use LiturgicalCalendar\Components\Http\HttpClientFactory;
@@ -123,9 +124,29 @@ class MetadataProvider
      * - Cache and logger are set once
      * - Cache TTL is set once
      *
-     * **Typical Usage:**
+     * **Dependency Resolution Priority**:
+     * 1. Explicit parameters passed to this method (highest priority)
+     * 2. ApiClient configuration (if initialized)
+     * 3. Default values (fallback)
+     *
+     * **Typical Usage (Recommended - with ApiClient):**
      * ```php
-     * // Initialize once at application bootstrap
+     * // Initialize ApiClient once at application bootstrap
+     * ApiClient::getInstance([
+     *     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+     *     'httpClient' => $httpClient,
+     *     'cache' => $cache,
+     *     'logger' => $logger
+     * ]);
+     *
+     * // Use anywhere without parameters - pulls config from ApiClient
+     * $provider = MetadataProvider::getInstance();
+     * $metadata = $provider->getMetadata();
+     * ```
+     *
+     * **Legacy Usage (Still Supported):**
+     * ```php
+     * // Initialize with explicit parameters (backward compatible)
      * MetadataProvider::getInstance(
      *     apiUrl: 'https://litcal.johnromanodorazio.com/api/dev',
      *     httpClient: $httpClient,
@@ -133,13 +154,6 @@ class MetadataProvider
      *     logger: $logger,
      *     cacheTtl: 86400
      * );
-     *
-     * // Use anywhere without parameters
-     * $provider = MetadataProvider::getInstance();
-     * $metadata = $provider->getMetadata();
-     *
-     * // Or use static validation methods directly
-     * $isValid = MetadataProvider::isValidDioceseForNation('boston_us', 'US');
      * ```
      *
      * **Warning:** If you provide a pre-decorated client (e.g., from
@@ -150,7 +164,7 @@ class MetadataProvider
      * @param HttpClientInterface|null $httpClient Optional HTTP client. Only used on first call.
      * @param CacheInterface|null $cache Optional PSR-16 cache. Only used on first call.
      * @param LoggerInterface|null $logger Optional PSR-3 logger. Only used on first call.
-     * @param int $cacheTtl Cache TTL in seconds (default: 86400 = 24 hours). Only used on first call.
+     * @param int|null $cacheTtl Cache TTL in seconds. Only used on first call.
      * @return self Singleton instance
      */
     public static function getInstance(
@@ -158,7 +172,7 @@ class MetadataProvider
         ?HttpClientInterface $httpClient = null,
         ?CacheInterface $cache = null,
         ?LoggerInterface $logger = null,
-        int $cacheTtl = 86400
+        ?int $cacheTtl = null
     ): self {
         // Return existing instance if already initialized
         if (self::$instance !== null) {
@@ -166,11 +180,23 @@ class MetadataProvider
         }
 
         // First initialization - set global configuration (immutable)
-        self::$globalApiUrl     = $apiUrl ?? self::DEFAULT_API_URL;
-        self::$globalHttpClient = $httpClient;
-        self::$globalCache      = $cache;
-        self::$globalLogger     = $logger;
-        self::$globalCacheTtl   = $cacheTtl;
+        // Priority: explicit params > ApiClient > defaults
+        self::$globalApiUrl = $apiUrl
+            ?? ApiClient::getApiUrl()
+            ?? self::DEFAULT_API_URL;
+
+        self::$globalHttpClient = $httpClient
+            ?? ApiClient::getHttpClient();
+
+        self::$globalCache = $cache
+            ?? ApiClient::getCache();
+
+        self::$globalLogger = $logger
+            ?? ApiClient::getLogger();
+
+        self::$globalCacheTtl = $cacheTtl
+            ?? ApiClient::getCacheTtl()
+            ?? 86400;
 
         // Warn about potential double-wrapping if both client and decorators provided
         if ($httpClient !== null && ( $cache !== null || $logger !== null )) {
@@ -183,8 +209,8 @@ class MetadataProvider
         }
 
         // Initialize HTTP client with auto-discovery if not provided
-        $baseClient = self::$globalHttpClient ?? HttpClientFactory::create();
-        $logger     = self::$globalLogger ?? new NullLogger();
+        $baseClient  = self::$globalHttpClient ?? HttpClientFactory::create();
+        $finalLogger = self::$globalLogger ?? new NullLogger();
 
         // Wrap with caching if cache provided
         if (self::$globalCache !== null) {
@@ -192,16 +218,16 @@ class MetadataProvider
                 $baseClient,
                 self::$globalCache,
                 self::$globalCacheTtl,
-                $logger
+                $finalLogger
             );
         }
 
         // Wrap with logging if logger provided (and not NullLogger)
-        if (!( $logger instanceof NullLogger )) {
-            $baseClient = new LoggingHttpClient($baseClient, $logger);
+        if (!( $finalLogger instanceof NullLogger )) {
+            $baseClient = new LoggingHttpClient($baseClient, $finalLogger);
         }
 
-        self::$instance = new self($baseClient, $logger);
+        self::$instance = new self($baseClient, $finalLogger);
 
         return self::$instance;
     }
