@@ -157,7 +157,7 @@ Input::setGlobalLabelClass('form-label');
 Input::setGlobalInputClass('form-select');
 $apiOptions->localeInput->wrapperClass('col col-md-6');
 $apiOptions->yearTypeInput->wrapperClass('col col-md-3');
-$apiOptions->yearInput->wrapperClass('col col-md-3');
+$apiOptions->yearInput->wrapperClass('col col-md-3')->class('form-control');
 
 $calendarSelectNations = new CalendarSelect();
 $calendarSelectNations->label(true)->labelText('Nation')->class('form-select')
@@ -299,10 +299,8 @@ if (isset($_POST) && !empty($_POST)) {
             $calendarRequest->nation($selectedNation);
         }
 
-        // Set year if provided
-        if (!empty($requestData['year'] ?? null)) {
-            $calendarRequest->year((int) $requestData['year']);
-        } elseif (isset($_POST['year']) && is_numeric($_POST['year'])) {
+        // Set year if provided (year is a path parameter, not in requestData)
+        if (isset($_POST['year']) && is_numeric($_POST['year'])) {
             $calendarRequest->year((int) $_POST['year']);
         }
 

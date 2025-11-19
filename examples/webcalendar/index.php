@@ -293,10 +293,8 @@ if (isset($_POST) && !empty($_POST)) {
             $calendarRequest->nation($selectedNation);
         }
 
-        // Set year if provided
-        if (!empty($requestData['year'] ?? null)) {
-            $calendarRequest->year((int) $requestData['year']);
-        } elseif (isset($_POST['year']) && is_numeric($_POST['year'])) {
+        // Set year if provided (year is a path parameter, not in requestData)
+        if (isset($_POST['year']) && is_numeric($_POST['year'])) {
             $calendarRequest->year((int) $_POST['year']);
         }
 
