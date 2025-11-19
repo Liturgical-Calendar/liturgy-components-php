@@ -289,7 +289,7 @@ use Psr\Log\NullLogger;
 class ApiClient
 {
     private const DEFAULT_API_URL = 'https://litcal.johnromanodorazio.com/api/dev';
-    private const DEFAULT_CACHE_TTL = 86400; // 24 hours
+    public const DEFAULT_CACHE_TTL = 86400; // 24 hours
 
     /** @var self|null Singleton instance */
     private static ?self $instance = null;
@@ -480,7 +480,7 @@ public static function getInstance(
 
         $finalCacheTtl = $cacheTtl
             ?? ApiClient::getCacheTtl()
-            ?? self::DEFAULT_CACHE_TTL;
+            ?? ApiClient::DEFAULT_CACHE_TTL;
 
         // Set global configuration (immutable)
         self::$globalApiUrl = $finalApiUrl;
@@ -1686,10 +1686,11 @@ $req = new CalendarRequest($httpClient, $logger, $cache);
 
 ---
 
-**Document Version**: 3.1
+**Document Version**: 3.2
 **Last Updated**: 2025-11-19
 **Status**: Partially Implemented - Phases 0 & 1 Complete
 **Priority**: Medium (Core features complete, advanced features remain)
+
 **Changes in v3.2** (2025-11):
 
 - Removed CalendarResponseBuilder (Phase 4) - deemed unnecessary since CalendarRequest already provides clean fluent API
