@@ -212,7 +212,7 @@ class MetadataProvider
 
         self::$globalCacheTtl = $cacheTtl
             ?? ApiClient::getCacheTtl()
-            ?? 86400;
+            ?? ApiClient::DEFAULT_CACHE_TTL;
 
         // Warn about potential double-wrapping if httpClient from any source + explicit cache/logger
         // Note: We check self::$globalHttpClient (resolved from any source) not just $httpClient param

@@ -15,6 +15,10 @@ use Psr\Log\NullLogger;
  * and API URL. All components (MetadataProvider, CalendarRequest, etc.) can
  * pull dependencies from ApiClient for consistent configuration.
  *
+ * **Default Cache TTL**: The default cache TTL is exposed as a public constant
+ * `ApiClient::DEFAULT_CACHE_TTL` (86400 seconds / 24 hours) for use by other
+ * components that need a consistent default caching duration.
+ *
  * Usage:
  * ```php
  * // Initialize once at application bootstrap
@@ -23,7 +27,7 @@ use Psr\Log\NullLogger;
  *     'httpClient' => $httpClient,
  *     'cache' => $cache,
  *     'logger' => $logger,
- *     'cacheTtl' => 86400
+ *     'cacheTtl' => ApiClient::DEFAULT_CACHE_TTL  // Or custom value
  * ]);
  *
  * // All components use this configuration
@@ -33,8 +37,8 @@ use Psr\Log\NullLogger;
  */
 class ApiClient
 {
-    private const DEFAULT_API_URL   = 'https://litcal.johnromanodorazio.com/api/dev';
-    private const DEFAULT_CACHE_TTL = 86400; // 24 hours
+    private const DEFAULT_API_URL  = 'https://litcal.johnromanodorazio.com/api/dev';
+    public const DEFAULT_CACHE_TTL = 86400; // 24 hours
 
     /** @var self|null Singleton instance */
     private static ?self $instance = null;
