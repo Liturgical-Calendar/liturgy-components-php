@@ -214,12 +214,15 @@ class MetadataProvider
             ?? ApiClient::getCacheTtl()
             ?? 86400;
 
-        // Warn about potential double-wrapping if both client and decorators provided
-        if ($httpClient !== null && ( $cache !== null || $logger !== null )) {
+        // Warn about potential double-wrapping if httpClient from any source + explicit cache/logger
+        // Note: We check self::$globalHttpClient (resolved from any source) not just $httpClient param
+        // This catches both: explicit httpClient + cache/logger AND ApiClient httpClient + cache/logger
+        if (self::$globalHttpClient !== null && ( $cache !== null || $logger !== null )) {
             trigger_error(
                 'MetadataProvider::getInstance() called with both httpClient and cache/logger parameters. ' .
-                'If httpClient is already decorated (e.g., from HttpClientFactory::createProductionClient()), ' .
-                'this will cause double-wrapping. Only pass httpClient OR cache/logger, not both.',
+                'HttpClient is provided (either explicitly or from ApiClient), and cache/logger are also provided. ' .
+                'If httpClient is already decorated, this will cause double-wrapping. ' .
+                'Only pass httpClient OR cache/logger, not both.',
                 E_USER_WARNING
             );
         }

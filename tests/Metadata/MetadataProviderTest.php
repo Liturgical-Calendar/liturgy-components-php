@@ -609,4 +609,103 @@ class MetadataProviderTest extends TestCase
         // Verify ApiClient URL is used
         $this->assertEquals($customApiUrl, MetadataProvider::getApiUrl());
     }
+
+    /**
+     * @group apiclient
+     */
+    public function testWarnsAboutDoubleWrappingWhenApiClientProvidesHttpClientAndExplicitCacheProvided()
+    {
+        $httpClient     = $this->createMockHttpClient();
+        $cache          = new ArrayCache();
+        $warningIssued  = false;
+        $warningMessage = '';
+
+        // Initialize ApiClient with httpClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        // Set up error handler to catch the warning
+        set_error_handler(function (int $_errno, string $errstr) use (&$warningIssued, &$warningMessage): bool {
+            $warningIssued  = true;
+            $warningMessage = $errstr;
+            return true; // Suppress the warning
+        }, E_USER_WARNING);
+
+        // Create MetadataProvider with explicit cache (httpClient from ApiClient)
+        // This should trigger warning because httpClient comes from ApiClient + explicit cache
+        MetadataProvider::getInstance(cache: $cache);
+
+        restore_error_handler();
+
+        $this->assertTrue($warningIssued, 'Expected warning was not issued when ApiClient provides httpClient and explicit cache is passed');
+        $this->assertStringContainsString('double-wrapping', $warningMessage);
+        $this->assertStringContainsString('either explicitly or from ApiClient', $warningMessage);
+    }
+
+    /**
+     * @group apiclient
+     */
+    public function testWarnsAboutDoubleWrappingWhenApiClientProvidesHttpClientAndExplicitLoggerProvided()
+    {
+        $httpClient     = $this->createMockHttpClient();
+        $logger         = $this->createMock(LoggerInterface::class);
+        $warningIssued  = false;
+        $warningMessage = '';
+
+        // Initialize ApiClient with httpClient
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient
+        ]);
+
+        // Set up error handler to catch the warning
+        set_error_handler(function (int $_errno, string $errstr) use (&$warningIssued, &$warningMessage): bool {
+            $warningIssued  = true;
+            $warningMessage = $errstr;
+            return true; // Suppress the warning
+        }, E_USER_WARNING);
+
+        // Create MetadataProvider with explicit logger (httpClient from ApiClient)
+        // This should trigger warning because httpClient comes from ApiClient + explicit logger
+        MetadataProvider::getInstance(logger: $logger);
+
+        restore_error_handler();
+
+        $this->assertTrue($warningIssued, 'Expected warning was not issued when ApiClient provides httpClient and explicit logger is passed');
+        $this->assertStringContainsString('double-wrapping', $warningMessage);
+        $this->assertStringContainsString('either explicitly or from ApiClient', $warningMessage);
+    }
+
+    /**
+     * @group apiclient
+     */
+    public function testNoWarningWhenBothHttpClientAndCacheFromApiClient()
+    {
+        $httpClient    = $this->createMockHttpClient();
+        $cache         = new ArrayCache();
+        $warningIssued = false;
+
+        // Initialize ApiClient with BOTH httpClient AND cache
+        ApiClient::getInstance([
+            'apiUrl'     => self::API_URL,
+            'httpClient' => $httpClient,
+            'cache'      => $cache
+        ]);
+
+        // Set up error handler to catch any warnings
+        set_error_handler(function (int $_errno, string $_errstr) use (&$warningIssued): bool {
+            $warningIssued = true;
+            return true;
+        }, E_USER_WARNING);
+
+        // Create MetadataProvider without parameters - both come from ApiClient
+        // This should NOT trigger warning (recommended pattern)
+        MetadataProvider::getInstance();
+
+        restore_error_handler();
+
+        $this->assertFalse($warningIssued, 'Warning should NOT be issued when both httpClient and cache come from ApiClient');
+    }
 }
