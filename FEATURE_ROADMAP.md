@@ -70,7 +70,7 @@ $response = $calendarRequest
 - ❌ Phase 2: Typed response models (CalendarResponse, CalendarSettings, CalendarMetadata)
 - ❌ Phase 2: Helper methods for common queries (getEvent(), eventsByGrade(), etc.)
 - ❌ Phase 3: Smart cache keys with TTL logic based on year
-- ❌ Phase 4: CalendarResponseBuilder static helper class
+- ⚠️ Phase 4: CalendarResponseBuilder tests and example integration (implementation complete)
 - ❌ Phase 5: Batch request support (CalendarBatchRequest)
 - ❌ Phase 5: Response formatters (iCal, PDF)
 - ❌ Phase 5: Calendar comparison tools
@@ -1754,15 +1754,23 @@ $commonEvents = $comparison->getCommonEvents();
 - [ ] Performance benchmarking
 - [ ] Unit tests (10+ tests)
 
-### Phase 4: CalendarResponseBuilder (Week 5 - Priority 5)
+### Phase 4: CalendarResponseBuilder ⚠️ **MOSTLY COMPLETED** (Tests & Examples Pending)
 
-- [ ] Create `CalendarResponseBuilder` static helper class
-- [ ] Implement static methods
-  - [ ] generalCalendar()
-  - [ ] nationalCalendar()
-  - [ ] diocesanCalendar()
-- [ ] Unit tests (10+ tests)
-- [ ] Update examples
+- [x] Create `CalendarResponseBuilder` static helper class
+- [x] Implement static methods
+  - [x] generalCalendar()
+  - [x] nationalCalendar()
+  - [x] diocesanCalendar()
+- [ ] **Unit tests (10+ tests)** ⚠️ **PENDING**
+- [ ] **Update examples to use CalendarResponseBuilder** ⚠️ **PENDING**
+
+**Success Criteria**:
+
+- [x] CalendarResponseBuilder class exists with all three methods
+- [x] Methods integrate with CalendarRequest and ApiClient
+- [x] PHPStan Level 10 maintained
+- [ ] **Unit test coverage** ⚠️ **PENDING**
+- [ ] **Examples demonstrate usage** ⚠️ **PENDING**
 
 ### Phase 5: Advanced Features (Week 6 - Priority 6)
 
@@ -1840,10 +1848,16 @@ $req = new CalendarRequest($httpClient, $logger, $cache);
 
 ---
 
-**Document Version**: 3.0
+**Document Version**: 3.1
 **Last Updated**: 2025-11-19
-**Status**: Partially Implemented - Phase 0 & 1 Complete (Tests Needed for CalendarRequest)
+**Status**: Partially Implemented - Phases 0, 1, & 4 Complete (Tests Needed)
 **Priority**: Medium (Core features complete, advanced features remain)
+**Changes in v3.1**:
+
+- Updated Phase 4 status to reflect CalendarResponseBuilder implementation completion
+- Marked CalendarResponseBuilder unit tests and example integration as pending
+- Updated "What's Still Missing" to show Phase 4 implementation complete, tests pending
+
 **Changes in v3.0**:
 
 - Updated status to reflect Phase 0 (ApiClient) completion
