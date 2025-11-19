@@ -162,24 +162,12 @@ $calendarSelectDioceses->label(true)->labelText('diocese')
 if (isset($_POST) && !empty($_POST)) {
     $requestData    = [];
     $requestHeaders = ['Accept: application/json'];
-    $requestPath    = '';
-    $requestYear    = '';
 
     foreach ($_POST as $key => $value) {
         if (is_string($value)) {
             $value = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
         }
         switch ($key) {
-            case 'year':
-                if (false === is_int($value)) {
-                    if (is_numeric($value)) {
-                        $value = (int) $value;
-                    }
-                }
-                if ($value >= 1970 && $value <= 9999) {
-                    $requestYear = '/' . $value;
-                }
-                break;
             case 'year_type':
                 if (null !== $value && !empty($value)) {
                     $requestData[$key] = $value;
@@ -251,7 +239,6 @@ if (isset($_POST) && !empty($_POST)) {
     }
 
     if ($selectedDiocese) {
-        $requestPath = '/diocese/' . $selectedDiocese;
         if ($selectedNation) {
             $calendarSelectNations->selectedOption($selectedNation);
             $calendarSelectDioceses->nationFilter($selectedNation)->setOptions(OptionsType::DIOCESES_FOR_NATION);
@@ -266,7 +253,6 @@ if (isset($_POST) && !empty($_POST)) {
         }
         $apiOptions->localeInput->setOptionsForCalendar('diocese', $selectedDiocese);
     } elseif ($selectedNation) {
-        $requestPath = '/nation/' . $selectedNation;
         $calendarSelectNations->selectedOption($selectedNation);
         $calendarSelectDioceses->nationFilter($selectedNation)->setOptions(OptionsType::DIOCESES_FOR_NATION);
         $apiOptions->localeInput->setOptionsForCalendar('nation', $selectedNation);
@@ -329,11 +315,12 @@ if (isset($_POST) && !empty($_POST)) {
             }
         }
 
+        // Get request URL for display purposes BEFORE executing the request
+        // This ensures the URL is available even if the HTTP call fails
+        $requestUrl = $calendarRequest->getRequestUrl();
+
         // Execute the request
         $LiturgicalCalendar = $calendarRequest->get();
-
-        // Get request URL for display purposes
-        $requestUrl = $calendarRequest->getRequestUrl();
 
         if (property_exists($LiturgicalCalendar, 'settings') && $LiturgicalCalendar->settings instanceof \stdClass) {
             $apiOptions->epiphanyInput->selectedValue($LiturgicalCalendar->settings->epiphany);

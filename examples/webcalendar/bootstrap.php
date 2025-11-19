@@ -169,24 +169,12 @@ $calendarSelectDioceses->label(true)->labelText('Diocese')->class('form-select')
 if (isset($_POST) && !empty($_POST)) {
     $requestData    = [];
     $requestHeaders = ['Accept: application/json'];
-    $requestPath    = '';
-    $requestYear    = '';
 
     foreach ($_POST as $key => $value) {
         if (is_string($value)) {
             $value = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
         }
         switch ($key) {
-            case 'year':
-                if (false === is_int($value)) {
-                    if (is_numeric($value)) {
-                        $value = (int) $value;
-                    }
-                }
-                if ($value >= 1970 && $value <= 9999) {
-                    $requestYear = '/' . $value;
-                }
-                break;
             case 'year_type':
                 if (null !== $value && !empty($value)) {
                     $requestData[$key] = $value;
@@ -258,7 +246,6 @@ if (isset($_POST) && !empty($_POST)) {
     }
 
     if ($selectedDiocese) {
-        $requestPath = '/diocese/' . $selectedDiocese;
         if ($selectedNation) {
             $calendarSelectNations->selectedOption($selectedNation);
             $calendarSelectDioceses->nationFilter($selectedNation)->setOptions(OptionsType::DIOCESES_FOR_NATION);
@@ -273,7 +260,6 @@ if (isset($_POST) && !empty($_POST)) {
         }
         $apiOptions->localeInput->setOptionsForCalendar('diocese', $selectedDiocese);
     } elseif ($selectedNation) {
-        $requestPath = '/nation/' . $selectedNation;
         $calendarSelectNations->selectedOption($selectedNation);
         $calendarSelectDioceses->nationFilter($selectedNation)->setOptions(OptionsType::DIOCESES_FOR_NATION);
         $apiOptions->localeInput->setOptionsForCalendar('nation', $selectedNation);
