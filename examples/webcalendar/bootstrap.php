@@ -337,11 +337,12 @@ if (isset($_POST) && !empty($_POST)) {
             }
         }
 
+        // Get request URL for display purposes BEFORE executing the request
+        // This ensures the URL is available even if the HTTP call fails
+        $requestUrl = $calendarRequest->getRequestUrl();
+
         // Execute the request
         $LiturgicalCalendar = $calendarRequest->get();
-
-        // Get request URL for display purposes
-        $requestUrl = $calendarRequest->getRequestUrl();
 
         if (property_exists($LiturgicalCalendar, 'settings') && $LiturgicalCalendar->settings instanceof \stdClass) {
             $apiOptions->epiphanyInput->selectedValue($LiturgicalCalendar->settings->epiphany);
@@ -380,10 +381,11 @@ if (isset($_POST) && !empty($_POST)) {
         $webCalendarHtml = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
         if ($debugMode && $logger) {
             $logger->error('Calendar request failed', [
-                'error'   => $e->getMessage(),
-                'diocese' => $selectedDiocese,
-                'nation'  => $selectedNation,
-                'year'    => $_POST['year'] ?? null
+                'error'       => $e->getMessage(),
+                'request_url' => $requestUrl,
+                'diocese'     => $selectedDiocese,
+                'nation'      => $selectedNation,
+                'year'        => $_POST['year'] ?? null
             ]);
         }
     }
