@@ -127,13 +127,23 @@ CalendarRequest (instance-based)
 ```php
 use LiturgicalCalendar\Components\ApiClient;
 
-// Initialize at application bootstrap
+// Pattern A: Let ApiClient create and decorate the HTTP client
 ApiClient::getInstance([
     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
-    'httpClient' => $httpClient,  // Optional: auto-created if not provided
-    'cache' => $cache,            // Optional: PSR-16 cache
-    'logger' => $logger,          // Optional: PSR-3 logger
-    'cacheTtl' => 86400          // Optional: default cache TTL in seconds
+    'cache' => $cache,            // PSR-16 cache
+    'logger' => $logger,          // PSR-3 logger
+    'cacheTtl' => 86400          // Cache TTL in seconds (default: 86400)
+]);
+
+// Pattern B: Provide a pre-decorated HTTP client (no cache/logger)
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600
+);
+ApiClient::getInstance([
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
+    'httpClient' => $httpClient  // Used as-is, no additional wrapping
 ]);
 
 // All subsequent API interactions use this configuration
@@ -191,10 +201,9 @@ $calendarSelect = new CalendarSelect();
 **After** (with ApiClient):
 
 ```php
-// Initialize ApiClient once
+// Initialize ApiClient once (let it create and decorate the HTTP client)
 ApiClient::getInstance([
     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
-    'httpClient' => $httpClient,
     'cache' => $cache,
     'logger' => $logger
 ]);
@@ -265,10 +274,9 @@ use Psr\Log\NullLogger;
  *
  * Usage:
  * ```php
- * // Initialize once at application bootstrap
+ * // Initialize once at application bootstrap (let ApiClient create the HTTP client)
  * ApiClient::getInstance([
  *     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
- *     'httpClient' => $httpClient,
  *     'cache' => $cache,
  *     'logger' => $logger,
  *     'cacheTtl' => 86400
@@ -520,10 +528,9 @@ $request->baseUrl('https://litcal.johnromanodorazio.com/api/dev');
 #### New Approach (Recommended)
 
 ```php
-// Initialize once
+// Initialize once (let ApiClient create and decorate the HTTP client)
 ApiClient::getInstance([
     'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
-    'httpClient' => $httpClient,  // Or omit to auto-create
     'cache' => $cache,
     'logger' => $logger
 ]);
@@ -1373,11 +1380,11 @@ $calendar = json_decode($response);
 #### After (CalendarRequest Component)
 
 ```php
-// Configure caching once via ApiClient (recommended)
+// Pattern A: Configure via ApiClient (recommended - let it create the HTTP client)
 ApiClient::getInstance([
-    'httpClient' => $httpClient,
-    'logger' => $logger,
+    'apiUrl' => 'https://litcal.johnromanodorazio.com/api/dev',
     'cache' => $cache,
+    'logger' => $logger,
     'cacheTtl' => 3600
 ]);
 
@@ -1390,7 +1397,7 @@ $calendar = $request->year(2024)
 // Or even simpler with static helper
 $calendar = CalendarResponseBuilder::generalCalendar(2024);
 
-// Alternative: Pre-decorated HttpClient (no ApiClient needed)
+// Pattern B: Pre-decorated HttpClient (no ApiClient needed)
 $decoratedClient = HttpClientFactory::createProductionClient(
     cache: $cache,
     logger: $logger,
