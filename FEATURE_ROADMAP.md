@@ -1222,17 +1222,25 @@ use Psr\SimpleCache\CacheInterface;
  * Provides convenient static methods for fetching calendar data without manually
  * constructing CalendarRequest objects. All methods accept optional HTTP client,
  * logger, and cache dependencies for full control over the request configuration.
+ *
+ * IMPORTANT: The $cache parameter is accepted for API consistency but is NOT used
+ * by CalendarRequest. To enable caching, configure it via ApiClient or provide a
+ * pre-decorated HttpClient.
  */
 class CalendarResponseBuilder
 {
     /**
      * Quick request for General Roman Calendar
      *
+     * Caching: The $cache parameter is accepted for API consistency but is NOT
+     * used. Configure caching via ApiClient::getInstance(['cache' => $cache])
+     * or provide a pre-decorated HttpClient.
+     *
      * @param int $year The liturgical year to fetch
      * @param string $locale The locale for localized content (default: 'en')
      * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
      * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
+     * @param CacheInterface|null $cache Accepted for API consistency but NOT used
      * @return \stdClass Calendar response object
      * @throws \Exception If request fails or response is invalid
      */
@@ -1252,12 +1260,16 @@ class CalendarResponseBuilder
     /**
      * Quick request for National Calendar
      *
+     * Caching: The $cache parameter is accepted for API consistency but is NOT
+     * used. Configure caching via ApiClient::getInstance(['cache' => $cache])
+     * or provide a pre-decorated HttpClient.
+     *
      * @param string $nation The national calendar ID (e.g., 'IT', 'US', 'FR')
      * @param int $year The liturgical year to fetch
      * @param string $locale The locale for localized content (default: 'en')
      * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
      * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
+     * @param CacheInterface|null $cache Accepted for API consistency but NOT used
      * @return \stdClass Calendar response object
      * @throws \Exception If request fails or response is invalid
      */
@@ -1279,12 +1291,16 @@ class CalendarResponseBuilder
     /**
      * Quick request for Diocesan Calendar
      *
+     * Caching: The $cache parameter is accepted for API consistency but is NOT
+     * used. Configure caching via ApiClient::getInstance(['cache' => $cache])
+     * or provide a pre-decorated HttpClient.
+     *
      * @param string $diocese The diocesan calendar ID (9-character format)
      * @param int $year The liturgical year to fetch
      * @param string $locale The locale for localized content (default: 'en')
      * @param HttpClientInterface|null $httpClient Optional HTTP client for requests
      * @param LoggerInterface|null $logger Optional PSR-3 logger for request/response logging
-     * @param CacheInterface|null $cache Optional PSR-16 cache for HTTP response caching
+     * @param CacheInterface|null $cache Accepted for API consistency but NOT used
      * @return \stdClass Calendar response object
      * @throws \Exception If request fails or response is invalid
      */
@@ -1308,7 +1324,7 @@ class CalendarResponseBuilder
 #### CalendarResponseBuilder Usage Examples
 
 ```php
-// Minimal usage - all dependencies auto-discovered
+// Minimal usage - all dependencies auto-discovered from ApiClient
 $calendar = CalendarResponseBuilder::generalCalendar(2024);
 
 // With custom locale
@@ -1322,22 +1338,19 @@ $calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $mockClient);
 $logger = new Logger('calendar');
 $calendar = CalendarResponseBuilder::nationalCalendar('US', 2024, 'en', null, $logger);
 
-// With cache for performance
-$cache = new FilesystemCache();
-$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', null, null, $cache);
+// CORRECT way to enable caching - Option 1: Configure via ApiClient
+ApiClient::getInstance([
+    'cache' => new FilesystemCache(),
+    'cacheTtl' => 3600
+]);
+$calendar = CalendarResponseBuilder::generalCalendar(2024);
 
-// Full configuration with all dependencies
-$httpClient = HttpClientFactory::create();
-$logger = new Logger('calendar');
-$cache = new ArrayCache();
-$calendar = CalendarResponseBuilder::diocesanCalendar(
-    'DIOCESE001',
-    2024,
-    'en',
-    $httpClient,
-    $logger,
-    $cache
+// CORRECT way to enable caching - Option 2: Pre-decorated HttpClient
+$httpClient = HttpClientFactory::createProductionClient(
+    cache: new FilesystemCache(),
+    cacheTtl: 3600
 );
+$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $httpClient);
 ```
 
 ### CalendarRequest Usage Examples
@@ -1360,21 +1373,37 @@ $calendar = json_decode($response);
 #### After (CalendarRequest Component)
 
 ```php
-// Simple and clean
-$request = new CalendarRequest($httpClient, $logger, $cache);
+// Configure caching once via ApiClient (recommended)
+ApiClient::getInstance([
+    'httpClient' => $httpClient,
+    'logger' => $logger,
+    'cache' => $cache,
+    'cacheTtl' => 3600
+]);
+
+// Simple and clean - pulls config from ApiClient
+$request = new CalendarRequest();
 $calendar = $request->year(2024)
     ->locale('en')
     ->get();
 
 // Or even simpler with static helper
-$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $httpClient, $logger, $cache);
+$calendar = CalendarResponseBuilder::generalCalendar(2024);
+
+// Alternative: Pre-decorated HttpClient (no ApiClient needed)
+$decoratedClient = HttpClientFactory::createProductionClient(
+    cache: $cache,
+    logger: $logger,
+    cacheTtl: 3600
+);
+$calendar = CalendarResponseBuilder::generalCalendar(2024, 'en', $decoratedClient);
 ```
 
 ### CalendarRequest Benefits
 
 1. **✅ PSR-Compliant**: Uses existing HTTP client infrastructure
-1. **✅ Cached**: Automatic response caching (if cache provided)
-1. **✅ Logged**: All requests logged (if logger provided)
+1. **✅ Cached**: Automatic response caching (configured via ApiClient or pre-decorated HttpClient)
+1. **✅ Logged**: All requests logged (configured via ApiClient or pre-decorated HttpClient)
 1. **✅ Resilient**: Built-in retry and circuit breaker
 1. **✅ Validated**: Automatic response validation
 1. **✅ Type-Safe**: Full PHPStan compliance
