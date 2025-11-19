@@ -73,12 +73,12 @@ class ApiClient
         $this->logger   = $logger ?? new NullLogger();
         $this->cacheTtl = $cacheTtl;
 
-        // Warn about potential double-wrapping if both client and decorators provided
+        // Warn about ambiguous configuration if both client and decorators are provided
         if ($httpClient !== null && ( $cache !== null || $logger !== null )) {
             trigger_error(
                 'ApiClient::__construct() called with both httpClient and cache/logger parameters. ' .
-                'If httpClient is already decorated (e.g., from HttpClientFactory::createProductionClient()), ' .
-                'this will cause double-wrapping. Only pass httpClient OR cache/logger, not both.',
+                'Since a custom httpClient is provided, cache/logger configuration will be ignored. ' .
+                'Pass either httpClient OR cache/logger, not both.',
                 E_USER_WARNING
             );
         }

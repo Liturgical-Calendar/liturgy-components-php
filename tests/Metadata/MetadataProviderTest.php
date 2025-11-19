@@ -551,7 +551,7 @@ class MetadataProviderTest extends TestCase
         restore_error_handler();
 
         $this->assertTrue($warningIssued, 'Expected warning was not issued');
-        $this->assertStringContainsString('double-wrapping', $warningMessage);
+        $this->assertStringContainsString('cache/logger configuration will be ignored', $warningMessage);
     }
 
     public function testWarnsAboutDoubleWrappingWhenBothClientAndLoggerProvided()
@@ -578,7 +578,7 @@ class MetadataProviderTest extends TestCase
         restore_error_handler();
 
         $this->assertTrue($warningIssued, 'Expected warning was not issued');
-        $this->assertStringContainsString('double-wrapping', $warningMessage);
+        $this->assertStringContainsString('cache/logger configuration will be ignored', $warningMessage);
     }
 
     public function testWarnsAboutDoubleWrappingWhenClientAndBothCacheAndLoggerProvided()
@@ -607,7 +607,7 @@ class MetadataProviderTest extends TestCase
         restore_error_handler();
 
         $this->assertTrue($warningIssued, 'Expected warning was not issued');
-        $this->assertStringContainsString('double-wrapping', $warningMessage);
+        $this->assertStringContainsString('cache/logger configuration will be ignored', $warningMessage);
     }
 
     /**
