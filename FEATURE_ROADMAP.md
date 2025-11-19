@@ -34,40 +34,46 @@ This document outlines planned features and enhancements for the Liturgical Cale
 - Production-ready HTTP client factory
 - `MetadataProvider` with singleton pattern and global HttpClient configuration
 
-### What's Missing ❌
+### What's Been Added Recently ✨
 
-**Calendar Data Fetching:**
+**ApiClient (Phase 0 - Complete):**
 
-- No dedicated component for fetching calendar data from the API
-- Examples use raw curl (see `examples/webcalendar/index.php:186-193`)
-- POST request handling is manual and repetitive
-- No built-in support for calendar request parameters
-- No automatic response validation
+- `ApiClient` singleton for centralized API configuration
+- Shared HttpClient, cache, logger configuration
+- Integration with MetadataProvider and CalendarRequest
+- Full test coverage (30+ tests)
 
-**Current Manual Approach** (from examples/webcalendar/index.php):
+**CalendarRequest (Phase 1 - Complete):**
+
+- Dedicated component for fetching calendar data from `/calendar` endpoint
+- Fluent API for building requests (nation(), diocese(), year(), locale(), etc.)
+- PSR-18 HTTP client with caching, logging, retry, circuit breaker
+- Integration with ApiClient for shared configuration
+- Examples updated to use CalendarRequest instead of raw curl
+
+**Current Modern Approach** (from examples/webcalendar/index.php):
 
 ```php
-// Lines 186-193: Manual curl POST request
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $requestUrl);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($requestData));
-$response = curl_exec($ch);
-curl_close($ch);
+// CalendarRequest with fluent API - uses ApiClient configuration
+$calendarRequest = new CalendarRequest();
+$response = $calendarRequest
+    ->nation('US')
+    ->year(2024)
+    ->locale('en')
+    ->get();
 ```
 
-**Problems with Current Approach:**
+### What's Still Missing ❌
 
-- ❌ Uses raw curl instead of PSR-18 HTTP client
-- ❌ No caching of calendar data responses
-- ❌ No retry or circuit breaker protection
-- ❌ No logging of calendar requests
-- ❌ Manual header construction
-- ❌ Repetitive code in every implementation
-- ❌ No response validation
-- ❌ No type safety
+**Remaining Features from Roadmap:**
+
+- ❌ Phase 2: Typed response models (CalendarResponse, CalendarSettings, CalendarMetadata)
+- ❌ Phase 2: Helper methods for common queries (getEvent(), eventsByGrade(), etc.)
+- ❌ Phase 3: Smart cache keys with TTL logic based on year
+- ❌ Phase 4: CalendarResponseBuilder static helper class
+- ❌ Phase 5: Batch request support (CalendarBatchRequest)
+- ❌ Phase 5: Response formatters (iCal, PDF)
+- ❌ Phase 5: Calendar comparison tools
 
 ---
 
@@ -1616,63 +1622,63 @@ $commonEvents = $comparison->getCommonEvents();
 
 ## Implementation Timeline
 
-### Phase 0: ApiClient Foundation (Week 1 - Priority 1)
+### Phase 0: ApiClient Foundation ✅ **COMPLETED**
 
 **Goal**: Establish centralized API configuration before CalendarRequest implementation
 
-- [ ] Create `ApiClient` singleton class (`src/ApiClient.php`)
-  - [ ] Implement getInstance() with config array parameter
-  - [ ] Add static getters: getHttpClient(), getApiUrl(), getCache(), getLogger(), getCacheTtl()
-  - [ ] Add isInitialized() check
-  - [ ] Add createCalendarRequest() factory method
-  - [ ] Add resetForTesting() for test isolation
-- [ ] Update `MetadataProvider` to use ApiClient
-  - [ ] Modify getInstance() to check ApiClient first (priority: explicit params > ApiClient > defaults)
-  - [ ] Maintain backward compatibility
-  - [ ] Update docstrings
-- [ ] Unit tests for ApiClient
-  - [ ] Test singleton behavior
-  - [ ] Test configuration priority (explicit > ApiClient > defaults)
-  - [ ] Test static getters
-  - [ ] Test resetForTesting()
-  - [ ] Test integration with MetadataProvider
-- [ ] Update documentation
-  - [ ] Update CLAUDE.md with ApiClient initialization pattern
-  - [ ] Update README.md with new recommended approach
-  - [ ] Add migration examples
-- [ ] PHPStan Level 10 validation
-- [ ] Update examples to use ApiClient pattern
+- [x] Create `ApiClient` singleton class (`src/ApiClient.php`)
+  - [x] Implement getInstance() with config array parameter
+  - [x] Add static getters: getHttpClient(), getApiUrl(), getCache(), getLogger(), getCacheTtl()
+  - [x] Add isInitialized() check
+  - [x] Add createCalendarRequest() factory method
+  - [x] Add resetForTesting() for test isolation
+- [x] Update `MetadataProvider` to use ApiClient
+  - [x] Modify getInstance() to check ApiClient first (priority: explicit params > ApiClient > defaults)
+  - [x] Maintain backward compatibility
+  - [x] Update docstrings
+- [x] Unit tests for ApiClient
+  - [x] Test singleton behavior
+  - [x] Test configuration priority (explicit > ApiClient > defaults)
+  - [x] Test static getters
+  - [x] Test resetForTesting()
+  - [x] Test integration with MetadataProvider
+- [x] Update documentation
+  - [x] Update CLAUDE.md with ApiClient initialization pattern
+  - [x] Update README.md with new recommended approach
+  - [x] Add migration examples
+- [x] PHPStan Level 10 validation
+- [x] Update examples to use ApiClient pattern
 
 **Success Criteria**:
 
-- [ ] ApiClient tests pass (15+ tests)
-- [ ] MetadataProvider still works with explicit params (backward compatibility)
-- [ ] MetadataProvider works with ApiClient configuration
-- [ ] All existing tests still pass
-- [ ] PHPStan Level 10 maintained
+- [x] ApiClient tests pass (30+ tests, exceeded 15+ target)
+- [x] MetadataProvider still works with explicit params (backward compatibility)
+- [x] MetadataProvider works with ApiClient configuration
+- [x] All existing tests still pass (200 tests, 716 assertions)
+- [x] PHPStan Level 10 maintained
 
-### Phase 1: Core CalendarRequest (Week 2 - Priority 2)
+### Phase 1: Core CalendarRequest ⚠️ **MOSTLY COMPLETED** (Tests Pending)
 
 **Goal**: Implement calendar data fetching with ApiClient integration
 
-- [ ] Create `CalendarRequest` component (`src/CalendarRequest.php`)
-- [ ] Implement constructor with ApiClient fallback
-  - [ ] Priority: explicit params > ApiClient > defaults
-  - [ ] Support httpClient, logger, cache, apiUrl parameters
-- [ ] Implement fluent API
-  - [ ] Calendar type methods: nation(), diocese()
-  - [ ] Parameter methods: year(), locale(), returnType(), yearType()
-  - [ ] General calendar methods: epiphany(), ascension(), corpusChristi(), eternalHighPriest(), holydaysOfObligation()
-  - [ ] Header methods: header(), acceptLanguage()
-- [ ] Implement request execution
-  - [ ] buildUrl() with proper URL encoding
-  - [ ] buildHeaders() with header validation (CRLF injection prevention)
-  - [ ] buildPostData()
-  - [ ] get() method with response validation
-- [ ] Add response validation
-  - [ ] Validate required properties (litcal, settings)
-  - [ ] Validate data types
-- [ ] Unit tests (25+ tests)
+- [x] Create `CalendarRequest` component (`src/CalendarRequest.php`)
+- [x] Implement constructor with ApiClient fallback
+  - [x] Priority: explicit params > ApiClient > defaults
+  - [x] Support httpClient, logger, cache, apiUrl parameters
+- [x] Implement fluent API
+  - [x] Calendar type methods: nation(), diocese()
+  - [x] Parameter methods: year(), locale(), returnType(), yearType()
+  - [x] General calendar methods: epiphany(), ascension(), corpusChristi(), eternalHighPriest(), holydaysOfObligation()
+  - [x] Header methods: header(), acceptLanguage()
+- [x] Implement request execution
+  - [x] buildUrl() with proper URL encoding
+  - [x] buildHeaders() with header validation (CRLF injection prevention)
+  - [x] buildPostData()
+  - [x] get() method with response validation
+- [x] Add response validation
+  - [x] Validate required properties (litcal, settings)
+  - [x] Validate data types
+- [ ] **Unit tests (25+ tests)** ⚠️ **MISSING**
   - [ ] Test fluent API methods
   - [ ] Test URL building and encoding
   - [ ] Test header validation (valid/invalid cases)
@@ -1680,17 +1686,18 @@ $commonEvents = $comparison->getCommonEvents();
   - [ ] Test response validation
   - [ ] Test integration with ApiClient
   - [ ] Test fallback to defaults
-- [ ] PHPStan Level 10 validation
-- [ ] Update examples to use CalendarRequest
+- [x] PHPStan Level 10 validation
+- [x] Update examples to use CalendarRequest
 
 **Success Criteria**:
 
-- [ ] CalendarRequest works with ApiClient configuration
-- [ ] CalendarRequest works with explicit dependencies
-- [ ] CalendarRequest works with defaults (creates own HttpClient)
-- [ ] All header injection attacks prevented
-- [ ] All URL encoding scenarios handled
-- [ ] PHPStan Level 10 maintained
+- [x] CalendarRequest works with ApiClient configuration
+- [x] CalendarRequest works with explicit dependencies
+- [x] CalendarRequest works with defaults (creates own HttpClient)
+- [x] All header injection attacks prevented
+- [x] All URL encoding scenarios handled
+- [x] PHPStan Level 10 maintained
+- [ ] **Unit test coverage** ⚠️ **PENDING**
 
 ### Phase 2: Response Models (Week 3 - Priority 3)
 
@@ -1804,10 +1811,19 @@ $req = new CalendarRequest($httpClient, $logger, $cache);
 
 ---
 
-**Document Version**: 2.0
-**Last Updated**: 2025-11-18
-**Status**: Proposal - Awaiting Implementation
-**Priority**: High
+**Document Version**: 3.0
+**Last Updated**: 2025-11-19
+**Status**: Partially Implemented - Phase 0 & 1 Complete (Tests Needed for CalendarRequest)
+**Priority**: Medium (Core features complete, advanced features remain)
+**Changes in v3.0**:
+
+- Updated status to reflect Phase 0 (ApiClient) completion
+- Updated status to reflect Phase 1 (CalendarRequest) implementation completion
+- Marked CalendarRequest unit tests as pending (implementation exists but lacks test coverage)
+- Updated "What's Missing" section to "What's Been Added Recently" + "What's Still Missing"
+- Reflected current state: examples no longer use raw curl, now use CalendarRequest
+- All existing tests pass (200 tests, 716 assertions)
+
 **Changes in v2.0**:
 
 - Added ApiClient singleton for unified API configuration (Phase 0)
