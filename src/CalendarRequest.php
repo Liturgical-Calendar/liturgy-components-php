@@ -496,8 +496,16 @@ class CalendarRequest
             throw new \Exception('Invalid calendar response: missing settings property');
         }
 
+        if (!property_exists($calendar, 'messages')) {
+            throw new \Exception('Invalid calendar response: missing messages property');
+        }
+
         if (!is_array($calendar->litcal)) {
-            throw new \Exception('Invalid calendar response: litcal must be array');
+            throw new \Exception('Invalid calendar response: litcal must be an array');
+        }
+
+        if (!is_array($calendar->messages)) {
+            throw new \Exception('Invalid calendar response: messages must be an array');
         }
     }
 }

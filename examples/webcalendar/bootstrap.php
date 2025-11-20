@@ -1,6 +1,39 @@
 <?php
 
-require '../../vendor/autoload.php';
+// Locate autoloader by walking up the directory tree
+// We start from the folder the current script is running in
+$currentDir     = __DIR__;
+$autoloaderPath = null;
+
+// Walk up directories looking for vendor/autoload.php
+$level = 0;
+while (true) {
+    $candidatePath = $currentDir . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+
+    if (file_exists($candidatePath)) {
+        $autoloaderPath = $candidatePath;
+        break;
+    }
+
+    // Don't look more than 10 levels up
+    if ($level > 10) {
+        break;
+    }
+
+    $parentDir = dirname($currentDir);
+    if ($parentDir === $currentDir) { // Reached the filesystem root
+        break;
+    }
+
+    ++$level;
+    $currentDir = $parentDir;
+}
+
+if (null === $autoloaderPath) {
+    die('Error: Unable to locate vendor/autoload.php. Please run `composer install` in the project root.');
+}
+
+require_once $autoloaderPath;
 
 use LiturgicalCalendar\Components\ApiClient;
 use LiturgicalCalendar\Components\ApiOptions;
