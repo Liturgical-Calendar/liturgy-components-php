@@ -409,6 +409,9 @@ class CalendarSelect
      * (without the 'data-' prefix) and the values are the corresponding attribute values.
      * These data attributes will be rendered as 'data-*' attributes in the HTML select element.
      *
+     * **Note:** Each call to this method replaces any previously set data attributes.
+     * To add multiple attributes, pass them all in a single array.
+     *
      * Example:
      * ```php
      * $calendarSelect->data(['requires-auth' => '', 'calendar-type' => 'national']);
@@ -416,15 +419,21 @@ class CalendarSelect
      * ```
      *
      * @param array<string,string> $data An associative array representing data attributes for the select element.
+     *                                   Keys must contain only letters, digits, hyphens, underscores, or colons.
      *
      * @return $this
+     *
+     * @throws \InvalidArgumentException If an attribute name contains invalid characters.
      */
     public function data(array $data): self
     {
-        $this->dataAttributes = array_map(
-            fn(string $value) => htmlspecialchars($value, ENT_QUOTES, 'UTF-8'),
-            $data
-        );
+        $this->dataAttributes = [];
+        foreach ($data as $key => $value) {
+            if (!is_string($key) || !preg_match('/^[A-Za-z][A-Za-z0-9_\-:]*$/', $key)) {
+                throw new \InvalidArgumentException('Invalid data attribute name: ' . (string) $key);
+            }
+            $this->dataAttributes[$key] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+        }
         return $this;
     }
 

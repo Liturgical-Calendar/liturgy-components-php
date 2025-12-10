@@ -139,5 +139,55 @@ class CalendarSelectTest extends TestCase
         $selectHtml     = $calendarSelect->getSelect();
         // Ensure there are no stray data- attributes when none are set
         $this->assertMatchesRegularExpression('/<select[^>]*>/', $selectHtml);
+        // Check that no data- attributes appear on the select element itself
+        preg_match('/<select[^>]*>/', $selectHtml, $matches);
+        $this->assertNotEmpty($matches);
+        $this->assertStringNotContainsString('data-', $matches[0]);
+    }
+
+    public function testDataMethodRejectsInvalidAttributeName()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid data attribute name');
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['invalid<name' => 'value']);
+    }
+
+    public function testDataMethodRejectsAttributeNameStartingWithNumber()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid data attribute name');
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['123invalid' => 'value']);
+    }
+
+    public function testDataMethodAcceptsValidAttributeNames()
+    {
+        $calendarSelect = new CalendarSelect();
+        // Should not throw - valid attribute names
+        $calendarSelect->data([
+            'simple'       => 'value1',
+            'with-hyphen'  => 'value2',
+            'with_under'   => 'value3',
+            'withNumbers1' => 'value4',
+            'name:space'   => 'value5'
+        ]);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('data-simple="value1"', $selectHtml);
+        $this->assertStringContainsString('data-with-hyphen="value2"', $selectHtml);
+        $this->assertStringContainsString('data-with_under="value3"', $selectHtml);
+        $this->assertStringContainsString('data-withNumbers1="value4"', $selectHtml);
+        $this->assertStringContainsString('data-name:space="value5"', $selectHtml);
+    }
+
+    public function testDataMethodReplacesNotMerges()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['first' => 'value1']);
+        $calendarSelect->data(['second' => 'value2']);
+        $selectHtml = $calendarSelect->getSelect();
+        // Second call should replace, not merge
+        $this->assertStringNotContainsString('data-first', $selectHtml);
+        $this->assertStringContainsString('data-second="value2"', $selectHtml);
     }
 }
