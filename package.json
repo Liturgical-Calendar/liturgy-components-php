@@ -4,8 +4,8 @@
     "description": "Reusable frontend components for the Liturgical Calendar API",
     "private": true,
     "scripts": {
-        "lint:md": "markdownlint-cli2 \"**/*.md\" \"!vendor/**\" \"!node_modules/**\" --config .markdownlint.yml",
-        "lint:md:fix": "markdownlint-cli2 \"**/*.md\" \"!vendor/**\" \"!node_modules/**\" --config .markdownlint.yml --fix"
+        "lint:md": "markdownlint-cli2 \"**/*.md\" \"#vendor/**\" \"#node_modules/**\"",
+        "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#vendor/**\" \"#node_modules/**\""
     },
     "devDependencies": {
         "markdownlint-cli2": "^0.15.0"

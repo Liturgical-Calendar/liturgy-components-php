@@ -452,11 +452,11 @@ With caching enabled:
 
 ### Recommended Cache TTLs
 
-| Data Type | Recommended TTL | Rationale |
-|-----------|----------------|-----------|
-| Calendar Metadata | 24 hours (86400s) | Changes infrequently |
-| Locale Information | 24 hours (86400s) | Very stable (supported locales per calendar) |
-| Calendar Data | 1 week (604800s) | Liturgical calendar data is stable long-term |
+| Data Type           | Recommended TTL   | Rationale                                    |
+|---------------------|-------------------|----------------------------------------------|
+| Calendar Metadata   | 24 hours (86400s) | Changes infrequently                         |
+| Locale Information  | 24 hours (86400s) | Very stable (supported locales per calendar) |
+| Calendar Data       | 1 week (604800s)  | Liturgical calendar data is stable long-term |
 
 ### Example Performance Gains
 

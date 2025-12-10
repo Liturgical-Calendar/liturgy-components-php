@@ -69,7 +69,7 @@ ini_set('display_errors', '1');
 
 // Load environment variables if Dotenv is available
 if (class_exists('Dotenv\Dotenv')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.production'], false);
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__, ['.env', '.env.local', '.env.development', '.env.staging', '.env.production'], false);
     $dotenv->ifPresent(['API_PROTOCOL', 'API_HOST'])->notEmpty();
     $dotenv->ifPresent(['API_PORT'])->isInteger();
     $dotenv->safeLoad();

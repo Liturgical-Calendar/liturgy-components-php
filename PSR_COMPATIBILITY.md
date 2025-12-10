@@ -68,14 +68,14 @@ Defines interface for sending PSR-7 requests and returning PSR-7 responses.
 
 This section provides a comprehensive view of all PSR standards we'll implement:
 
-| PSR | Standard | Purpose | Priority | Complexity |
-|-----|----------|---------|----------|------------|
-| **PSR-7** | HTTP Message Interfaces | Request/Response objects | High | Medium |
-| **PSR-17** | HTTP Factories | Create PSR-7 objects | High | Low |
-| **PSR-18** | HTTP Client | Send HTTP requests | High | Medium |
-| **PSR-3** | Logger Interface | Structured logging | Medium | Low |
-| **PSR-6** | Caching Interface | Cache pool abstraction | Low | Medium |
-| **PSR-16** | Simple Cache | Simplified cache interface | Low | Low |
+| PSR        | Standard                 | Purpose                   | Priority | Complexity |
+|------------|--------------------------|---------------------------|----------|------------|
+| **PSR-7**  | HTTP Message Interfaces  | Request/Response objects  | High     | Medium     |
+| **PSR-17** | HTTP Factories           | Create PSR-7 objects      | High     | Low        |
+| **PSR-18** | HTTP Client              | Send HTTP requests        | High     | Medium     |
+| **PSR-3**  | Logger Interface         | Structured logging        | Medium   | Low        |
+| **PSR-6**  | Caching Interface        | Cache pool abstraction    | Low      | Medium     |
+| **PSR-16** | Simple Cache             | Simplified cache interface| Low      | Low        |
 
 ---
 
