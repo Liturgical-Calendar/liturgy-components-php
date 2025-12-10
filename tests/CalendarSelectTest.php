@@ -78,4 +78,66 @@ class CalendarSelectTest extends TestCase
         $this->assertTrue(CalendarSelect::isValidLocale('es_ES'));
         $this->assertFalse(CalendarSelect::isValidLocale(' invalid-locale '));
     }
+
+    public function testDataMethodWithValueAttribute()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['calendar-type' => 'national']);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('data-calendar-type="national"', $selectHtml);
+    }
+
+    public function testDataMethodWithEmptyValueAttribute()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['requires-auth' => '']);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('data-requires-auth', $selectHtml);
+        $this->assertStringNotContainsString('data-requires-auth=""', $selectHtml);
+    }
+
+    public function testDataMethodWithMultipleAttributes()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data([
+            'requires-auth' => '',
+            'calendar-type' => 'national',
+            'api-version'   => '2.0'
+        ]);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('data-requires-auth', $selectHtml);
+        $this->assertStringContainsString('data-calendar-type="national"', $selectHtml);
+        $this->assertStringContainsString('data-api-version="2.0"', $selectHtml);
+    }
+
+    public function testDataMethodChaining()
+    {
+        $calendarSelect = new CalendarSelect();
+        $result         = $calendarSelect
+            ->class('form-select')
+            ->data(['requires-auth' => ''])
+            ->id('mySelect');
+        $this->assertSame($calendarSelect, $result);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('class="form-select"', $selectHtml);
+        $this->assertStringContainsString('data-requires-auth', $selectHtml);
+        $this->assertStringContainsString('id="mySelect"', $selectHtml);
+    }
+
+    public function testDataMethodEscapesHtml()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['test-attr' => '<script>alert("xss")</script>']);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringNotContainsString('<script>', $selectHtml);
+        $this->assertStringContainsString('&lt;script&gt;', $selectHtml);
+    }
+
+    public function testDataMethodWithNoAttributes()
+    {
+        $calendarSelect = new CalendarSelect();
+        $selectHtml     = $calendarSelect->getSelect();
+        // Ensure there are no stray data- attributes when none are set
+        $this->assertMatchesRegularExpression('/<select[^>]*>/', $selectHtml);
+    }
 }

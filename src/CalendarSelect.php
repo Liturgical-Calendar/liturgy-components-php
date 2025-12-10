@@ -38,6 +38,7 @@ use Psr\SimpleCache\CacheInterface;
  * - {@see LiturgicalCalendar\Components\CalendarSelect::labelText()} Sets the text for the label.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::allowNull()} Allows or disallows null selection.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::disabled()} Sets whether the select element is disabled.
+ * - {@see LiturgicalCalendar\Components\CalendarSelect::data()} Sets data attributes for the select element.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::isValidLocale()} Checks if the given locale is valid.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::getSelect()} Returns the HTML for the select element.
  * - {@see LiturgicalCalendar\Components\CalendarSelect::getLocale()} Returns the locale used by the calendar select instance.
@@ -77,6 +78,9 @@ class CalendarSelect
     private bool $allowNull                        = false;
     private bool $disabled                         = false;
     private OptionsType $optionsType               = OptionsType::ALL;
+
+    /** @var array<string,string> $dataAttributes Data attributes (name => value, without 'data-' prefix) */
+    private array $dataAttributes = [];
 
     /**
      * Creates a new instance of the CalendarSelect class.
@@ -399,6 +403,32 @@ class CalendarSelect
     }
 
     /**
+     * Sets data attributes for the select element.
+     *
+     * This method accepts an associative array where the keys are the data attribute names
+     * (without the 'data-' prefix) and the values are the corresponding attribute values.
+     * These data attributes will be rendered as 'data-*' attributes in the HTML select element.
+     *
+     * Example:
+     * ```php
+     * $calendarSelect->data(['requires-auth' => '', 'calendar-type' => 'national']);
+     * // Renders: <select ... data-requires-auth data-calendar-type="national">
+     * ```
+     *
+     * @param array<string,string> $data An associative array representing data attributes for the select element.
+     *
+     * @return $this
+     */
+    public function data(array $data): self
+    {
+        $this->dataAttributes = array_map(
+            fn(string $value) => htmlspecialchars($value, ENT_QUOTES, 'UTF-8'),
+            $data
+        );
+        return $this;
+    }
+
+    /**
      * Returns true if the given locale is valid, and false otherwise.
      *
      * A locale is valid if it is either 'la' or 'la_VA' (for Latin) or
@@ -603,6 +633,32 @@ class CalendarSelect
     }
 
     /**
+     * Returns the data-* attributes string for the select element.
+     *
+     * If no data attributes are set, an empty string is returned.
+     * Otherwise, returns a space-prefixed string of all data attributes.
+     *
+     * @return string The data-* attributes string.
+     */
+    private function getData(): string
+    {
+        if (empty($this->dataAttributes)) {
+            return '';
+        }
+        $data = array_map(
+            function (string $key, string $value): string {
+                if ($value === '') {
+                    return "data-{$key}";
+                }
+                return "data-{$key}=\"{$value}\"";
+            },
+            array_keys($this->dataAttributes),
+            array_values($this->dataAttributes)
+        );
+        return ' ' . implode(' ', $data);
+    }
+
+    /**
      * Returns a complete HTML select element for the given options.
      *
      * @return string The HTML for the select element.
@@ -613,13 +669,14 @@ class CalendarSelect
         $id          = $this->id && !empty($this->id) ? " id=\"{$this->id}\"" : '';
         $name        = $this->name && !empty($this->name) ? " name=\"{$this->name}\"" : '';
         $class       = $this->class && !empty($this->class) ? " class=\"{$this->class}\"" : '';
-        $disabled    = $this->disabled ? 'disabled' : '';
+        $disabled    = $this->disabled ? ' disabled' : '';
+        $dataAttrs   = $this->getData();
         $optionsHtml = $this->getOptions();
         if ($this->allowNull) {
             $optionsHtml = "<option value=\"\">---</option>{$optionsHtml}";
         }
         return ( $this->label ? "<label for=\"{$this->id}\"{$labelClass}>{$this->labelStr}</label>" : '' )
-            . "<select{$id}{$name}{$class}{$disabled}>{$optionsHtml}</select>";
+            . "<select{$id}{$name}{$class}{$disabled}{$dataAttrs}>{$optionsHtml}</select>";
     }
 
     /**
