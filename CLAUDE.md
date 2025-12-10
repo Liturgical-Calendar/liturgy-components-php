@@ -11,6 +11,10 @@ This is a PHP library providing reusable frontend components for the Liturgical 
 - `ApiOptions`: Form inputs for API request parameters
 - `WebCalendar`: Display components for liturgical calendar data
 
+This library is part of the coordinated API client libraries effort.
+See the [API Client Libraries Roadmap](../docs/API_CLIENT_LIBRARIES_ROADMAP.md)
+for the full coordination strategy across PHP, JavaScript, and React platforms.
+
 ## PHP Requirements
 
 - **PHP Version**: >= 8.1 (required for Enum support)
@@ -50,6 +54,7 @@ This is a PHP library providing reusable frontend components for the Liturgical 
   - Ordered lists use consistent numbering style
   - Lists must be surrounded by blank lines
   - Headings must be surrounded by blank lines
+  - Table columns must be vertically aligned (MD060)
   - Inline HTML is allowed for specific elements (img, a, b, table, etc.)
 
 ### Before Committing
@@ -805,3 +810,73 @@ Components primarily work with JSON responses and should handle the data structu
 - Always test with both PHP 8.1 and latest PHP versions when possible
 - Weblate is used for translations (ApiOptions and WebCalendar)
 - Component output should be HTML strings, not echo'd directly
+
+## TODO - Planned Features
+
+### LiturgyOfAnyDay Component
+
+Add a `LiturgyOfAnyDay` component similar to the JavaScript library's implementation. This component should:
+
+- Display liturgical events for any selected date
+- Include `DayInput`, `MonthInput`, and `YearInput` sub-components for date selection
+- Automatically handle December 31st special case (fetch with `year_type=LITURGICAL` and `year+1` for vigil masses)
+- Cache calendar data and re-render when day/month changes (no API call needed)
+- Trigger API refetch only when year changes or year_type needs to change
+- Support high-contrast text colors based on liturgical color backgrounds
+- Add border for white backgrounds to distinguish from parent
+
+**Reference:** See `liturgy-components-js/src/LiturgyOfAnyDay/LiturgyOfAnyDay.js` for implementation patterns.
+
+**Configuration Methods to Implement:**
+
+```php
+$liturgyOfAnyDay = new LiturgyOfAnyDay(['locale' => 'en'])
+    ->id('liturgyOfAnyDay')
+    ->class('card shadow')
+    ->titleClass('h3')
+    ->dateClass('card-header')
+    ->dateControlsClass('row g-3 p-3')
+    ->eventsWrapperClass('card-body')
+    ->eventClass('p-3 mb-2 rounded')
+    ->eventGradeClass('small')
+    ->eventCommonClass('small fst-italic')
+    ->eventYearCycleClass('small')
+    ->dayInputConfig([...])
+    ->monthInputConfig([...])
+    ->yearInputConfig([...])
+    ->buildDateControls();
+
+echo $liturgyOfAnyDay;
+```
+
+### Lightweight JavaScript Client for PHP Components
+
+Create a lightweight JavaScript client (`liturgy-components-php-js`) that complements the PHP component library for reactive UI updates. This would:
+
+- Provide event-driven communication similar to `liturgy-components-js` but designed to work with server-rendered PHP components
+- Allow PHP-rendered components to become reactive without a full JavaScript component library
+- Wire `ApiClient`, `CalendarSelect`, `ApiOptions`, and display components together
+- Handle the component communication patterns:
+
+```javascript
+// Initialize from PHP-rendered HTML
+const apiClient = await LitCalPhpClient.init(BaseUrl);
+
+// Wire components together by DOM selectors
+apiClient.listenTo('#calendarSelect').listenTo('#apiOptions');
+document.querySelector('#liturgyOfAnyDay').listenTo(apiClient);
+```
+
+**Benefits:**
+
+- PHP handles initial rendering (SEO-friendly, fast initial load)
+- JavaScript adds reactivity without duplicating component logic
+- Smaller bundle size than full JS component library
+- Consistent API with `liturgy-components-js` patterns
+
+**Implementation Approach:**
+
+1. Create event listeners for PHP-rendered form elements
+2. Emit events on changes that match `liturgy-components-js` event patterns
+3. Provide `listenTo()` pattern for wiring components
+4. Re-render PHP templates via AJAX or use existing DOM manipulation
