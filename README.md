@@ -263,6 +263,10 @@ with the following keys:
 - `labelText`: The text to use for the label element, default `"Select a calendar"`.
 - `allowNull`: Whether an option with an empty value should be added as the first option of the select, to allow the user to submit a null value, default `false`.
 - `disabled`: Whether to set the `disabled` attribute on the select element, default `false`.
+- `data`: An associative array of data attributes to add to the select element. Keys are the attribute names (without the `data-` prefix)
+  and values are the attribute values. Keys must start with a letter and may contain letters, digits, hyphens, underscores, or colons.
+  Keys are converted to lowercase for HTML5 compliance. Empty string values render as boolean attributes (e.g., `data-requires-auth`),
+  while non-empty values render with quotes (e.g., `data-type="national"`).
 
 > [!CAUTION]
 > When `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`, the `nationFilter` option MUST also be set, otherwise an exception will occur.
@@ -300,7 +304,15 @@ use LiturgicalCalendar\Components\CalendarSelect;
 use LiturgicalCalendar\Components\CalendarSelect\OptionsType;
 
 $CalendarSelect = new CalendarSelect();
-$CalendarSelect->nationFilter('NL')->setOptions(OptionsType::DIOCESES_FOR_NATION)->locale('it')->class('form-select')->id('diocesan_calendar')->name('diocesan_calendar')->label(true)->labelText('diocese');
+$CalendarSelect->nationFilter('NL')
+    ->setOptions(OptionsType::DIOCESES_FOR_NATION)
+    ->locale('it')
+    ->class('form-select')
+    ->id('diocesan_calendar')
+    ->name('diocesan_calendar')
+    ->label(true)
+    ->labelText('diocese')
+    ->data(['requires-auth' => '', 'calendar-type' => 'diocesan']);
 
 echo $CalendarSelect->getSelect();
 ```
