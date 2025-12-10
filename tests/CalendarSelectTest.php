@@ -78,4 +78,128 @@ class CalendarSelectTest extends TestCase
         $this->assertTrue(CalendarSelect::isValidLocale('es_ES'));
         $this->assertFalse(CalendarSelect::isValidLocale(' invalid-locale '));
     }
+
+    public function testDataMethodWithValueAttribute()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['calendar-type' => 'national']);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('data-calendar-type="national"', $selectHtml);
+    }
+
+    public function testDataMethodWithEmptyValueAttribute()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['requires-auth' => '']);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('data-requires-auth', $selectHtml);
+        $this->assertStringNotContainsString('data-requires-auth=""', $selectHtml);
+    }
+
+    public function testDataMethodWithMultipleAttributes()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data([
+            'requires-auth' => '',
+            'calendar-type' => 'national',
+            'api-version'   => '2.0'
+        ]);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('data-requires-auth', $selectHtml);
+        $this->assertStringContainsString('data-calendar-type="national"', $selectHtml);
+        $this->assertStringContainsString('data-api-version="2.0"', $selectHtml);
+    }
+
+    public function testDataMethodChaining()
+    {
+        $calendarSelect = new CalendarSelect();
+        $result         = $calendarSelect
+            ->class('form-select')
+            ->data(['requires-auth' => ''])
+            ->id('mySelect');
+        $this->assertSame($calendarSelect, $result);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('class="form-select"', $selectHtml);
+        $this->assertStringContainsString('data-requires-auth', $selectHtml);
+        $this->assertStringContainsString('id="mySelect"', $selectHtml);
+    }
+
+    public function testDataMethodEscapesHtml()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['test-attr' => '<script>alert("xss")</script>']);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringNotContainsString('<script>', $selectHtml);
+        $this->assertStringContainsString('&lt;script&gt;', $selectHtml);
+    }
+
+    public function testDataMethodWithNoAttributes()
+    {
+        $calendarSelect = new CalendarSelect();
+        $selectHtml     = $calendarSelect->getSelect();
+        // Ensure there are no stray data- attributes when none are set
+        $this->assertMatchesRegularExpression('/<select[^>]*>/', $selectHtml);
+        // Check that no data- attributes appear on the select element itself
+        preg_match('/<select[^>]*>/', $selectHtml, $matches);
+        $this->assertNotEmpty($matches);
+        $this->assertStringNotContainsString('data-', $matches[0]);
+    }
+
+    public function testDataMethodRejectsInvalidAttributeName()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid data attribute name');
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['invalid<name' => 'value']);
+    }
+
+    public function testDataMethodRejectsAttributeNameStartingWithNumber()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid data attribute name');
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['123invalid' => 'value']);
+    }
+
+    public function testDataMethodAcceptsValidAttributeNames()
+    {
+        $calendarSelect = new CalendarSelect();
+        // Should not throw - valid attribute names (note: keys are converted to lowercase)
+        $calendarSelect->data([
+            'simple'       => 'value1',
+            'with-hyphen'  => 'value2',
+            'with_under'   => 'value3',
+            'withNumbers1' => 'value4',
+            'name:space'   => 'value5'
+        ]);
+        $selectHtml = $calendarSelect->getSelect();
+        $this->assertStringContainsString('data-simple="value1"', $selectHtml);
+        $this->assertStringContainsString('data-with-hyphen="value2"', $selectHtml);
+        $this->assertStringContainsString('data-with_under="value3"', $selectHtml);
+        $this->assertStringContainsString('data-withnumbers1="value4"', $selectHtml);
+        $this->assertStringContainsString('data-name:space="value5"', $selectHtml);
+    }
+
+    public function testDataMethodReplacesNotMerges()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['first' => 'value1']);
+        $calendarSelect->data(['second' => 'value2']);
+        $selectHtml = $calendarSelect->getSelect();
+        // Second call should replace, not merge
+        $this->assertStringNotContainsString('data-first', $selectHtml);
+        $this->assertStringContainsString('data-second="value2"', $selectHtml);
+    }
+
+    public function testDataMethodConvertsKeysToLowercase()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['CamelCase' => 'value1', 'UPPERCASE' => 'value2']);
+        $selectHtml = $calendarSelect->getSelect();
+        // Keys should be converted to lowercase for HTML5 compliance
+        $this->assertStringContainsString('data-camelcase="value1"', $selectHtml);
+        $this->assertStringContainsString('data-uppercase="value2"', $selectHtml);
+        $this->assertStringNotContainsString('data-CamelCase', $selectHtml);
+        $this->assertStringNotContainsString('data-UPPERCASE', $selectHtml);
+    }
 }
