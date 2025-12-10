@@ -164,7 +164,7 @@ class CalendarSelectTest extends TestCase
     public function testDataMethodAcceptsValidAttributeNames()
     {
         $calendarSelect = new CalendarSelect();
-        // Should not throw - valid attribute names
+        // Should not throw - valid attribute names (note: keys are converted to lowercase)
         $calendarSelect->data([
             'simple'       => 'value1',
             'with-hyphen'  => 'value2',
@@ -176,7 +176,7 @@ class CalendarSelectTest extends TestCase
         $this->assertStringContainsString('data-simple="value1"', $selectHtml);
         $this->assertStringContainsString('data-with-hyphen="value2"', $selectHtml);
         $this->assertStringContainsString('data-with_under="value3"', $selectHtml);
-        $this->assertStringContainsString('data-withNumbers1="value4"', $selectHtml);
+        $this->assertStringContainsString('data-withnumbers1="value4"', $selectHtml);
         $this->assertStringContainsString('data-name:space="value5"', $selectHtml);
     }
 
@@ -189,5 +189,17 @@ class CalendarSelectTest extends TestCase
         // Second call should replace, not merge
         $this->assertStringNotContainsString('data-first', $selectHtml);
         $this->assertStringContainsString('data-second="value2"', $selectHtml);
+    }
+
+    public function testDataMethodConvertsKeysToLowercase()
+    {
+        $calendarSelect = new CalendarSelect();
+        $calendarSelect->data(['CamelCase' => 'value1', 'UPPERCASE' => 'value2']);
+        $selectHtml = $calendarSelect->getSelect();
+        // Keys should be converted to lowercase for HTML5 compliance
+        $this->assertStringContainsString('data-camelcase="value1"', $selectHtml);
+        $this->assertStringContainsString('data-uppercase="value2"', $selectHtml);
+        $this->assertStringNotContainsString('data-CamelCase', $selectHtml);
+        $this->assertStringNotContainsString('data-UPPERCASE', $selectHtml);
     }
 }

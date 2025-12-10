@@ -420,7 +420,8 @@ class CalendarSelect
      *
      * @param array<string,string> $data An associative array representing data attributes for the select element.
      *                                   Keys must start with a letter and may then contain letters, digits,
-     *                                   hyphens, underscores, or colons.
+     *                                   hyphens, underscores, or colons. Keys are converted to lowercase
+     *                                   for HTML5 compliance.
      *
      * @return $this
      *
@@ -433,7 +434,8 @@ class CalendarSelect
             if (!is_string($key) || !preg_match('/^[A-Za-z][A-Za-z0-9_\-:]*$/', $key)) {
                 throw new \InvalidArgumentException('Invalid data attribute name: ' . (string) $key);
             }
-            $this->dataAttributes[$key] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+            // Convert to lowercase for HTML5 compliance
+            $this->dataAttributes[strtolower($key)] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
         }
         return $this;
     }
