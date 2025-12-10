@@ -419,7 +419,8 @@ class CalendarSelect
      * ```
      *
      * @param array<string,string> $data An associative array representing data attributes for the select element.
-     *                                   Keys must contain only letters, digits, hyphens, underscores, or colons.
+     *                                   Keys must start with a letter and may then contain letters, digits,
+     *                                   hyphens, underscores, or colons.
      *
      * @return $this
      *
