@@ -39,10 +39,10 @@ means `lugano_ch` never reaches the code that assumes a national calendar.
 
 ### Two further divergences from the JS library
 
-| Concern              | liturgy-components-js                          | liturgy-components-php              |
-| -------------------- | ---------------------------------------------- | ----------------------------------- |
-| `data-calendartype`  | `national` / `diocesan`                        | `nationalcalendar` / `diocesancalendar` |
-| Empty option label   | the rite-level calendar name                   | a literal `---`                     |
+| Concern             | liturgy-components-js        | liturgy-components-php                  |
+| ------------------- | ---------------------------- | --------------------------------------- |
+| `data-calendartype` | `national` / `diocesan`      | `nationalcalendar` / `diocesancalendar` |
+| Empty option label  | the rite-level calendar name | a literal `---`                         |
 
 A third spelling exists and is **not** in scope to change: the API's own URL segments are `nation`
 and `diocese` (`/calendar/nation/IT`). That is the API's route naming, not a component convention.
@@ -62,8 +62,8 @@ Anything interactive belongs in liturgy-components-js, which is what the fronten
 A `Rite` enum with the same two cases as JS, and the same structural facts attached. These are
 properties of the rite, not of a diocese and not user preferences.
 
-| Property                  | Roman | Ambrosian | Meaning                                                        |
-| ------------------------- | ----- | --------- | -------------------------------------------------------------- |
+| Property                  | Roman | Ambrosian | Meaning                                                         |
+| ------------------------- | ----- | --------- | --------------------------------------------------------------- |
 | `hasNationalTier`         | true  | false     | whether the rite has national calendars at all                  |
 | `hasFixedTemporalOptions` | false | true      | whether the rite fixes Epiphany, Ascension, Corpus Christi, EHP |
 | `minYear`                 | 1970  | 1976      | earliest year the API will serve for the rite                   |
