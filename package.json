@@ -5,10 +5,13 @@
     "private": true,
     "scripts": {
         "lint:md": "markdownlint-cli2 \"**/*.md\" \"#vendor/**\" \"#node_modules/**\"",
-        "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#vendor/**\" \"#node_modules/**\""
+        "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#vendor/**\" \"#node_modules/**\"",
+        "format:md": "prettier --check --embedded-language-formatting=off --prose-wrap=preserve \"**/*.md\"",
+        "format:md:fix": "prettier --write --embedded-language-formatting=off --prose-wrap=preserve \"**/*.md\""
     },
     "devDependencies": {
-        "markdownlint-cli2": "^0.15.0"
+        "markdownlint-cli2": "^0.15.0",
+        "prettier": "^3.9.6"
     },
     "repository": {
         "type": "git",

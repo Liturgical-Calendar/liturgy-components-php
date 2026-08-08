@@ -253,7 +253,7 @@ $request = new CalendarRequest();
 
 **File:** `src/ApiClient.php`
 
-```php
+````php
 <?php
 
 namespace LiturgicalCalendar\Components;
@@ -434,7 +434,7 @@ class ApiClient
         self::$instance = null;
     }
 }
-```
+````
 
 #### Phase 0.1: Update MetadataProvider to use ApiClient
 

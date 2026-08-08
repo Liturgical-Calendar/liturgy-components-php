@@ -248,16 +248,16 @@ from the Liturgical Calendar API `/calendars` route. Can be instantiated passing
 with the following keys:
 
 - `locale`: The locale to use for the calendar select. Defaults to 'en'.
-               This is the locale that will be used to translate and order the names of the countries.
-               This should be a valid PHP locale string, such as 'en' or 'es' or 'en_US' or 'es_ES'.
+  This is the locale that will be used to translate and order the names of the countries.
+  This should be a valid PHP locale string, such as 'en' or 'es' or 'en_US' or 'es_ES'.
 - `class`: The class or classes to apply to the select element, default `calendarSelect`.
-- `id`:    The id to apply to the select element, default `calendarSelect`.
-- `name`:  The name to apply to the select element, default `calendarSelect`.
+- `id`: The id to apply to the select element, default `calendarSelect`.
+- `name`: The name to apply to the select element, default `calendarSelect`.
 - `setOptions`: The type of select options to return. Must be a valid case of the `OptionsType` enum. Valid cases are
-                   `OptionsType::NATIONS`, `OptionsType::DIOCESES`, `OptionsType::DIOCESES_FOR_NATION`, or `OptionsType::ALL`, default `OptionsType::ALL`.
+  `OptionsType::NATIONS`, `OptionsType::DIOCESES`, `OptionsType::DIOCESES_FOR_NATION`, or `OptionsType::ALL`, default `OptionsType::ALL`.
 - `nationFilter`: When `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`, this is the nation for which dioceses will be filtered, default `null`.
-                     This option MUST be set, and MUST NOT be `null` or empty, when `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`,
-                     otherwise an exception will occur.
+  This option MUST be set, and MUST NOT be `null` or empty, when `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`,
+  otherwise an exception will occur.
 - `selectedOption`: Set one of the options in the select as the default selected option, by value, default `null`.
 - `label`: A boolean indicating whether to include a label element or not, default `false`.
 - `labelText`: The text to use for the label element, default `"Select a calendar"`.
@@ -422,7 +422,7 @@ We can change the `locale` for the `ApiOptions` component, which will affect:
 
 - the display values of the `locale` select element, so that the language names in the select options are displayed according to the given locale
 - the display values of the `eternal_high_priest` select element (since the final value is a boolean, the display values are localized
-    text representations of the underlying boolean values that are sent to the API)
+  text representations of the underlying boolean values that are sent to the API)
 - the display values of the `epiphany` select element (which are descriptive to make them more comprehensible)
 - the display values of the `ascension` and `corpus_christ` select elements ("Sunday" and "Thursday" will be displayed according to the given locale)
 
@@ -548,6 +548,7 @@ echo $apiOptions->getForm();
 > ```
 
 <!-- break blockquotes -->
+
 > [!NOTE]
 > Other than setting the `as` html element as a string value in the `formLabel` option, or enabling the `formLabel` with a boolean value,
 > we can also set `formLabel` to an associative array with the desired options.
@@ -755,19 +756,20 @@ To this end, a number of CSS classes are created by default in the resulting tab
   rather than relying on the browser to calculate the width automatically.
 - the first column has a default class of `rotate` which allows for a CSS rule that will rotate the text such as:
 
-   ```css
-   #LitCalTable td.rotate div {
-     writing-mode: vertical-rl;
-     transform: rotate(180.0deg);
-   }
-   ```
+  ```css
+  #LitCalTable td.rotate div {
+    writing-mode: vertical-rl;
+    transform: rotate(180.0deg);
+  }
+  ```
 
-   Additionally, if the first column grouping is set to `Grouping::BY_MONTH`
-   (see [Chainable methods](https://github.com/Liturgical-Calendar/liturgy-components-php#chainable-methods) below),
-   each cell of the column will have class `month`.
-   If instead the grouping is set to `Grouping::BY_LITURGICAL_SEASON`,
-   each cell of the column will have additional classes `season {LITURGICAL_SEASON}`
-   where `{LITURGICAL_SEASON}` is a value of `ADVENT`, `CHRISTMAS`, `LENT`, `EASTER_TRIDUUM`, `EASTER` or `ORDINARY_TIME`.
+  Additionally, if the first column grouping is set to `Grouping::BY_MONTH`
+  (see [Chainable methods](https://github.com/Liturgical-Calendar/liturgy-components-php#chainable-methods) below),
+  each cell of the column will have class `month`.
+  If instead the grouping is set to `Grouping::BY_LITURGICAL_SEASON`,
+  each cell of the column will have additional classes `season {LITURGICAL_SEASON}`
+  where `{LITURGICAL_SEASON}` is a value of `ADVENT`, `CHRISTMAS`, `LENT`, `EASTER_TRIDUUM`, `EASTER` or `ORDINARY_TIME`.
+
 - if Month header rows are enabled, each Month header cell will have a class of `monthHeader`
 - Date column cells have a class of `dateEntry`
 - Event details column cells have a class of `eventDetails liturgicalGrade_{GRADE}` where `{GRADE}` is the numerical rank of the festivity, where:
@@ -785,7 +787,7 @@ To this end, a number of CSS classes are created by default in the resulting tab
 > [!NOTE]
 > The WebCalendar component currently suppresses the `grade_display` for celebrations of rank 7,
 > since it is more explanatory than actually useful for display in a web calendar,
-> having a value along the lines of *'celebration with precedence over solemnities'*.
+> having a value along the lines of _'celebration with precedence over solemnities'_.
 
 #### Chainable methods
 
@@ -826,7 +828,7 @@ use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
   - `Grouping::BY_MONTH`: the first column will contain month groupings
   - `Grouping::BY_LITURGICAL_SEASON`: the first column will contain liturgical season groupings
 - `psalterWeekGrouping(bool $boolVal = true)`: sets whether the psalter week column is produced.
-   It is always the last column, and liturgical events within the same Psalter week are grouped together.
+  It is always the last column, and liturgical events within the same Psalter week are grouped together.
 - `removeHeaderRow(bool $removeHeaderRow = true)`: sets whether the header row should be removed from the table
 - `removeCaption(bool $removeCaption = true)`: sets whether the table caption should be removed from the table
 - `seasonColor(ColorAs $colorAs)`: sets how the season color is applied to the table. Can take an enum value of:
@@ -850,6 +852,7 @@ use LiturgicalCalendar\Components\WebCalendar\GradeDisplay;
   A bitwise combination of columns would look like: `seasonColorColumns(Column::LITURGICAL_SEASON->value | Column::DATE->value | Column::PSALTER_WEEK->value)`.
   As a convenience, we have a `Column::ALL` enum case that represents the OR'd value of all columns,
   as well as a `Column::NONE` enum case that represents a zero value, effectively disabling all columns from any season color effects.
+
 - `eventColor(ColorAs $colorAs)`: sets how the color for the single liturgical celebration is applied to the table.
   See `seasonColor` above for the `ColorAs` enum cases.
 - `eventColorColumns(Columns|int $columnFlags = Column::NONE)`: sets which columns should be affected by the `eventColor` settings.
@@ -939,9 +942,10 @@ composer parallel-lint     # Check PHP syntax
 This project enforces consistent markdown formatting. To lint markdown files:
 
 ```bash
-npm install                # Install markdown linting dependencies (first time only)
-composer lint:md           # Check markdown files
-composer lint:md:fix       # Auto-fix markdown issues
+npm install                # Install markdown tooling (first time only)
+composer format:md:fix     # Format with prettier — run this FIRST (owns MD060 table alignment)
+composer lint:md:fix       # Auto-fix the markdownlint rules prettier does not own
+composer lint:md           # Check for anything left, e.g. MD013 line length
 ```
 
 See [MARKDOWN_LINTING.md](MARKDOWN_LINTING.md) for detailed markdown linting documentation.

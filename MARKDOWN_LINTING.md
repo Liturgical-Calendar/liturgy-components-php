@@ -8,7 +8,8 @@ Markdown linting dependencies are managed via npm. Install them with:
 
 ```bash
 npm install
-```text
+```
+
 This will install:
 
 - `markdownlint-cli2` - CLI tool for linting markdown files
@@ -36,7 +37,8 @@ Check all markdown files for issues:
 composer lint:md
 # or directly with npm
 npm run lint:md
-```text
+```
+
 ### Auto-fix Issues
 
 Automatically fix many markdown issues:
@@ -45,7 +47,37 @@ Automatically fix many markdown issues:
 composer lint:md:fix
 # or directly with npm
 npm run lint:md:fix
-```text
+```
+
+### Formatting (Prettier)
+
+Two tools, deliberately kept separate:
+
+| Tool                | Scripts                      | Owns                                                  |
+| ------------------- | ---------------------------- | ----------------------------------------------------- |
+| `markdownlint-cli2` | `lint:md`, `lint:md:fix`     | the `.markdownlint.yml` rules — MD013, MD029, MD040 … |
+| `prettier`          | `format:md`, `format:md:fix` | formatting — table alignment (MD060), blank lines     |
+
+They are complementary, not alternatives, because **`markdownlint-cli2 --fix` cannot repair MD060.**
+Run it on a misaligned table and it reports the error but changes nothing; alignment would otherwise
+have to be done by hand. `composer format:md:fix` does it mechanically, and its output passes
+`lint:md` with zero errors. Prettier does **not** fix MD013 line length — that still needs a human
+edit, because it runs with `--prose-wrap=preserve`.
+
+Run prettier **first**, then markdownlint:
+
+```bash
+composer format:md:fix
+composer lint:md
+```
+
+**Prettier is configured for markdown only, on purpose.** The scripts pass
+`--embedded-language-formatting=off` so fenced PHP samples in the docs are left exactly as written,
+rather than reformatted against prettier's defaults instead of the PSR-12 ruleset phpcs enforces. For
+the same reason there is deliberately **no `.prettierrc`** — a config file would be picked up by an
+editor's format-on-save and would start silently reformatting `src/`. Keep the options as CLI flags
+in the scripts, and keep source out via `.prettierignore`.
+
 ### Excluded Directories
 
 The following directories are automatically excluded from linting:
@@ -81,7 +113,8 @@ The markdown linting hook is configured in `captainhook.json`:
         }
     ]
 }
-```text
+```
+
 This ensures markdown linting only runs when `.md` files are staged for commit.
 
 ### Workflow Example
@@ -107,7 +140,8 @@ composer lint:md:fix
 # Re-stage and commit
 git add README.md
 git commit -m "Update README"
-```text
+```
+
 ## Common Linting Errors
 
 ### MD013 - Line Too Long
@@ -124,27 +158,29 @@ git commit -m "Update README"
 
 **Fix**: Add blank lines before and after code blocks:
 
-```markdown
+````markdown
 Some text here.
 
 ```bash
 command here
-```text
-More text here.
+```
 
-```text
+More text here.
+````
+
 ### MD040 - Fenced Code Should Have Language
 
 **Error**: Fenced code blocks should specify a language
 
 **Fix**: Add language identifier after opening backticks:
 
-```markdown
+````markdown
 ```bash
 #!/bin/bash
 echo "Hello"
-```text
-```text
+```
+````
+
 ### MD032 - Lists Need Blank Lines
 
 **Error**: Lists should be surrounded by blank lines
@@ -159,7 +195,8 @@ Some text here.
 - List item 3
 
 More text here.
-```text
+```
+
 ## Integration with Other Linting
 
 The project uses multiple linting tools:
@@ -185,7 +222,8 @@ git commit --no-verify
 
 # Skip pre-push hooks
 git push --no-verify
-```text
+```
+
 **Warning**: Skipping hooks may result in commits that fail CI/CD checks.
 
 ## Updating Markdown Rules
@@ -205,7 +243,8 @@ If the markdown linting hook doesn't run:
 ```bash
 # Reinstall captainhook hooks
 vendor/bin/captainhook install -f
-```text
+```
+
 ### npm Command Not Found
 
 If `composer lint:md` fails with "npm: command not found":
@@ -220,20 +259,25 @@ brew install node
 
 # Then install dependencies:
 npm install
-```text
+```
+
 ### Too Many Errors
 
 If you have many markdown files with errors:
 
 ```bash
-# Auto-fix what can be fixed automatically
+# Format first — this is what fixes MD060 table alignment
+composer format:md:fix
+
+# Then auto-fix the markdownlint rules prettier does not own
 composer lint:md:fix
 
 # Review remaining errors
 composer lint:md
 
-# Fix remaining errors manually
-```text
+# Fix remaining errors manually (MD013 line length in particular)
+```
+
 ## See Also
 
 - **CLAUDE.md** - Markdown standards section

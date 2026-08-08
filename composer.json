@@ -61,6 +61,8 @@
         "lint:fix": "phpcbf",
         "lint:md": "npm run lint:md",
         "lint:md:fix": "npm run lint:md:fix",
+        "format:md": "npm run format:md",
+        "format:md:fix": "npm run format:md:fix",
         "analyse": "phpstan analyse",
         "parallel-lint": "parallel-lint --exclude .git --exclude vendor .",
         "test": "phpunit --testdox --display-warnings",
