@@ -1,0 +1,13 @@
+# Prettier is used in this project for MARKDOWN ONLY — see the `format:md` /
+# `format:md:fix` scripts in package.json. It is deliberately NOT wired up for
+# PHP (there is no prettier PHP parser installed) and there is intentionally no
+# .prettierrc, so that an editor's format-on-save does not silently start
+# reformatting source files against prettier's defaults instead of the PSR-12
+# ruleset phpcs enforces.
+
+# Dependencies and build output
+vendor/
+node_modules/
+
+# Compiled gettext catalogues and their sources
+src/**/i18n/

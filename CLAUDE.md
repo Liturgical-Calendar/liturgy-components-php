@@ -70,13 +70,20 @@ composer parallel-lint     # Check PHP syntax
 composer test              # Run full test suite
 composer test:quick        # Run tests excluding slow tests
 
-# Markdown Quality Checks
-composer lint:md           # Check markdown formatting (markdownlint)
-composer lint:md:fix       # Auto-fix markdown formatting
+# Markdown Quality Checks — two tools, different jobs
+composer lint:md           # markdownlint-cli2: check against .markdownlint.yml
+composer lint:md:fix       # markdownlint-cli2 --fix (cannot fix MD060 table alignment)
+composer format:md         # prettier: check formatting, changes nothing
+composer format:md:fix     # prettier: reformat in place (this is what fixes MD060)
 ```
 
-**CRITICAL**: When you create or edit markdown files (*.md), you MUST run `composer lint:md:fix` before committing to ensure proper formatting.
+**CRITICAL**: When you create or edit markdown files (*.md), you MUST run `composer format:md:fix` and then `composer lint:md` before committing.
 The pre-commit hook will block commits with markdown formatting errors.
+
+Run them in that order. They are complementary, not alternatives: `markdownlint-cli2 --fix` **cannot repair MD060** table alignment — it reports the
+error and changes nothing — while prettier does it mechanically, and its output passes `lint:md` with zero errors. Prettier does not fix MD013 line
+length; that still needs a human edit. See [MARKDOWN_LINTING.md](MARKDOWN_LINTING.md) for why prettier is markdown-only and why there is deliberately
+no `.prettierrc`.
 
 ### Markdown File Workflow
 
