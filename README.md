@@ -942,9 +942,10 @@ composer parallel-lint     # Check PHP syntax
 This project enforces consistent markdown formatting. To lint markdown files:
 
 ```bash
-npm install                # Install markdown linting dependencies (first time only)
-composer lint:md           # Check markdown files
-composer lint:md:fix       # Auto-fix markdown issues
+npm install                # Install markdown tooling (first time only)
+composer format:md:fix     # Format with prettier — run this FIRST (owns MD060 table alignment)
+composer lint:md:fix       # Auto-fix the markdownlint rules prettier does not own
+composer lint:md           # Check for anything left, e.g. MD013 line length
 ```
 
 See [MARKDOWN_LINTING.md](MARKDOWN_LINTING.md) for detailed markdown linting documentation.

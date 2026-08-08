@@ -266,13 +266,16 @@ npm install
 If you have many markdown files with errors:
 
 ```bash
-# Auto-fix what can be fixed automatically
+# Format first — this is what fixes MD060 table alignment
+composer format:md:fix
+
+# Then auto-fix the markdownlint rules prettier does not own
 composer lint:md:fix
 
 # Review remaining errors
 composer lint:md
 
-# Fix remaining errors manually
+# Fix remaining errors manually (MD013 line length in particular)
 ```
 
 ## See Also

@@ -90,9 +90,10 @@ no `.prettierrc`.
 When creating or editing markdown files, follow this workflow:
 
 1. **Create/Edit** the markdown file
-1. **Auto-fix formatting**: Run `composer lint:md:fix` immediately after editing
+1. **Format**: Run `composer format:md:fix` first — prettier owns table alignment (MD060) and blank lines
+1. **Auto-fix the rest**: Run `composer lint:md:fix` for the rules prettier does not own
 1. **Verify**: Run `composer lint:md` to check for any remaining issues
-1. **Fix manually** if auto-fix couldn't resolve all issues
+1. **Fix manually** what neither can resolve — MD013 line length in particular, since prettier runs with `--prose-wrap=preserve`
 1. **Commit**: The pre-commit hook will verify formatting
 
 **Common markdown linting errors**:
@@ -146,7 +147,7 @@ See [MARKDOWN_LINTING.md](MARKDOWN_LINTING.md) for complete documentation.
 1. Follow existing patterns for method naming and structure
 1. Update relevant tests when modifying component behavior
 1. Ensure phpcs compliance before committing (run `composer lint`)
-1. **Ensure markdown linting compliance** when editing .md files (run `composer lint:md:fix`)
+1. **Ensure markdown linting compliance** when editing .md files (run `composer format:md:fix`, then `composer lint:md`)
 1. Use type hints and return types (PHP 8.1+ features)
 1. Document public methods with clear docblocks
 
