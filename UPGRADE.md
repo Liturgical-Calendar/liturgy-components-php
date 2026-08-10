@@ -86,6 +86,24 @@ come back `400`. The input now renders `value="1976"` in that case. This is the 
 only ever fires for a year the API would have rejected. `liturgy-components-js` does the same thing on the same
 transition, when a linked `RiteSelect` changes the rite.
 
+### `Rite::resolve()`
+
+Every method in the library that takes a rite takes `Rite|string`, and each one needed the same three lines to
+normalize it. There were four byte-identical copies — `CalendarSelect::rite()`, `RiteSelect::selectedOption()`,
+`CalendarRequest::rite()` and the new `Year::rite()` — so they now share one:
+
+```php
+Rite::resolve(Rite::AMBROSIAN);   // passes the case through
+Rite::resolve('ambrosian');       // Rite::AMBROSIAN
+Rite::resolve('byzantine');       // \Exception: Invalid rite: byzantine, valid values are: roman, ambrosian
+```
+
+Pure extraction: no signature changed, and the message is preserved verbatim, since each of those four components
+has a test asserting it.
+
+**Do not replace this with the built-in `Rite::from()`.** A backed enum already has one; it throws a `\ValueError`
+that does not name the valid values, which is exactly why the four hand-rolled copies existed in the first place.
+
 ### `Year::min()`
 
 The floor is also settable directly, for a range the rite does not dictate — an archive that begins later than the

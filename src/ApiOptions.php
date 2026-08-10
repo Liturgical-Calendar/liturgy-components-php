@@ -160,14 +160,14 @@ class ApiOptions
                         }
                         break;
                     case 'rite':
-                        // The value itself is validated by Year::rite(), below, so
-                        // that there is one definition of what a valid rite is.
                         // Only the type is this class's business, and it refuses a
-                        // wrong one the way it refuses a non-string locale.
+                        // wrong one the way it refuses a non-string locale. What
+                        // counts as a valid rite belongs to Rite::resolve(), which
+                        // is also what raises the message naming the valid values.
                         if (false === $value instanceof Rite && false === is_string($value)) {
                             throw new \InvalidArgumentException('Expected Rite or string for rite, got ' . gettype($value));
                         }
-                        $rite = $value;
+                        $rite = Rite::resolve($value);
                         break;
                     case 'after':
                         if (is_string($value)) {
@@ -198,9 +198,9 @@ class ApiOptions
         $this->acceptHeaderInput         = new AcceptHeader();
         $this->holydaysOfObligationInput = new HolydaysOfObligation();
 
-        // Applied once the input exists. Year::rite() is what validates the value,
-        // so an unknown rite throws from here — out of the constructor, before the
-        // caller has a half-configured form in hand.
+        // Applied once the input exists. A resolved case by this point, since an
+        // unknown rite was refused up in the options loop — out of the
+        // constructor, before any of these inputs were built.
         $this->yearInput->rite($rite);
     }
 

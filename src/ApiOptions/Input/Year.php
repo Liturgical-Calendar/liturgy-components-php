@@ -76,15 +76,7 @@ final class Year extends Input
      */
     public function rite(Rite|string $rite): self
     {
-        if (is_string($rite)) {
-            $resolved = Rite::tryFrom($rite);
-            if (null === $resolved) {
-                $valid = implode(', ', array_map(fn(Rite $case) => $case->value, Rite::cases()));
-                throw new \Exception("Invalid rite: {$rite}, valid values are: {$valid}");
-            }
-            $rite = $resolved;
-        }
-        return $this->min($rite->minYear());
+        return $this->min(Rite::resolve($rite)->minYear());
     }
 
     public function get(): string

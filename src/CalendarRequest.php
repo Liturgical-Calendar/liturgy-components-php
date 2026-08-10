@@ -163,14 +163,7 @@ class CalendarRequest
      */
     public function rite(Rite|string $rite): self
     {
-        if (is_string($rite)) {
-            $resolved = Rite::tryFrom($rite);
-            if (null === $resolved) {
-                $valid = implode(', ', array_map(fn(Rite $case) => $case->value, Rite::cases()));
-                throw new \Exception("Invalid rite: {$rite}, valid values are: {$valid}");
-            }
-            $rite = $resolved;
-        }
+        $rite = Rite::resolve($rite);
 
         // Guard both orders. Setting the rite last would otherwise walk straight
         // past the check in nation() and rebuild the unroutable URL.
