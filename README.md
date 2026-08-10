@@ -25,7 +25,7 @@ introduced in 8.1, but `WebCalendar\Column` composes one enum case from the valu
 that the package had never actually parsed there.
 It also requires PHP `ext-intl`. To check if you have all the requirements you can run `composer check-platform-reqs --no-dev`.
 
-<b>Contributing requires PHP >= 8.4</b>, which is a higher bar than using the package. `composer.lock` pins development
+<b>Contributing requires PHP >= 8.4.1</b>, which is a higher bar than using the package. `composer.lock` pins development
 tooling — PHPUnit 12, and `symfony/var-exporter` by way of `symfony/cache` — that requires 8.4, so `composer install` cannot
 resolve below it. Consumers are unaffected: `composer require` reads only the runtime `require` section and never this lock.
 If you intend on contributing and installing development requirements, run `composer check-platform-reqs`.
