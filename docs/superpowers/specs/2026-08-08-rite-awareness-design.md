@@ -24,9 +24,27 @@ the crash fires against real metadata.
 This is the exact analogue of the bug fixed in liturgy-components-js by `2a89aef`, "Fix crash when a
 diocese's nation has no national calendar (e.g. lugano_ch/CH)".
 
-The crash is not merely theoretical. LiturgicalCalendarFrontend removed the PHP `CalendarSelect` from
-`usage.php` because of it, replacing it with the JS component; the in-code comment there records the
-reason. The PHP `CalendarSelect` is currently instantiated nowhere in that frontend.
+The crash is not merely theoretical — it is **live**. LiturgicalCalendarFrontend's `usage.php`
+constructs the PHP `CalendarSelect` unconditionally at the top of the file and renders it further down:
+
+```php
+$CalendarSelect = new CalendarSelect(['locale' => $i18n->LOCALE]);   // usage.php:7
+// …
+echo $CalendarSelect->class('form-select')->id('calendarSelect')->getSelect();
+```
+
+Against live metadata that is a guaranteed fatal on every request to that page. `lugano_ch` is the
+**only** diocese whose nation has no national calendar, so it alone triggers it — and it is present:
+
+```console
+$ curl -sS https://litcal.johnromanodorazio.com/api/dev/calendars
+national calendars: 6, diocesan calendars: 16
+diocese nations with NO national calendar: ['CH']  ->  lugano_ch | nation CH | rite ambrosian
+```
+
+An earlier draft of this section claimed the opposite — that the frontend had removed the component
+because of the crash, and that a comment there recorded the reason. Neither is so: no such comment
+exists, and the call site is live.
 
 ### The cause is a missing rite partition
 
