@@ -129,13 +129,23 @@ final class CalendarSelectRiteTest extends TestCase
     #[PreserveGlobalState(false)]
     public function testEmptyOptionIsTranslatedIntoTheConfiguredLocale(): void
     {
-        $current = setlocale(LC_MESSAGES, '0');
+        // Bind first: the probe may run before any component has, and an
+        // unbound domain returns the msgid for reasons that say nothing
+        // about whether the catalog resolves.
+        bindtextdomain('rite', dirname(__DIR__) . '/src/i18n');
+        $before  = setlocale(LC_MESSAGES, '0');
         $italian = setlocale(LC_MESSAGES, 'it_IT.utf8', 'it_IT.UTF-8', 'it_IT', 'it');
-        if (false !== $current) {
-            setlocale(LC_MESSAGES, $current);
+        $direct  = false === $italian ? null : dgettext('rite', 'Roman Rite');
+        if (false !== $before) {
+            setlocale(LC_MESSAGES, $before);
         }
         if (false === $italian) {
             $this->markTestSkipped('No Italian locale installed; cannot assert translated output.');
+        }
+        // See RiteSelectTest::skipWithoutWorkingItalianCatalog() for why a
+        // process can hold the locale and still fail to resolve the catalog.
+        if ('Rito Romano' !== $direct) {
+            $this->markTestSkipped('gettext cannot resolve the rite catalog in this process.');
         }
 
         $html = ( new CalendarSelect(['locale' => 'it', 'allowNull' => true]) )->getSelect();
