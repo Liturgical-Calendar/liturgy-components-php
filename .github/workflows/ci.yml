@@ -213,23 +213,6 @@ jobs:
           cat "${RUNNER_TEMP}/litcal-api.log"
           exit 1
 
-      # Temporary. The Italian assertions pass locally and failed on the runner
-      # with English output, and neither a corrupted catalog nor gettext's
-      # LANGUAGE override reproduced it — both were tested and ruled out. This
-      # prints what PHP actually sees so the next run explains itself rather
-      # than inviting another guess.
-      - name: Diagnose the gettext lookup
-        run: |
-          echo "locales matching it:"; locale -a | grep -i '^it' || echo '  (none)'
-          echo "LANG=${LANG:-unset} LC_ALL=${LC_ALL:-unset} LANGUAGE=${LANGUAGE:-unset}"
-          php -r '
-            $path = __DIR__ . "/src/i18n";
-            printf("catalog exists: %s\n", var_export(file_exists($path . "/it/LC_MESSAGES/rite.mo"), true));
-            printf("bindtextdomain: %s\n", var_export(bindtextdomain("rite", $path), true));
-            printf("setlocale: %s\n", var_export(setlocale(LC_MESSAGES, "it_IT.utf8", "it_IT.UTF-8", "it_IT", "it"), true));
-            printf("dgettext: %s\n", dgettext("rite", "Roman Rite"));
-          '
-
       - name: Run the tests
         env:
           LITCAL_API_URL: http://127.0.0.1:8000
