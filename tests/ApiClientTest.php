@@ -81,7 +81,10 @@ class ApiClientTest extends TestCase
     {
         ApiClient::getInstance();
 
-        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev', ApiClient::getApiUrl());
+        // Against the resolved default rather than a literal: the default is
+        // now whatever ApiClient::defaultApiUrl() returns, which honours
+        // LITCAL_API_URL so the suite can run on a local API.
+        $this->assertEquals(ApiClient::defaultApiUrl(), ApiClient::getApiUrl());
     }
 
     public function testGetApiUrlTrimsTrailingSlash()
@@ -226,7 +229,10 @@ class ApiClientTest extends TestCase
         ApiClient::getInstance();
 
         // Should use all defaults
-        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev', ApiClient::getApiUrl());
+        // Against the resolved default rather than a literal: the default is
+        // now whatever ApiClient::defaultApiUrl() returns, which honours
+        // LITCAL_API_URL so the suite can run on a local API.
+        $this->assertEquals(ApiClient::defaultApiUrl(), ApiClient::getApiUrl());
         $this->assertInstanceOf(HttpClientInterface::class, ApiClient::getHttpClient());
         $this->assertNull(ApiClient::getCache());
         $this->assertInstanceOf(\Psr\Log\LoggerInterface::class, ApiClient::getLogger());
@@ -248,7 +254,10 @@ class ApiClientTest extends TestCase
         ApiClient::getInstance(['httpClient' => $httpClient]);
 
         $this->assertSame($httpClient, ApiClient::getHttpClient());
-        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev', ApiClient::getApiUrl());
+        // Against the resolved default rather than a literal: the default is
+        // now whatever ApiClient::defaultApiUrl() returns, which honours
+        // LITCAL_API_URL so the suite can run on a local API.
+        $this->assertEquals(ApiClient::defaultApiUrl(), ApiClient::getApiUrl());
     }
 
     public function testWarnsAboutDoubleWrappingWhenBothClientAndCacheProvided()
