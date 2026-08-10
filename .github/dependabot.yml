@@ -1,0 +1,63 @@
+# Dependabot configuration, matching the setup in liturgy-components-js.
+#
+# No `target-branch`: this repository's default branch is `main`, and releases
+# are cut from it, so version updates belong there directly.
+
+version: 2
+updates:
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    # Wait 7 days before proposing updates to newly published versions, to
+    # reduce exposure to a compromised or yanked release (supply-chain).
+    cooldown:
+      default-days: 7
+    labels:
+      - 'github-actions'
+    # Batch all action bumps into a single PR. The workflows pin actions by
+    # commit SHA with the version in a trailing comment; Dependabot rewrites
+    # both together, which is the whole reason the pins stay readable.
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+
+  # Composer. Everything the library requires at runtime is a PSR interface or a
+  # tiny implementation, and those move rarely; the churn is all in require-dev.
+  # That split is why the two groups below are separated rather than batched:
+  # a runtime bump reaches consumers and deserves its own review, while a
+  # PHPUnit or PHPStan bump cannot.
+  - package-ecosystem: 'composer'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    cooldown:
+      default-days: 7
+    labels:
+      - 'php dependencies'
+    # Dependabot's default ceiling on open version-update PRs is five. Once
+    # reached it stops opening new ones, so a group can be starved indefinitely
+    # by unrelated PRs sitting in review — silently, with nothing to indicate an
+    # update was withheld.
+    open-pull-requests-limit: 10
+    # Groups are matched in declaration order — a dependency joins the FIRST
+    # group whose patterns match — so the specific groups precede the catch-all.
+    groups:
+      # PSR interface packages are versioned independently but are consumed as a
+      # set, and a mismatched pair is the kind of thing that only shows up at
+      # runtime in a consumer's project.
+      psr-interfaces:
+        patterns:
+          - 'psr/*'
+      # phpunit, phpstan, phpcs, parallel-lint and captainhook. None of these
+      # reach a consumer: they are the check suite. Note that PHPUnit 12 and the
+      # symfony/cache line already require PHP 8.4 to install, which is why
+      # contributing needs a newer PHP than using the package does — see README.
+      dev-tooling:
+        dependency-type: 'development'
+        patterns:
+          - '*'
+      runtime:
+        patterns:
+          - '*'

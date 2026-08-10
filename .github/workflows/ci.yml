@@ -20,6 +20,12 @@ on:
   push:
     branches: [main]
 
+# Actions are pinned to a commit SHA rather than a moving tag. A tag can be
+# repointed at new code by whoever controls the upstream repository, so the pin
+# is what makes a compromised action show up as a reviewable diff rather than
+# arriving silently. The trailing comment carries the human-readable version;
+# Dependabot rewrites the SHA and the comment together.
+
 jobs:
   # Static analysis and code style. No network, no API, so this is the job that
   # should stay green regardless of what any external service is doing.
@@ -29,10 +35,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
         with:
           php-version: '8.4'
           extensions: intl, json, gettext
@@ -70,10 +76,10 @@ jobs:
       matrix:
         php: ['8.2', '8.3', '8.4']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
         with:
           php-version: ${{ matrix.php }}
           extensions: intl, json, gettext
@@ -97,9 +103,9 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
 
@@ -131,10 +137,10 @@ jobs:
       contents: read
     steps:
       - name: Check out the library
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check out the API
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Liturgical-Calendar/LiturgicalCalendarAPI
           ref: development
@@ -145,7 +151,7 @@ jobs:
       # than across the library's whole supported range; `compat` above covers
       # the older versions as far as syntax.
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
         with:
           php-version: '8.4'
           extensions: intl, json, gettext, calendar, ctype, curl, dom, libxml, mbstring, simplexml, xml, zip
@@ -156,11 +162,19 @@ jobs:
       # themselves when no Italian locale is installed, and an ubuntu runner
       # carries almost none — without this the localization would silently go
       # unverified in CI, which is the one place it matters most.
-      - name: Generate the Italian locale
+      # gettext brings msgfmt and friends; the runtime lookup is glibc's, and the
+      # PHP extension is installed by setup-php above. Included because a runner
+      # without the package is one plausible reason the catalog assertions skip
+      # here while passing locally — the tests report which case they hit, so if
+      # this changes nothing the skip message will still say so.
+      - name: Install gettext and the Italian locale
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gettext locales
           sudo locale-gen it_IT.UTF-8
           sudo update-locale
           locale -a | grep -i '^it_IT' || ( echo 'it_IT locale missing' && exit 1 )
+          msgfmt --version | head -1
 
       - name: Install library dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
