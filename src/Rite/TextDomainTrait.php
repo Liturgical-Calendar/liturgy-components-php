@@ -2,6 +2,8 @@
 
 namespace LiturgicalCalendar\Components\Rite;
 
+use LiturgicalCalendar\Components\Locale\ScopedLocale;
+
 /**
  * Shared gettext handling for the `rite` domain.
  *
@@ -38,19 +40,17 @@ trait TextDomainTrait
     }
 
     /**
-     * Runs `$render` with `LC_MESSAGES` set to `$locale`, then restores it.
+     * Runs `$render` with `LC_MESSAGES` and `LANGUAGE` set to `$locale`, then restores both.
      *
      * Without this the components accepted a locale and then translated in
      * whatever locale the process happened to be in, so `new RiteSelect( [
      * 'locale' => 'it' ] )` rendered English. gettext reads the category, not
-     * the argument.
+     * the argument — and it reads `LANGUAGE` above the category, which is why
+     * {@see ScopedLocale} moves the two together.
      *
      * Only `LC_MESSAGES` is touched, not `LC_ALL` as WebCalendar does: message
      * lookup is all that is wanted here, and widening it would also change
      * number and date formatting for the caller's whole process.
-     *
-     * The restore runs in a `finally`, so an exception thrown while rendering
-     * cannot leave the caller's process in a locale it never chose.
      *
      * @param string          $locale The canonicalized locale to translate in.
      * @param callable(): string $render Produces the markup; called once.
@@ -59,53 +59,7 @@ trait TextDomainTrait
      */
     private function withRiteMessagesLocale(string $locale, callable $render): string
     {
-        $previous = setlocale(LC_MESSAGES, '0');
-        setlocale(LC_MESSAGES, self::riteMessagesLocaleCandidates($locale));
-
-        try {
-            return $render();
-        } finally {
-            if (false !== $previous) {
-                setlocale(LC_MESSAGES, $previous);
-            }
-        }
-    }
-
-    /**
-     * Locale strings to try, most specific first.
-     *
-     * A system carries `it_IT.utf8` but rarely bare `it`, so the language-only
-     * forms are the fallback rather than the first choice. Mirrors the ladder
-     * ApiOptions and WebCalendar already build.
-     *
-     * @param string $locale The canonicalized locale, e.g. `it_IT`.
-     *
-     * @return string[] Candidates for setlocale, in order of preference.
-     */
-    private static function riteMessagesLocaleCandidates(string $locale): array
-    {
-        $language = \Locale::getPrimaryLanguage($locale) ?? 'en';
-        $region   = \Locale::getRegion($locale);
-
-        $candidates = [
-            $locale . '.utf8',
-            $locale . '.UTF-8',
-            $locale
-        ];
-
-        if (null !== $region && '' !== $region) {
-            $candidates[] = $language . '_' . $region . '.utf8';
-            $candidates[] = $language . '_' . $region . '.UTF-8';
-            $candidates[] = $language . '_' . $region;
-        }
-
-        $candidates[] = $language . '_' . strtoupper($language) . '.utf8';
-        $candidates[] = $language . '_' . strtoupper($language) . '.UTF-8';
-        $candidates[] = $language . '_' . strtoupper($language);
-        $candidates[] = $language . '.utf8';
-        $candidates[] = $language . '.UTF-8';
-        $candidates[] = $language;
-
-        return array_values(array_unique($candidates));
+        /** @var string */
+        return ScopedLocale::within(LC_MESSAGES, $locale, $render);
     }
 }

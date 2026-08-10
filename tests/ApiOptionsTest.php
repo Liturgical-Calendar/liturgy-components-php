@@ -3,7 +3,9 @@
 namespace LiturgicalCalendar\Components\Tests;
 
 use PHPUnit\Framework\TestCase;
+use LiturgicalCalendar\Components\ApiClient;
 use LiturgicalCalendar\Components\ApiOptions;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use LiturgicalCalendar\Components\ApiOptions\Input;
 use LiturgicalCalendar\Components\ApiOptions\PathType;
 
@@ -14,6 +16,54 @@ class ApiOptionsTest extends TestCase
         foreach ($expectedElements as $element) {
             $this->assertContains($element, $actualArray);
         }
+    }
+
+    /**
+     * Once per class: the Locale input fetches metadata, and without this the
+     * class inherits whichever API URL and HTTP client a previously-run class
+     * left in the singletons — including the public API, which makes this class
+     * hang whenever that instance is slow or down. Class-level rather than
+     * per-test so the metadata is fetched once instead of on every test, which
+     * earns an HTTP 429.
+     */
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+        ApiClient::resetForTesting();
+        MetadataProvider::resetForTesting();
+    }
+
+    protected function setUp(): void
+    {
+        // Input's global wrapper/class setters are process-global by design and
+        // were never reset, so a test that set them changed the markup every
+        // later test rendered. Harmless in declared order, which is the only
+        // reason it went unnoticed; --order-by=random surfaced it immediately.
+        ApiOptions::resetForTesting();
+    }
+
+    public function testGlobalInputClassDoesNotSurviveAReset(): void
+    {
+        Input::setGlobalInputClass('form-select');
+        Input::setGlobalWrapper('div');
+        Input::setGlobalWrapperClass('form-group col-sm-2');
+
+        ApiOptions::resetForTesting();
+        $form = ( new ApiOptions() )->getForm(PathType::BASE_PATH);
+
+        $this->assertStringNotContainsString('class="form-select"', $form);
+        $this->assertStringNotContainsString('form-group col-sm-2', $form);
+    }
+
+    public function testLocaleDoesNotSurviveAReset(): void
+    {
+        new ApiOptions(['locale' => 'it']);
+        $this->assertEquals('it', ApiOptions::getLocale());
+
+        ApiOptions::resetForTesting();
+        new ApiOptions();
+
+        $this->assertEquals('en', \Locale::getPrimaryLanguage((string) ApiOptions::getLocale()));
     }
 
     public function testGetFormBasePath(): void

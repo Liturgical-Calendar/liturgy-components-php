@@ -3,6 +3,9 @@
 namespace LiturgicalCalendar\Components;
 
 use LiturgicalCalendar\Components\ApiOptions\FormLabel;
+use LiturgicalCalendar\Components\ApiOptions\Input;
+use LiturgicalCalendar\Components\Locale\LocaleResolver;
+use LiturgicalCalendar\Components\Locale\ScopedLocale;
 use LiturgicalCalendar\Components\ApiOptions\Input\AcceptHeader;
 use LiturgicalCalendar\Components\ApiOptions\Input\Ascension;
 use LiturgicalCalendar\Components\ApiOptions\Input\Epiphany;
@@ -201,17 +204,32 @@ class ApiOptions
      * Initializes the localization for the component.
      *
      * If the ApiOptions::$locale is not set, it defaults to 'en_US'.
-     * Then, it sets the locale using setlocale with an array of locale variants built as follows:
-     *    - ApiOptions::$locale with '.utf8' or '.UTF-8' appended, and without suffix
-     *    - If a region is detected (via \Locale::getRegion), base locale + '_' + region with
-     *      '.utf8' or '.UTF-8' appended, and without suffix
-     *    - Base locale with '.utf8' or '.UTF-8' appended, and without suffix
+     * Then, it sets the locale using setlocale with the candidates from
+     * {@see LocaleResolver::candidates()}, which resolves a region-less locale through CLDR likely
+     * subtags rather than by uppercasing the language — the latter produced the non-existent `en_EN`
+     * for English, so `setlocale()` failed and the component rendered in whatever locale the host
+     * process already held.
      *
-     * Duplicate variants are removed to ensure efficient locale resolution.
+     * `LANGUAGE` is pinned alongside, because glibc's gettext reads it above `LC_MESSAGES`: without
+     * it a host that exports `LANGUAGE` (Composer exports `LANGUAGE=C`) silently overrides the locale
+     * and nothing translates.
      *
      * If none of the locale variants can be set (usually because they are not installed on the system),
      * a warning is triggered but the component continues to function. Translations may fall back to
      * English or display untranslated strings.
+     *
+     * Unlike WebCalendar, this restores nothing: the Input classes translate at render time
+     * (`get()`), not at construction, so the locale has to remain in force after this returns. Two
+     * process-global mutations therefore outlive the call, and they are not the same age:
+     *
+     * - The `setlocale(LC_ALL, …)` change is long-standing behaviour, unchanged here.
+     * - The `LANGUAGE` pin is **new**. It overwrites whatever `LANGUAGE` the host had — including an
+     *   empty one — and does not put it back, because restoring it would immediately undo the locale
+     *   the inputs are about to translate in.
+     *
+     * A host that cares about either must set them again after rendering; there is no release call,
+     * because there is no point at which this component knows the inputs are done rendering.
+     * {@see self::resetForTesting()} deliberately does not touch them either.
      *
      * After attempting to set the locale, it binds the textdomain 'litcompphp' to the 'i18n' directory.
      */
@@ -220,31 +238,15 @@ class ApiOptions
         if (self::$locale === null) {
             self::$locale = 'en_US';
         }
-        $region     = \Locale::getRegion(self::$locale);
         $baseLocale = self::baseLocale();
         if (null === $baseLocale) {
             throw new \RuntimeException('“Pride was the reason for the division of tongues, humility the reason they were reunited.” - St. Augustine, The City of God, Book XVI, Chapter 4');
         }
 
-        $localeArray = [
-            self::$locale . '.utf8',
-            self::$locale . '.UTF-8',
-            self::$locale,
-            $baseLocale . '.utf8',
-            $baseLocale . '.UTF-8',
-            $baseLocale
-        ];
-        if ($region !== null && $region !== '') {
-            array_splice($localeArray, 3, 0, [
-                $baseLocale . '_' . $region . '.utf8',
-                $baseLocale . '_' . $region . '.UTF-8',
-                $baseLocale . '_' . $region
-            ]);
-        }
-        // Remove duplicates that may occur when self::$locale already includes a region
-        $localeArray = array_unique($localeArray);
+        $localeArray = LocaleResolver::candidates(self::$locale);
 
         $runtimeLocale = setlocale(LC_ALL, $localeArray);
+        ScopedLocale::pinLanguage(self::$locale, $runtimeLocale);
         if (false === $runtimeLocale) {
             // Locale setting failed - trigger a warning but continue
             // The component will still work, but translations may not be available
@@ -372,6 +374,29 @@ class ApiOptions
      *
      * @return string|null The locale, or null if no locale has been set.
      */
+    /**
+     * Clears the process-global state this component keeps between instances.
+     *
+     * That is the static `$locale` and the global wrapper/class settings on
+     * {@see Input}. Both are deliberate — the component is configured once and
+     * every instance and input honours it — but a test suite needs them back at
+     * their defaults, or a test that configured them dictates the markup every
+     * later test renders.
+     *
+     * Does not touch the process locale or `LANGUAGE`: {@see self::prepareL10n()}
+     * sets those and does not restore them, so a caller wanting its own locale
+     * back must set it itself.
+     *
+     * **WARNING**: for tests only. Never call this in production code.
+     *
+     * @return void
+     */
+    public static function resetForTesting(): void
+    {
+        self::$locale = null;
+        Input::resetGlobals();
+    }
+
     public static function getLocale(): ?string
     {
         return self::$locale;

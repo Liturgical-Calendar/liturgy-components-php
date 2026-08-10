@@ -82,6 +82,26 @@ abstract class Input
     }
 
     /**
+     * Clears the global wrapper and class settings.
+     *
+     * These are process-global by design — set once, applied to every input — so
+     * nothing in normal use wants them undone. A test suite does: without this a
+     * test that called `setGlobalInputClass()` changed the markup every later
+     * test rendered, which made the suite pass only in its declared order.
+     *
+     * **WARNING**: for tests only. Never call this in production code.
+     *
+     * @return void
+     */
+    public static function resetGlobals(): void
+    {
+        static::$globalWrapper      = null;
+        static::$globalWrapperClass = null;
+        static::$globalLabelClass   = null;
+        static::$globalInputClass   = null;
+    }
+
+    /**
      * Sets the id attribute of the input element.
      *
      * @param string $id The value of the id attribute.

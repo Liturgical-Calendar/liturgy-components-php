@@ -27,6 +27,10 @@ use Psr\SimpleCache\CacheInterface;
  * // Diocesan calendar
  * $calendar = $request->diocese('DIOCESE001')->year(2025)->locale('la')->get();
  *
+ * // A calendar of another rite. The rite precedes the nation/diocese pair,
+ * // and an Ambrosian diocese is unroutable without it.
+ * $calendar = $request->rite(Rite::AMBROSIAN)->diocese('lugano_ch')->year(2026)->get();
+ *
  * // General Roman Calendar with custom options (only for general calendar)
  * $calendar = $request->year(2024)
  *     ->epiphany('SUNDAY_JAN2_JAN8')
@@ -54,6 +58,7 @@ class CalendarRequest
     private string $baseUrl          = 'https://litcal.johnromanodorazio.com/api/dev';
     private ?string $calendarType    = null;  // 'nation' or 'diocese'
     private ?string $calendarId      = null;
+    private ?Rite $rite              = null;
     private ?int $year               = null;
     private ?string $yearType        = null;
     private ?string $locale          = null;
@@ -104,11 +109,22 @@ class CalendarRequest
     /**
      * Request national calendar
      *
+     * Refused under a rite that has no national tier. The Ambrosian rite is the
+     * rite of a handful of sees in Lombardy and Ticino with nothing above them,
+     * so `/calendar/ambrosian/nation/CH` is not a route and never will be. A
+     * `CalendarSelect` expresses the same fact by skipping the national pass
+     * entirely; here it is an exception, thrown where the mistake is made rather
+     * than surfacing later as a 400 from `get()`.
+     *
      * @param string $nationCode ISO 3166-1 alpha-2 country code (e.g., 'US', 'IT', 'FR')
      * @return self
+     * @throws \InvalidArgumentException If the rite has no national tier.
      */
     public function nation(string $nationCode): self
     {
+        if ($this->rite !== null) {
+            $this->assertRiteHasNationalTier($this->rite, $nationCode);
+        }
         $this->calendarType = 'nation';
         $this->calendarId   = $nationCode;
         return $this;
@@ -125,6 +141,75 @@ class CalendarRequest
         $this->calendarType = 'diocese';
         $this->calendarId   = $dioceseId;
         return $this;
+    }
+
+    /**
+     * Request the calendar of a given liturgical rite
+     *
+     * The API routes a rite as a bare segment named by the rite itself, sitting
+     * between `calendar` and any nation or diocese pair — so
+     * `/calendar/ambrosian/diocese/lugano_ch/2026`. There is no `/calendar/rite/{rite}`
+     * spelling. An Ambrosian diocese is unroutable without the prefix.
+     *
+     * The segment is emitted whenever a rite is set, the Roman rite included:
+     * `/calendar/roman` and `/calendar` serve the same calendar, and a request
+     * built from a RiteSelect knows its rite explicitly, so it says so. Leaving
+     * the rite unset keeps the prefix-free URL of every release before this one.
+     *
+     * @param Rite|string $rite A `Rite` case, or its string value.
+     * @return self
+     * @throws \Exception If the string is not a valid rite.
+     * @throws \InvalidArgumentException If a nation is already set and the rite has no national tier.
+     */
+    public function rite(Rite|string $rite): self
+    {
+        if (is_string($rite)) {
+            $resolved = Rite::tryFrom($rite);
+            if (null === $resolved) {
+                $valid = implode(', ', array_map(fn(Rite $case) => $case->value, Rite::cases()));
+                throw new \Exception("Invalid rite: {$rite}, valid values are: {$valid}");
+            }
+            $rite = $resolved;
+        }
+
+        // Guard both orders. Setting the rite last would otherwise walk straight
+        // past the check in nation() and rebuild the unroutable URL.
+        if ($this->calendarType === 'nation' && $this->calendarId !== null) {
+            $this->assertRiteHasNationalTier($rite, $this->calendarId);
+        }
+
+        $this->rite = $rite;
+        return $this;
+    }
+
+    /**
+     * Refuse a nation under a rite that has no national tier
+     *
+     * @param Rite $rite The rite in play.
+     * @param string $nationCode The nation that cannot be requested under it.
+     * @return void
+     * @throws \InvalidArgumentException If the rite has no national tier.
+     */
+    private function assertRiteHasNationalTier(Rite $rite, string $nationCode): void
+    {
+        if ($rite->hasNationalTier()) {
+            return;
+        }
+
+        throw new \InvalidArgumentException(
+            "The {$rite->value} rite has no national calendars, so nation('{$nationCode}') cannot be requested under it. "
+            . 'Request one of its dioceses instead.'
+        );
+    }
+
+    /**
+     * Returns the liturgical rite this request is built for
+     *
+     * @return Rite|null The rite, or null if none was set.
+     */
+    public function getRite(): ?Rite
+    {
+        return $this->rite;
     }
 
     /**
@@ -374,6 +459,12 @@ class CalendarRequest
     {
         // Start with the calendar endpoint
         $pathSegments = ['calendar'];
+
+        // Add the rite whenever one was set explicitly, Roman included. It
+        // precedes the nation/diocese pair: /calendar/ambrosian/diocese/lugano_ch
+        if ($this->rite !== null) {
+            $pathSegments[] = rawurlencode($this->rite->value);
+        }
 
         // Add calendar type and ID if specified (both are required together)
         if ($this->calendarType && $this->calendarId) {

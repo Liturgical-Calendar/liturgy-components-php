@@ -386,6 +386,38 @@ echo $riteSelect;
 >
 > Anything interactive belongs in liturgy-components-js.
 
+Set the same rite on the request that fetches the data, or the selection has nowhere to go:
+
+```php
+$calendarData = $apiClient->calendar()
+    ->rite($rite)
+    ->diocese('lugano_ch')
+    ->year(2026)
+    ->get();
+```
+
+The API routes a rite as a bare segment named by the rite itself, between `calendar` and any nation or diocese
+pair — `/calendar/ambrosian/diocese/lugano_ch/2026`. There is no `/calendar/rite/{rite}` spelling, and an
+Ambrosian diocese without the prefix is a `400`: `/calendar/diocese/lugano_ch` is not a route.
+
+`rite()` accepts a `Rite` case or its string value, and throws on an unknown one exactly as the two select
+components do. It emits the segment for whichever rite you set, `roman` included — `/calendar/roman/2026` and
+`/calendar/2026` serve the same calendar, and a request built from a `RiteSelect` knows its rite explicitly, so
+it says so. Leave the rite unset and the URL keeps its historic prefix-free shape.
+
+Asking for a nation under a rite that has no national tier throws an `InvalidArgumentException`, in whichever
+order you set the two:
+
+```php
+$apiClient->calendar()->rite('ambrosian')->nation('CH'); // InvalidArgumentException
+$apiClient->calendar()->nation('CH')->rite('ambrosian'); // the same, guarded both ways
+```
+
+The Ambrosian rite is the rite of a handful of sees in Lombardy and Ticino with nothing above them, so
+`/calendar/ambrosian/nation/CH` is not a route and never will be. `CalendarSelect` expresses the same fact by
+skipping the national pass entirely; here it is an exception, raised where the mistake is made rather than
+arriving later as a `400` from `get()`. Dioceses are unaffected — they are the whole point of the rite.
+
 ### ApiOptions
 
 Produces a number of HTML <kbd>\<select\></kbd> elements, with <kbd>\<option\></kbd>s that correspond to the values of parameters
@@ -1039,6 +1071,29 @@ vendor/bin/captainhook install -f
 ## Translations
 
 The few translatable strings in the component are handled via weblate. Click on the following badges to contribute to the translations.
+
+### How a locale is resolved
+
+Two things have to be true for a component to render in the locale you asked for, and the library now handles both.
+
+**The requested locale has to name a locale the system actually has.** A region-less locale is expanded through CLDR likely
+subtags, so `en` becomes `en_US`, `pt` becomes `pt_BR` and `la` becomes `la_VA`, tried as `.utf8`, `.UTF-8` and bare before
+falling back to the language on its own. An explicit region is never overridden — `pt_PT` stays Portuguese-of-Portugal. This
+replaces a guess that built the region by uppercasing the language: `it` → `it_IT` was right by luck, but `en` → `en_EN` is
+not a locale on any system, so `setlocale()` failed and the component silently rendered in whatever locale the host process
+already held.
+
+**`LANGUAGE` has to agree.** glibc's gettext reads the `LANGUAGE` environment variable _above_ `LC_MESSAGES`, so a host that
+exports it overrides every locale the library sets, and `LANGUAGE=C` disables catalog lookup entirely. The components now
+pin `LANGUAGE` alongside the locale category. `CalendarSelect`, `RiteSelect` and `WebCalendar` restore both afterwards — the
+library runs inside your process and puts back exactly what it found, including a `LANGUAGE` you never set.
+
+> [!NOTE]
+> `ApiOptions` is the exception: its inputs translate when they render, not when they are constructed, so it sets the locale
+> and `LANGUAGE` and leaves them set. That is long-standing behaviour, not new — but if you render an `ApiOptions` form and
+> then rely on the process locale for your own output, set it again afterwards.
+
+This mirrors `LocaleConfigurator` in the API, which solved the same problem first.
 
 ### ApiOptions translations
 
