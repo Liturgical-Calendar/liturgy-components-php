@@ -1072,6 +1072,29 @@ vendor/bin/captainhook install -f
 
 The few translatable strings in the component are handled via weblate. Click on the following badges to contribute to the translations.
 
+### How a locale is resolved
+
+Two things have to be true for a component to render in the locale you asked for, and the library now handles both.
+
+**The requested locale has to name a locale the system actually has.** A region-less locale is expanded through CLDR likely
+subtags, so `en` becomes `en_US`, `pt` becomes `pt_BR` and `la` becomes `la_VA`, tried as `.utf8`, `.UTF-8` and bare before
+falling back to the language on its own. An explicit region is never overridden — `pt_PT` stays Portuguese-of-Portugal. This
+replaces a guess that built the region by uppercasing the language: `it` → `it_IT` was right by luck, but `en` → `en_EN` is
+not a locale on any system, so `setlocale()` failed and the component silently rendered in whatever locale the host process
+already held.
+
+**`LANGUAGE` has to agree.** glibc's gettext reads the `LANGUAGE` environment variable _above_ `LC_MESSAGES`, so a host that
+exports it overrides every locale the library sets, and `LANGUAGE=C` disables catalog lookup entirely. The components now
+pin `LANGUAGE` alongside the locale category. `CalendarSelect`, `RiteSelect` and `WebCalendar` restore both afterwards — the
+library runs inside your process and puts back exactly what it found, including a `LANGUAGE` you never set.
+
+> [!NOTE]
+> `ApiOptions` is the exception: its inputs translate when they render, not when they are constructed, so it sets the locale
+> and `LANGUAGE` and leaves them set. That is long-standing behaviour, not new — but if you render an `ApiOptions` form and
+> then rely on the process locale for your own output, set it again afterwards.
+
+This mirrors `LocaleConfigurator` in the API, which solved the same problem first.
+
 ### ApiOptions translations
 
 <a href="https://translate.johnromanodorazio.com/engage/liturgical-calendar/" target="_blank">

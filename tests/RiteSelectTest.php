@@ -3,6 +3,7 @@
 namespace LiturgicalCalendar\Components\Tests;
 
 use LiturgicalCalendar\Components\Rite;
+use LiturgicalCalendar\Components\Locale\ScopedLocale;
 use LiturgicalCalendar\Components\RiteSelect;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
@@ -247,23 +248,20 @@ final class RiteSelectTest extends TestCase
         // unbound domain returns the msgid for reasons that say nothing
         // about whether the catalog resolves.
         bindtextdomain('rite', dirname(__DIR__) . '/src/i18n');
-        $before  = setlocale(LC_MESSAGES, '0');
-        $italian = setlocale(LC_MESSAGES, 'it_IT.utf8', 'it_IT.UTF-8', 'it_IT', 'it');
-        $direct  = false === $italian ? null : dgettext('rite', 'Roman Rite');
-        if (false !== $before) {
-            setlocale(LC_MESSAGES, $before);
-        }
 
-        if (false === $italian) {
-            $this->markTestSkipped('No Italian locale installed; cannot assert translated output.');
-        }
+        // Probe through the same path the component uses. The old probe set
+        // LC_MESSAGES by hand and skipped whenever gettext ignored it, which it
+        // does whenever an inherited LANGUAGE outranks the category — Composer
+        // exports LANGUAGE=C into the scripts it runs, so `composer test` and CI
+        // skipped while a bare `vendor/bin/phpunit` passed. ScopedLocale sets
+        // LANGUAGE alongside the category, so what remains to guard is only the
+        // genuine environmental case: no Italian locale on the machine.
+        $direct = ScopedLocale::within(LC_MESSAGES, 'it', static fn(): string => dgettext('rite', 'Roman Rite'));
 
         if ('Rito Romano' !== $direct) {
             $this->markTestSkipped(sprintf(
-                'gettext cannot resolve the rite catalog in this process '
-                    . '(setlocale=%s, direct dgettext=%s, catalog present=%s), '
-                    . 'so translated output is not assertable here.',
-                var_export($italian, true),
+                'Cannot translate into Italian here (dgettext=%s, catalog present=%s), '
+                    . 'so translated output is not assertable.',
                 var_export($direct, true),
                 var_export(file_exists(dirname(__DIR__) . '/src/i18n/it/LC_MESSAGES/rite.mo'), true)
             ));

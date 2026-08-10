@@ -81,6 +81,24 @@ building `/calendar/ambrosian/nation/CH` and failing at `get()`. The guard fires
 `->rite('ambrosian')->nation('CH')` and `->nation('CH')->rite('ambrosian')` alike — and only ever fires for a
 combination the API cannot route, so no previously working call is affected.
 
+**Also fixed in this release: components now render in the locale you asked for.** Two defects, both of which made a
+component fall back to the host process's locale without saying so.
+
+`en` never resolved. The candidate ladder built its regional fallback by uppercasing the language, so `it` produced
+`it_IT` and `fr` produced `fr_FR` — correct only because those are real locale names. English produced `en_EN`, which
+exists on no system, so `setlocale()` returned false and the component rendered in whatever locale the process already
+held. Region resolution now goes through CLDR likely subtags (`en` → `en_US`, `pt` → `pt_BR`), borrowed from the API's
+`LocaleConfigurator`. An explicit region still wins: `pt_PT` is not rewritten to `pt_BR`.
+
+`LANGUAGE` was never set. glibc's gettext reads it above `LC_MESSAGES`, so any host exporting `LANGUAGE` silently
+overrode the library, and `LANGUAGE=C` switched translation off altogether. It is now pinned alongside the locale and
+restored with it by `CalendarSelect`, `RiteSelect` and `WebCalendar` — `LANGUAGE` included, and including the case where
+the host never set it. `ApiOptions` keeps its long-standing set-and-leave behaviour, because its inputs translate at
+render time rather than at construction; it now leaves `LANGUAGE` set as well as the locale.
+
+If you were relying on a component rendering English because its locale silently failed to apply, it will now render the
+locale you actually requested.
+
 **Also fixed in this release:** constructing a `CalendarSelect` against live metadata threw
 `TypeError: hasNationalCalendarWithDioceses(): Argument #1 ($item) must be of type NationalCalendar, null given`.
 The nation pass assumed every diocese's nation owns a national calendar, which is true only within the Roman

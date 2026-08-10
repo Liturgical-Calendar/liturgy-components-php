@@ -3,6 +3,7 @@
 namespace LiturgicalCalendar\Components\Tests;
 
 use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\Locale\ScopedLocale;
 use LiturgicalCalendar\Components\Rite;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
@@ -133,19 +134,16 @@ final class CalendarSelectRiteTest extends TestCase
         // unbound domain returns the msgid for reasons that say nothing
         // about whether the catalog resolves.
         bindtextdomain('rite', dirname(__DIR__) . '/src/i18n');
-        $before  = setlocale(LC_MESSAGES, '0');
-        $italian = setlocale(LC_MESSAGES, 'it_IT.utf8', 'it_IT.UTF-8', 'it_IT', 'it');
-        $direct  = false === $italian ? null : dgettext('rite', 'Roman Rite');
-        if (false !== $before) {
-            setlocale(LC_MESSAGES, $before);
-        }
-        if (false === $italian) {
-            $this->markTestSkipped('No Italian locale installed; cannot assert translated output.');
-        }
-        // See RiteSelectTest::skipWithoutWorkingItalianCatalog() for why a
-        // process can hold the locale and still fail to resolve the catalog.
+
+        // Probe through the same path the component uses. The old probe set
+        // LC_MESSAGES by hand and skipped whenever gettext ignored it — which it
+        // does whenever an inherited LANGUAGE outranks the category, as under
+        // `composer test`. That was the environment defect ScopedLocale fixes,
+        // so probing without it skipped on a condition no longer true.
+        $direct = ScopedLocale::within(LC_MESSAGES, 'it', static fn(): string => dgettext('rite', 'Roman Rite'));
+
         if ('Rito Romano' !== $direct) {
-            $this->markTestSkipped('gettext cannot resolve the rite catalog in this process.');
+            $this->markTestSkipped('No Italian locale installed; cannot assert translated output.');
         }
 
         $html = ( new CalendarSelect(['locale' => 'it', 'allowNull' => true]) )->getSelect();

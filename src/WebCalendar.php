@@ -2,6 +2,7 @@
 
 namespace LiturgicalCalendar\Components;
 
+use LiturgicalCalendar\Components\Locale\ScopedLocale;
 use LiturgicalCalendar\Components\Models\LiturgicalCalendar as LiturgicalCalendarModel;
 use LiturgicalCalendar\Components\Models\LiturgicalEvent;
 use LiturgicalCalendar\Components\WebCalendar\Grouping;
@@ -48,7 +49,7 @@ class WebCalendar
     private string $locale                  = 'en-US';
     private string $baseLocale              = 'en';
     private ?string $currentSetLocale       = null;
-    private ?string $globalLocale           = null;
+    private ?ScopedLocale $localeScope      = null;
     private ?string $currentTextDomainPath  = null;
     private ?string $expectedTextDomainPath = null;
     private LiturgicalCalendarModel $LiturgicalCalendar;
@@ -373,20 +374,13 @@ class WebCalendar
      * Called internally by the public method {@see buildTable()}.
      * The locale is set to that of the liturgical calendar that was requested.
      *
-     *    1. The global locale is retrieved using `setlocale(LC_ALL, 0)`, so that it can be later restored.
+     *    1. The prior `LC_ALL` and `LANGUAGE` are captured by {@see ScopedLocale::apply()}, so that both can be later restored.
      *    2. The locale for the component is set to the parameter `$locale`, which is passed in by the buildTable method based on the Liturgical Calendar response data.
      *    3. The base locale is set using `Locale::getPrimaryLanguage($locale)`.
-     *    4. An array of possible locale strings is created, with the following order of preference:
-     *        * The locale string with '.utf8' appended.
-     *        * The locale string with '.UTF-8' appended.
-     *        * The locale string without any suffix.
-     *        * The base locale string with '_' followed by its uppercase version and '.utf8' appended.
-     *        * The base locale string with '_' followed by its uppercase version and '.UTF-8' appended.
-     *        * The base locale string with '_' followed by its uppercase version without any suffix.
-     *        * The base locale string with '.utf8' appended.
-     *        * The base locale string with '.UTF-8' appended.
-     *        * The base locale string without any suffix.
-     *    5. The locale is set to the first of the above that is supported by the system using `setlocale(LC_ALL, $localeArray)`.
+     *    4. The system locale candidates come from {@see LocaleResolver::candidates()}, which resolves a region-less
+     *       locale through CLDR likely subtags. The ladder this replaced guessed the region by uppercasing the
+     *       language, which produced the non-existent `en_EN` for English and so left the host's locale in place.
+     *    5. `LANGUAGE` is pinned alongside, because glibc's gettext reads it above `LC_MESSAGES`.
      *    6. The path to the textdomain is set to `__DIR__ . "/WebCalendar/i18n"` and bound to the textdomain __webcalendar__.
      *    7. If the textdomain is not bound to the expected path, it will die with an error message.
      *
@@ -394,23 +388,11 @@ class WebCalendar
      */
     private function setLocale(string $locale): void
     {
-        $currentGlobal                = setlocale(LC_ALL, '0');
-        $this->globalLocale           = $currentGlobal === false ? null : $currentGlobal;
         $this->locale                 = $locale;
         $primaryLanguage              = \Locale::getPrimaryLanguage($locale);
         $this->baseLocale             = $primaryLanguage ?? 'en';
-        $localeArray                  = [
-            $this->locale . '.utf8',
-            $this->locale . '.UTF-8',
-            $this->locale,
-            $this->baseLocale . '_' . strtoupper($this->baseLocale) . '.utf8',
-            $this->baseLocale . '_' . strtoupper($this->baseLocale) . '.UTF-8',
-            $this->baseLocale . '_' . strtoupper($this->baseLocale),
-            $this->baseLocale . '.utf8',
-            $this->baseLocale . '.UTF-8',
-            $this->baseLocale
-        ];
-        $newLocale                    = setlocale(LC_ALL, $localeArray);
+        $this->localeScope            = ScopedLocale::apply(LC_ALL, $locale);
+        $newLocale                    = $this->localeScope->appliedLocale;
         $this->currentSetLocale       = $newLocale === false ? null : $newLocale;
         $this->expectedTextDomainPath = __DIR__ . '/WebCalendar/i18n';
         $currentTextDomain            = bindtextdomain('webcalendar', $this->expectedTextDomainPath);
@@ -424,11 +406,13 @@ class WebCalendar
      * Resets the global locale back to the original locale that was set before we started tampering with it.
      *
      * This is necessary because the locale is a global setting and we don't want to mess up the locale for other PHP scripts
-     * that may be running on the same system.
+     * that may be running on the same system. `LANGUAGE` is restored with it: the component sets it so gettext honours
+     * the requested locale, and leaving it behind would redirect the host's own translations.
      */
     private function resetGlobalLocale(): void
     {
-        setlocale(LC_ALL, $this->globalLocale);
+        $this->localeScope?->restore();
+        $this->localeScope = null;
     }
 
     /**
