@@ -123,7 +123,12 @@ final class RiteSelectTest extends TestCase
 
         $html = ( new RiteSelect(['locale' => 'it']) )->label(true)->getSelect();
 
-        $this->assertStringContainsString('>Rito Romano</option>', $html);
+        // Carried into the failure message: this assertion has failed on a CI
+        // runner where a standalone bindtextdomain/setlocale/dgettext probe
+        // returned Italian correctly, so when it fails the interesting question
+        // is what the catalog resolves to inside *this* process, not whether the
+        // environment can translate at all.
+        $this->assertStringContainsString('>Rito Romano</option>', $html, $this->catalogDiagnostics());
         $this->assertStringContainsString('>Rito Ambrosiano</option>', $html);
         $this->assertStringContainsString('>Seleziona un rito</label>', $html);
     }
@@ -172,6 +177,33 @@ final class RiteSelectTest extends TestCase
         // which is the failure mode it exists to rule out.
         $this->assertTrue($threw, 'Expected the callback exception to propagate.');
         $this->assertSame($before, setlocale(LC_MESSAGES, '0'));
+    }
+
+    /**
+     * What the rite catalog resolves to in this process, for a failure message.
+     *
+     * Probes directly rather than through a component, so a mismatch says
+     * whether the catalog itself failed to resolve or the component failed to
+     * apply the locale it was given.
+     */
+    private function catalogDiagnostics(): string
+    {
+        $before = setlocale(LC_MESSAGES, '0');
+        $set    = setlocale(LC_MESSAGES, 'it_IT.utf8', 'it_IT.UTF-8', 'it_IT', 'it');
+        $direct = dgettext('rite', 'Roman Rite');
+        if (false !== $before) {
+            setlocale(LC_MESSAGES, $before);
+        }
+
+        return sprintf(
+            'catalog diagnostics: LC_MESSAGES before=%s, setlocale returned=%s, direct dgettext=%s, '
+                . 'bound path=%s, catalog file exists=%s',
+            var_export($before, true),
+            var_export($set, true),
+            var_export($direct, true),
+            var_export(bindtextdomain('rite', null), true),
+            var_export(file_exists(dirname(__DIR__) . '/src/i18n/it/LC_MESSAGES/rite.mo'), true)
+        );
     }
 
     /**
