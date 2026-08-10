@@ -50,16 +50,35 @@ Ambrosian rite starts at 1976 — the first year of the reformed Ambrosian Missa
 earlier. Until now nothing in the PHP components said so, so an Ambrosian form happily offered years the request
 built from it could not fetch.
 
+`ApiOptions` takes a `rite` option for it, the same one `CalendarSelect` already takes, so a single options array
+configures both and no caller has to reach through the form into its child input:
+
 ```php
 use LiturgicalCalendar\Components\Rite;
 
+$options = ['locale' => 'it-IT', 'rite' => Rite::AMBROSIAN];
+
+$apiOptions     = new ApiOptions($options);      // year input renders min="1976"
+$calendarSelect = new CalendarSelect($options);
+```
+
+The floor is settable on the input directly too, which is what the option does under the hood:
+
+```php
 $apiOptions->yearInput->rite(Rite::AMBROSIAN);   // renders min="1976"
 $apiOptions->yearInput->rite(Rite::ROMAN);       // back to min="1970"
 ```
 
 The floor is read from `Rite::minYear()` rather than restated, so a rite that gains a floor gains it in one place.
-`rite()` takes a `Rite` case or its string value and throws on any other string, matching `CalendarSelect::rite()`
-and `CalendarRequest::rite()`.
+Both spellings take a `Rite` case or its string value and throw on any other string, matching `CalendarSelect::rite()`
+and `CalendarRequest::rite()`. An options array that never mentions a rite gets the Roman rite, which is what every
+release before this one did implicitly.
+
+Note that the rite currently governs the year floor and nothing else. In particular `ApiOptions` does **not** disable
+the Epiphany, Ascension, Corpus Christi and Eternal High Priest inputs under a rite that fixes them in its own books,
+the way `liturgy-components-js` does — `Input::disabled()` is one-way, with no argument that puts an input back, so a
+library that started disabling on rite grounds would leave a caller no way to recover. That is worth revisiting once
+`disabled()` takes a boolean.
 
 **A selected year below the new floor is clamped up to it.** Raising `min` alone would leave a re-rendered form
 carrying, say, `1970` — valid under the Roman rite, below the Ambrosian floor — and the request built from it would

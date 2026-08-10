@@ -745,17 +745,31 @@ The `yearInput` renders as a `<input type="number">` with `min="1970"` — the f
 Roman rite — and `max="9999"`. The floor is not the same for every rite: the Ambrosian rite is computed from 1976, the
 first year of the reformed Ambrosian Missal, and a request for an earlier year is refused by the API.
 
-Rather than restate that year at the call site, hand the input the rite and let it read the floor off it:
+Rather than restate that year at the call site, tell `ApiOptions` which rite the form is for and let the input read the
+floor off it. This is the `rite` option, and it takes the same values as `CalendarSelect`'s option of the same name —
+so a single options array can configure both:
 
 ```php
 <?php
 require 'vendor/autoload.php';
 use LiturgicalCalendar\Components\ApiOptions;
+use LiturgicalCalendar\Components\CalendarSelect;
 use LiturgicalCalendar\Components\Rite;
 
-$apiOptions = new ApiOptions(['locale' => 'it-IT']);
-$apiOptions->yearInput->rite(Rite::AMBROSIAN);
+$options = ['locale' => 'it-IT', 'rite' => Rite::AMBROSIAN];
+
+$apiOptions     = new ApiOptions($options);
+$calendarSelect = new CalendarSelect($options);
+
 echo $apiOptions->getForm();
+```
+
+The rite defaults to Roman, so an options array that never mentions one renders exactly what it always did.
+
+The same floor can be set on the input directly, which is what the option does under the hood:
+
+```php
+$apiOptions->yearInput->rite(Rite::AMBROSIAN);
 ```
 
 Output:
@@ -765,9 +779,9 @@ Output:
 <input type="number" id="year" name="year" data-param="year" min="1976" max="9999" value="2026" />
 ```
 
-`->rite()` accepts a `Rite` case or its string value (`'roman'`, `'ambrosian'`), and throws on any other string.
-Setting the Roman rite puts the floor back to 1970, so the input can be re-pointed as often as the rite changes —
-the last call wins.
+Both the option and `->rite()` accept a `Rite` case or its string value (`'roman'`, `'ambrosian'`), and throw on any
+other string. Setting the Roman rite puts the floor back to 1970, so the input can be re-pointed as often as the rite
+changes — the last call wins.
 
 Raising the floor also raises a selected year that sits below it. A form that submitted `1970` under the Roman rite
 and is then re-rendered under the Ambrosian re-renders with `1976`, rather than round-tripping a year the API would
