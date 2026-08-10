@@ -29,7 +29,9 @@ The library now implements **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories
 - **Circuit Breaker** - Prevent cascading failures when services are down
 - **Flexible HTTP Clients** - Swap between Guzzle, native PHP, or custom implementations
 
-**Good News:** All changes are **100% backward compatible**. Your existing code continues to work without modifications!
+**Good News:** Up to and including 3.x, all changes were **100% backward compatible** — existing code
+continued to work without modification. **v4.0.0 is the first release that changes rendered output**; see
+[Breaking Changes](#breaking-changes) below.
 
 ---
 

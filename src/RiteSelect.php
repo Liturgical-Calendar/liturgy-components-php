@@ -2,6 +2,8 @@
 
 namespace LiturgicalCalendar\Components;
 
+use LiturgicalCalendar\Components\Rite\TextDomainTrait;
+
 /**
  * A class to generate a select element for selecting a liturgical rite.
  *
@@ -36,6 +38,8 @@ namespace LiturgicalCalendar\Components;
  */
 class RiteSelect
 {
+    use TextDomainTrait;
+
     private string $locale        = 'en';
     private string $class         = 'riteSelect';
     private string $id            = 'riteSelect';
@@ -110,26 +114,6 @@ class RiteSelect
 
         if (isset($options['selectedOption'])) {
             $this->selectedOption($options['selectedOption']);
-        }
-    }
-
-    /**
-     * Binds the `rite` gettext domain.
-     *
-     * The catalogs are shared with CalendarSelect, which renders the same
-     * rite-level calendar names — see that class for why they live in src/i18n
-     * rather than under either component.
-     */
-    private function bindRiteTextDomain(): void
-    {
-        $expected = __DIR__ . '/i18n';
-        $bound    = bindtextdomain('rite', $expected);
-        if (false === $bound || $bound !== $expected) {
-            trigger_error(
-                "Failed to bind text domain. Expected path: {$expected}, got: " . var_export($bound, true) .
-                '. Translations may not be available.',
-                E_USER_WARNING
-            );
         }
     }
 
@@ -313,6 +297,17 @@ class RiteSelect
      * @return string The HTML for the select element.
      */
     public function getSelect(): string
+    {
+        return $this->withRiteMessagesLocale($this->locale, fn(): string => $this->renderSelect());
+    }
+
+    /**
+     * Renders the select. Called with LC_MESSAGES already set to this
+     * instance's locale, so the dgettext lookups below resolve in it.
+     *
+     * @return string The HTML for the select element.
+     */
+    private function renderSelect(): string
     {
         $labelClass  = !empty($this->labelClass) ? " class=\"{$this->labelClass}\"" : '';
         $id          = !empty($this->id) ? " id=\"{$this->id}\"" : '';

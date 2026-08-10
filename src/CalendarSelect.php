@@ -12,6 +12,7 @@ use LiturgicalCalendar\Components\Http\LoggingHttpClient;
 use LiturgicalCalendar\Components\Http\CachingHttpClient;
 use LiturgicalCalendar\Components\Logging\LoggerAwareTrait;
 use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+use LiturgicalCalendar\Components\Rite\TextDomainTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Psr\SimpleCache\CacheInterface;
@@ -50,6 +51,7 @@ use Psr\SimpleCache\CacheInterface;
 class CalendarSelect
 {
     use LoggerAwareTrait;
+    use TextDomainTrait;
 
     private CalendarIndex $calendarIndex;
     private MetadataProvider $metadataProvider;
@@ -377,32 +379,6 @@ class CalendarSelect
     public function getRite(): Rite
     {
         return $this->rite;
-    }
-
-    /**
-     * Binds the `rite` gettext domain.
-     *
-     * This class used no gettext at all before rite awareness: it localized
-     * country names through \Locale::getDisplayRegion and nothing else. The
-     * catalogs live in src/i18n rather than a per-component directory — unlike
-     * `litcompphp` under ApiOptions and `webcalendar` under WebCalendar —
-     * because RiteSelect renders the same five strings, and neither component
-     * should have to bind a domain that lives under the other.
-     *
-     * Failure is a warning rather than an exception, matching ApiOptions: an
-     * unbound domain means untranslated English, not a broken component.
-     */
-    private function bindRiteTextDomain(): void
-    {
-        $expected = __DIR__ . '/i18n';
-        $bound    = bindtextdomain('rite', $expected);
-        if (false === $bound || $bound !== $expected) {
-            trigger_error(
-                "Failed to bind text domain. Expected path: {$expected}, got: " . var_export($bound, true) .
-                '. Translations may not be available.',
-                E_USER_WARNING
-            );
-        }
     }
 
     /**
@@ -788,6 +764,18 @@ class CalendarSelect
      * @return string The HTML for the select element.
      */
     public function getSelect(): string
+    {
+        return $this->withRiteMessagesLocale($this->locale, fn(): string => $this->renderSelect());
+    }
+
+    /**
+     * Renders the select. Called with LC_MESSAGES already set to this
+     * instance's locale, so the empty option's rite-level calendar name
+     * resolves in it.
+     *
+     * @return string The HTML for the select element.
+     */
+    private function renderSelect(): string
     {
         $labelClass  = !empty($this->labelClass) ? " class=\"{$this->labelClass}\"" : '';
         $id          = $this->id && !empty($this->id) ? " id=\"{$this->id}\"" : '';

@@ -25,9 +25,13 @@ class DiocesanCalendar
         public readonly string $nation,
         public readonly array $locales,
         public readonly string $timezone,
-        public readonly string $rite = 'roman',
         public readonly ?string $group = null,
-        public readonly ?array $settings = null
+        public readonly ?array $settings = null,
+        // Appended rather than slotted in beside the other identity fields, so
+        // that positional construction against 3.x keeps mapping arguments to
+        // the same parameters. fromArray() passes by name, so ordering is
+        // invisible there.
+        public readonly string $rite = 'roman'
     ) {
     }
 

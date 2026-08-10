@@ -111,4 +111,73 @@ final class RiteSelectTest extends TestCase
         $this->expectException(\Exception::class);
         new RiteSelect(['locale' => ' invalid-locale ']);
     }
+
+    /**
+     * The component accepted a locale and then translated in whatever locale the
+     * process happened to be in, so this rendered English. gettext reads
+     * LC_MESSAGES, not the argument.
+     */
+    public function testTranslatesTheOptionsIntoTheConfiguredLocale(): void
+    {
+        $this->skipWithoutItalianLocale();
+
+        $html = ( new RiteSelect(['locale' => 'it']) )->label(true)->getSelect();
+
+        $this->assertStringContainsString('>Rito Romano</option>', $html);
+        $this->assertStringContainsString('>Rito Ambrosiano</option>', $html);
+        $this->assertStringContainsString('>Seleziona un rito</label>', $html);
+    }
+
+    public function testRestoresTheProcessMessagesLocaleAfterRendering(): void
+    {
+        $this->skipWithoutItalianLocale();
+
+        $before = setlocale(LC_MESSAGES, '0');
+        ( new RiteSelect(['locale' => 'it']) )->getSelect();
+        $after = setlocale(LC_MESSAGES, '0');
+
+        $this->assertSame($before, $after);
+    }
+
+    /**
+     * Rendering must not strand the caller's process in a locale it never chose,
+     * even when it throws part-way through.
+     */
+    public function testRestoresTheProcessMessagesLocaleWhenRenderingThrows(): void
+    {
+        $this->skipWithoutItalianLocale();
+
+        $before = setlocale(LC_MESSAGES, '0');
+        $select = new RiteSelect(['locale' => 'it']);
+
+        try {
+            // A label that is not a string reaches htmlspecialchars() and throws
+            // from inside the locale-scoped render.
+            $select->label(true)->labelText('ok');
+            $reflection = new \ReflectionProperty($select, 'labelStr');
+            $reflection->setValue($select, null);
+            $select->getSelect();
+        } catch (\Throwable) {
+            // Whether or not it threw, the locale must be back.
+        }
+
+        $this->assertSame($before, setlocale(LC_MESSAGES, '0'));
+    }
+
+    /**
+     * Skips when the system carries no Italian locale: gettext would fall back
+     * to the msgid and the assertion would be about the environment rather than
+     * about the component.
+     */
+    private function skipWithoutItalianLocale(): void
+    {
+        $current = setlocale(LC_MESSAGES, '0');
+        $italian = setlocale(LC_MESSAGES, 'it_IT.utf8', 'it_IT.UTF-8', 'it_IT', 'it');
+        if (false !== $current) {
+            setlocale(LC_MESSAGES, $current);
+        }
+        if (false === $italian) {
+            $this->markTestSkipped('No Italian locale installed; cannot assert translated output.');
+        }
+    }
 }

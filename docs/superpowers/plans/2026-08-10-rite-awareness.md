@@ -943,7 +943,7 @@ another component last made current."
 **Interfaces:**
 
 - Consumes: `Rite` (Task 2), the `rite` gettext domain (Task 6).
-- Produces: `RiteSelect::__construct(array $options = [])` accepting `locale`, `class`, `id`, `name`, `label`, `labelText`, `labelClass`, `wrapper`, `disabled`, `selectedOption`;
+- Produces: `RiteSelect::__construct(array $options = [])` accepting `locale`, `class`, `id`, `name`, `label`, `labelStr`, `labelClass`, `disabled`, `selectedOption`;
   chainable setters of the same names; `getSelect(): string`; `__toString(): string`.
 - **No linking method.** There is nothing to link to server-side — see the spec's "What parity means here".
 

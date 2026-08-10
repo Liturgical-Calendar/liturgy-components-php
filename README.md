@@ -263,7 +263,7 @@ with the following keys:
   no national tier — the Ambrosian rite has none — renders its dioceses as a flat list with no national options.
 - `selectedOption`: Set one of the options in the select as the default selected option, by value, default `null`.
 - `label`: A boolean indicating whether to include a label element or not, default `false`.
-- `labelText`: The text to use for the label element, default `"Select a calendar"`.
+- `labelStr`: The text to use for the label element, default `"Select a calendar"`. The chainable setter for it is `labelText()`.
 - `allowNull`: Whether an option with an empty value should be added as the first option of the select, to allow the user to submit a null value, default `false`.
   That option is labelled with the name of the rite-level calendar — "General Roman Calendar" or "Ambrosian Calendar", localized — rather than a bare `---`,
   because selecting neither a nation nor a diocese means selecting that calendar.
@@ -368,9 +368,13 @@ echo $riteSelect;
 > the rite set on the `CalendarSelect`:
 >
 > ```php
-> $rite = $_GET['rite'] ?? 'roman';
+> // Normalize before use: both components throw on an unknown rite, so a
+> // hand-edited ?rite=whatever would otherwise be a 500 rather than a default.
+> $requested = $_GET['rite'] ?? null;
+> $rite      = is_string($requested) ? ( Rite::tryFrom($requested) ?? Rite::ROMAN ) : Rite::ROMAN;
+>
 > $calendarSelect = new CalendarSelect(['locale' => 'it', 'rite' => $rite]);
-> $riteSelect = new RiteSelect(['locale' => 'it', 'selectedOption' => $rite]);
+> $riteSelect     = new RiteSelect(['locale' => 'it', 'selectedOption' => $rite]);
 > ```
 >
 > Anything interactive belongs in liturgy-components-js.

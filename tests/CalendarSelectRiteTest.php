@@ -110,6 +110,22 @@ final class CalendarSelectRiteTest extends TestCase
         $this->assertStringNotContainsString('diocesancalendar', $html);
     }
 
+    public function testEmptyOptionIsTranslatedIntoTheConfiguredLocale(): void
+    {
+        $current = setlocale(LC_MESSAGES, '0');
+        $italian = setlocale(LC_MESSAGES, 'it_IT.utf8', 'it_IT.UTF-8', 'it_IT', 'it');
+        if (false !== $current) {
+            setlocale(LC_MESSAGES, $current);
+        }
+        if (false === $italian) {
+            $this->markTestSkipped('No Italian locale installed; cannot assert translated output.');
+        }
+
+        $html = ( new CalendarSelect(['locale' => 'it', 'allowNull' => true]) )->getSelect();
+
+        $this->assertStringContainsString('>Calendario Romano Generale</option>', $html);
+    }
+
     public function testNoNationalTierUnderARiteThatHasNone(): void
     {
         $html = ( new CalendarSelect(['locale' => 'en', 'rite' => 'ambrosian']) )->getSelect();

@@ -85,7 +85,7 @@ properties of the rite, not of a diocese and not user preferences.
 | `hasNationalTier`         | true  | false     | whether the rite has national calendars at all                  |
 | `hasFixedTemporalOptions` | false | true      | whether the rite fixes Epiphany, Ascension, Corpus Christi, EHP |
 | `minYear`                 | 1970  | 1976      | earliest year the API will serve for the rite                   |
-| `emptyOptionLabelKey`     | —     | —         | which label the empty option carries                            |
+| `emptyOptionLabel`        | —     | —         | which label the empty option carries                            |
 
 PHP 8.1 backed enums fit this better than the frozen object JS uses. The enum carries the string value
 (`roman`, `ambrosian`) and exposes the properties through a method rather than a parallel constant, so
@@ -110,12 +110,12 @@ attribute back — it emits it in two places and consumes it nowhere — so this
 only.
 
 **The empty option carries the rite-level calendar name.** `---` becomes "General Roman Calendar" or
-"Ambrosian Calendar", localized, which is what `emptyOptionLabelKey` selects and what JS already does.
+"Ambrosian Calendar", localized, which is what `emptyOptionLabel` selects and what JS already does.
 
 ## RiteSelect
 
 A new component following the conventions the other components already establish: `class`, `id`,
-`name`, `label`, `labelText`, `labelClass`, `wrapper`, `disabled`, `selectedOption`, all chainable,
+`name`, `label`, `labelText`, `labelClass`, `disabled`, `selectedOption`, all chainable,
 with `__toString()` for rendering.
 
 No linking method. There is nothing to link to server-side.
