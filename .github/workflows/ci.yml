@@ -75,11 +75,16 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Install dependencies
-        run: composer install --no-interaction --no-progress --prefer-dist
-
+      # No `composer install` here, deliberately. The committed lock pins dev
+      # dependencies that themselves require php >=8.4 (symfony/var-exporter via
+      # symfony/cache), so installing on 8.1-8.3 fails before any check runs —
+      # the dev toolchain is 8.4-only even though the library is not. `php -l`
+      # needs nothing installed and is exactly the question this job asks.
       - name: Syntax check
-        run: composer parallel-lint
+        run: |
+          find src tests -name '*.php' -print0 | xargs -0 -n1 -P4 php -l > /dev/null
+          echo "All source files parse on PHP ${{ matrix.php }}"
+
 
   markdown:
     name: Markdown (markdownlint · prettier)
@@ -158,6 +163,23 @@ jobs:
       - name: Install API dependencies
         working-directory: .litcal-api
         run: composer install --no-interaction --no-progress --prefer-dist --no-scripts
+
+      # Without a .env the API emits `Warning: Undefined array key
+      # "API_BASE_PATH"` before its response, and laminas then refuses to emit
+      # one at all: `Output has been emitted previously`. The example file is
+      # already configured for local development, where API_BASE_PATH is empty
+      # because the API runs at the root.
+      #
+      # UNAUTHENTICATED_RATE_LIMIT is raised because the API rate-limits by IP
+      # and this suite issues dozens of requests in seconds — the same limit
+      # that makes the public instance unusable from a test run. The .env.example
+      # comment recommends exactly this for test suites.
+      - name: Configure the API
+        working-directory: .litcal-api
+        run: |
+          cp .env.example .env
+          sed -i 's/^UNAUTHENTICATED_RATE_LIMIT=.*/UNAUTHENTICATED_RATE_LIMIT=100000/' .env
+          grep '^UNAUTHENTICATED_RATE_LIMIT' .env
 
       # PHP_CLI_SERVER_WORKERS is not optional: the router refuses to build its
       # path table on a single-worker built-in server and throws
