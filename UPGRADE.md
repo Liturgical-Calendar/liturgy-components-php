@@ -70,6 +70,12 @@ Under a rite with no national tier the dioceses render as a flat list, with no n
 own localized name — "General Roman Calendar" or "Ambrosian Calendar". Selecting neither a nation nor a diocese
 was never selecting nothing; the option now says what it selects.
 
+**Also new in this release:** `CalendarRequest::rite()`, so a rite can reach the request that fetches the data
+and not just the components that render the choice. Without it a rite-aware `CalendarSelect` offered
+`lugano_ch` and `$apiClient->calendar()->diocese('lugano_ch')` then built `/calendar/diocese/lugano_ch`, which
+is a `400` — the two halves of the library disagreed. The method is additive and the URL is unchanged for any
+request that does not call it.
+
 **Also fixed in this release:** constructing a `CalendarSelect` against live metadata threw
 `TypeError: hasNationalCalendarWithDioceses(): Argument #1 ($item) must be of type NationalCalendar, null given`.
 The nation pass assumed every diocese's nation owns a national calendar, which is true only within the Roman

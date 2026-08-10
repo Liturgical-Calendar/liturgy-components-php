@@ -27,6 +27,10 @@ use Psr\SimpleCache\CacheInterface;
  * // Diocesan calendar
  * $calendar = $request->diocese('DIOCESE001')->year(2025)->locale('la')->get();
  *
+ * // A calendar of another rite. The rite precedes the nation/diocese pair,
+ * // and an Ambrosian diocese is unroutable without it.
+ * $calendar = $request->rite(Rite::AMBROSIAN)->diocese('lugano_ch')->year(2026)->get();
+ *
  * // General Roman Calendar with custom options (only for general calendar)
  * $calendar = $request->year(2024)
  *     ->epiphany('SUNDAY_JAN2_JAN8')
@@ -54,6 +58,7 @@ class CalendarRequest
     private string $baseUrl          = 'https://litcal.johnromanodorazio.com/api/dev';
     private ?string $calendarType    = null;  // 'nation' or 'diocese'
     private ?string $calendarId      = null;
+    private ?Rite $rite              = null;
     private ?int $year               = null;
     private ?string $yearType        = null;
     private ?string $locale          = null;
@@ -125,6 +130,47 @@ class CalendarRequest
         $this->calendarType = 'diocese';
         $this->calendarId   = $dioceseId;
         return $this;
+    }
+
+    /**
+     * Request the calendar of a given liturgical rite
+     *
+     * The API routes a rite as a bare segment named by the rite itself, sitting
+     * between `calendar` and any nation or diocese pair — so
+     * `/calendar/ambrosian/diocese/lugano_ch/2026`. There is no `/calendar/rite/{rite}`
+     * spelling. An Ambrosian diocese is unroutable without the prefix.
+     *
+     * The segment is emitted whenever a rite is set, the Roman rite included:
+     * `/calendar/roman` and `/calendar` serve the same calendar, and a request
+     * built from a RiteSelect knows its rite explicitly, so it says so. Leaving
+     * the rite unset keeps the prefix-free URL of every release before this one.
+     *
+     * @param Rite|string $rite A `Rite` case, or its string value.
+     * @return self
+     * @throws \Exception If the string is not a valid rite.
+     */
+    public function rite(Rite|string $rite): self
+    {
+        if (is_string($rite)) {
+            $resolved = Rite::tryFrom($rite);
+            if (null === $resolved) {
+                $valid = implode(', ', array_map(fn(Rite $case) => $case->value, Rite::cases()));
+                throw new \Exception("Invalid rite: {$rite}, valid values are: {$valid}");
+            }
+            $rite = $resolved;
+        }
+        $this->rite = $rite;
+        return $this;
+    }
+
+    /**
+     * Returns the liturgical rite this request is built for
+     *
+     * @return Rite|null The rite, or null if none was set.
+     */
+    public function getRite(): ?Rite
+    {
+        return $this->rite;
     }
 
     /**
@@ -374,6 +420,12 @@ class CalendarRequest
     {
         // Start with the calendar endpoint
         $pathSegments = ['calendar'];
+
+        // Add the rite whenever one was set explicitly, Roman included. It
+        // precedes the nation/diocese pair: /calendar/ambrosian/diocese/lugano_ch
+        if ($this->rite !== null) {
+            $pathSegments[] = rawurlencode($this->rite->value);
+        }
 
         // Add calendar type and ID if specified (both are required together)
         if ($this->calendarType && $this->calendarId) {

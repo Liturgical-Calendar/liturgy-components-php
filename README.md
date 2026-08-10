@@ -386,6 +386,25 @@ echo $riteSelect;
 >
 > Anything interactive belongs in liturgy-components-js.
 
+Set the same rite on the request that fetches the data, or the selection has nowhere to go:
+
+```php
+$calendarData = $apiClient->calendar()
+    ->rite($rite)
+    ->diocese('lugano_ch')
+    ->year(2026)
+    ->get();
+```
+
+The API routes a rite as a bare segment named by the rite itself, between `calendar` and any nation or diocese
+pair — `/calendar/ambrosian/diocese/lugano_ch/2026`. There is no `/calendar/rite/{rite}` spelling, and an
+Ambrosian diocese without the prefix is a `400`: `/calendar/diocese/lugano_ch` is not a route.
+
+`rite()` accepts a `Rite` case or its string value, and throws on an unknown one exactly as the two select
+components do. It emits the segment for whichever rite you set, `roman` included — `/calendar/roman/2026` and
+`/calendar/2026` serve the same calendar, and a request built from a `RiteSelect` knows its rite explicitly, so
+it says so. Leave the rite unset and the URL keeps its historic prefix-free shape.
+
 ### ApiOptions
 
 Produces a number of HTML <kbd>\<select\></kbd> elements, with <kbd>\<option\></kbd>s that correspond to the values of parameters
