@@ -114,11 +114,16 @@ final class Year extends Input
         $id   = $this->id !== '' ? " id=\"{$this->id}\"" : '';
         $name = $this->name !== '' ? " name=\"{$this->name}\"" : '';
 
-        // An unusable selected value — non-numeric, or outside the range the API
-        // serves at all — falls back to the current year, as it always has.
-        $selectedYear = ( is_int($this->selectedValue) || ( is_string($this->selectedValue) && is_numeric($this->selectedValue) ) )
-            ? (int) $this->selectedValue
-            : null;
+        // An unusable selected value — not a whole number, or outside the range
+        // the API serves at all — falls back to the current year, as it always
+        // has. `ctype_digit()` rather than `is_numeric()` because a year is a
+        // whole number: casting would quietly turn '9999.9' into a plausible-
+        // looking 9999, and '1.976e3' into 1976, rather than falling back.
+        $selectedYear = is_int($this->selectedValue)
+            ? $this->selectedValue
+            : ( ( is_string($this->selectedValue) && ctype_digit($this->selectedValue) )
+                ? (int) $this->selectedValue
+                : null );
         $year         = ( $selectedYear !== null && $selectedYear >= self::ABSOLUTE_MIN_YEAR && $selectedYear <= self::ABSOLUTE_MAX_YEAR )
             ? $selectedYear
             : (int) date('Y');

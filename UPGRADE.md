@@ -40,8 +40,10 @@ continued to work without modification. **v4.0.0 is the first release that chang
 
 ## What's new in v4.2.0
 
-Additive: one new method, one new overload of an existing idea, and no signature changed. Code written against 4.1
-needs no changes, and an `ApiOptions` form that never mentions a rite renders exactly the markup it rendered before.
+Additive. `Year` gains two new methods, `Year::min()` and `Year::rite()`; `Rite` gains `Rite::resolve()`; and
+`ApiOptions` accepts a new `rite` option. No method was removed and no existing signature changed. Code written
+against 4.1 needs no changes, and an `ApiOptions` form that never mentions a rite renders exactly the markup it
+rendered before.
 
 ### The year input knows the rite's floor
 
@@ -85,6 +87,10 @@ carrying, say, `1970` — valid under the Roman rite, below the Ambrosian floor 
 come back `400`. The input now renders `value="1976"` in that case. This is the one change in rendered output, and it
 only ever fires for a year the API would have rejected. `liturgy-components-js` does the same thing on the same
 transition, when a linked `RiteSelect` changes the rite.
+
+Clamping applies only to a selected year that is a whole number within 1970–9999 — the range the API serves for some
+rite. A value outside it, or one that is not a whole number, was never a servable year in the first place: it falls
+back to the current year, as it has in every release, rather than being clamped to the floor.
 
 ### `Rite::resolve()`
 

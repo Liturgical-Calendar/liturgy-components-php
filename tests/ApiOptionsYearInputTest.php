@@ -102,6 +102,35 @@ final class ApiOptionsYearInputTest extends TestCase
         $this->assertStringContainsString('value="1976"', $html);
     }
 
+    /**
+     * A year is a whole number. Casting these would silently turn a nonsensical
+     * value into a plausible one — `'9999.9'` into 9999 — rather than falling
+     * back the way every other unusable value does.
+     *
+     * @param string $selectedValue
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('unusableNumericStrings')]
+    public function testAYearThatIsNotAWholeNumberFallsBackToTheCurrentYear(string $selectedValue): void
+    {
+        $html = ( new Year() )->selectedValue($selectedValue)->get();
+
+        $this->assertStringContainsString('value="' . date('Y') . '"', $html);
+    }
+
+    /**
+     * @return array<string,string[]>
+     */
+    public static function unusableNumericStrings(): array
+    {
+        return [
+            'fractional'     => ['9999.9'],
+            'fractional too' => ['1976.5'],
+            'signed'         => ['+1976'],
+            'padded'         => [' 1976'],
+            'exponential'    => ['1.976e3']
+        ];
+    }
+
     public function testTheDefaultYearIsUnaffectedByTheFloorWhenItIsAboveIt(): void
     {
         $html = ( new Year() )->rite(Rite::AMBROSIAN)->get();

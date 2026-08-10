@@ -689,21 +689,26 @@ Output:
 </div>
 ```
 
-#### Fine grain control of single form select inputs
+#### Fine grain control of single form inputs
 
-Usually we would want to have the same wrapper and wrapper classes and select element classes on all of the form select inputs.
-However, if we do need for any reason to have finer grained control on a specific select element, say for example we would like
-to set an `id` attribute on a specific select element, we can do so by targeting the relative input. The select inputs are available
-on the `ApiOptions` instance as the following properties:
+Usually we would want to have the same wrapper and wrapper classes and element classes on all of the form inputs.
+However, if we do need for any reason to have finer grained control on a specific element, say for example we would like
+to set an `id` attribute on a specific element, we can do so by targeting the relative input. The inputs are available
+on the `ApiOptions` instance as the following properties.
+
+These render as <kbd>\<select\></kbd> elements:
 
 - `epiphanyInput`
 - `ascensionInput`
 - `corpusChristiInput`
 - `eternalHighPriestInput`
-- `yearInput`
 - `yearTypeInput`
 - `localeInput`
 - `acceptHeaderInput`
+
+And this one renders as an <kbd>\<input type="number"\></kbd>:
+
+- `yearInput`
 
 Each of these has it's own `->class()`, `->id()`, `->labelClass()`, `->wrapper()`, `->wrapperClass()`, `->disabled()` and `->selectedValue()` methods.
 If a global input wrapper or input class is also set, the single input's fine-grained methods will override the global settings
@@ -775,22 +780,27 @@ $apiOptions->yearInput->rite(Rite::AMBROSIAN);
 Output:
 
 ```html
+<!-- the value defaults to the current year, shown here as YYYY -->
 <label for="year">year</label>
-<input type="number" id="year" name="year" data-param="year" min="1976" max="9999" value="2026" />
+<input type="number" id="year" name="year" data-param="year" min="1976" max="9999" value="YYYY" />
 ```
 
 Both the option and `->rite()` accept a `Rite` case or its string value (`'roman'`, `'ambrosian'`), and throw on any
 other string. Setting the Roman rite puts the floor back to 1970, so the input can be re-pointed as often as the rite
 changes — the last call wins.
 
-Raising the floor also raises a selected year that sits below it. A form that submitted `1970` under the Roman rite
-and is then re-rendered under the Ambrosian re-renders with `1976`, rather than round-tripping a year the API would
-reject:
+Raising the floor also raises a selected year that sits below it, provided that year is one the API serves at all.
+A form that submitted `1970` under the Roman rite and is then re-rendered under the Ambrosian re-renders with `1976`,
+rather than round-tripping a year the API would reject:
 
 ```php
 $apiOptions->yearInput->rite(Rite::AMBROSIAN)->selectedValue(1970);
 // renders min="1976" ... value="1976"
 ```
+
+Clamping applies only to a selected year that is a whole number within 1970–9999. Anything else — a year outside that
+range, a fractional value, a non-numeric string — is not a year the API serves, so it falls back to the current year
+rather than being clamped, exactly as it did before the floor existed.
 
 To set the floor to something the rite does not dictate — an archive that begins later than the API does, say — use
 `->min()` directly. It takes any year the API serves, and throws for anything outside 1970–9999:
