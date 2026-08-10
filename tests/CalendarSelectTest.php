@@ -20,7 +20,10 @@ class CalendarSelectTest extends TestCase
     public function testConstructorDefaults()
     {
         $calendarSelect = new CalendarSelect();
-        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev/calendars', MetadataProvider::getMetadataUrl());
+        // Against the resolved default rather than a literal: the default is
+        // now whatever ApiClient::defaultApiUrl() returns, which honours
+        // LITCAL_API_URL so the suite can run on a local API.
+        $this->assertEquals(ApiClient::defaultApiUrl() . '/calendars', MetadataProvider::getMetadataUrl());
         $this->assertEquals('en', $calendarSelect->getLocale());
     }
 
@@ -30,7 +33,10 @@ class CalendarSelectTest extends TestCase
             'locale' => 'fr-FR'
         ];
         $calendarSelect = new CalendarSelect($options);
-        $this->assertEquals('https://litcal.johnromanodorazio.com/api/dev/calendars', MetadataProvider::getMetadataUrl());
+        // Against the resolved default rather than a literal: the default is
+        // now whatever ApiClient::defaultApiUrl() returns, which honours
+        // LITCAL_API_URL so the suite can run on a local API.
+        $this->assertEquals(ApiClient::defaultApiUrl() . '/calendars', MetadataProvider::getMetadataUrl());
         $this->assertEquals('fr_FR', $calendarSelect->getLocale());
     }
 

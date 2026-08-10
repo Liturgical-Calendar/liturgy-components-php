@@ -40,6 +40,27 @@ class ApiClient
     private const DEFAULT_API_URL  = 'https://litcal.johnromanodorazio.com/api/dev';
     public const DEFAULT_CACHE_TTL = 86400; // 24 hours
 
+    /**
+     * The API base URL to use when a caller configures none.
+     *
+     * Reads the `LITCAL_API_URL` environment variable first, falling back to
+     * the public instance. This is what lets a test run, a CI job or a
+     * self-hosted deployment point the library at its own API without
+     * threading configuration through every call site — and it is why the
+     * test suite can prefer a local API over the public one, which rate-limits
+     * and turns a full run into a string of connection failures.
+     *
+     * @return string The default API base URL, without a trailing slash.
+     */
+    public static function defaultApiUrl(): string
+    {
+        $configured = getenv('LITCAL_API_URL');
+        if (is_string($configured) && '' !== trim($configured)) {
+            return rtrim(trim($configured), '/');
+        }
+        return self::DEFAULT_API_URL;
+    }
+
     /** @var self|null Singleton instance */
     private static ?self $instance = null;
 
@@ -114,7 +135,7 @@ class ApiClient
     {
         if (self::$instance === null) {
             self::$instance = new self(
-                apiUrl: $config['apiUrl'] ?? self::DEFAULT_API_URL,
+                apiUrl: $config['apiUrl'] ?? self::defaultApiUrl(),
                 httpClient: $config['httpClient'] ?? null,
                 cache: $config['cache'] ?? null,
                 logger: $config['logger'] ?? null,

@@ -1,0 +1,51 @@
+name: Dependabot auto-merge
+
+# pull_request_target, not pull_request. A Dependabot-triggered `pull_request`
+# runs with a read-only GITHUB_TOKEN and no access to Actions secrets — only to
+# Dependabot secrets — so WORKFLOW_AUTOMERGE_PAT resolves empty and the fallback
+# token cannot merge. pull_request_target runs in the base repository's context,
+# where both are available.
+#
+# That elevation is only safe because this workflow never checks out or executes
+# pull request code: it reads metadata and calls `gh pr merge`. Do not add an
+# actions/checkout of the PR head here — under pull_request_target that would
+# run untrusted code with a writable token and repository secrets in scope.
+on:
+  pull_request_target:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  dependabot:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: '${{ secrets.GITHUB_TOKEN }}'
+
+      # GITHUB_TOKEN cannot modify .github/workflows/* files (a hard GitHub
+      # restriction, not something the `permissions:` block above can grant).
+      # Dependabot PRs from the github-actions ecosystem do exactly that, so
+      # without a fallback they fail with "Tried to create or update workflow
+      # without `workflows` permission". WORKFLOW_AUTOMERGE_PAT is an org-level
+      # Actions secret (fine-grained, repo-scoped, Workflows: write) shared with
+      # the sibling repositories. When it is absent this still works for every
+      # non-workflow PR.
+      #
+      # --auto merges once the branch's merge requirements are satisfied. That
+      # gate is only meaningful while `main` requires the CI checks: with no
+      # required check the pull request is mergeable on arrival and this merges
+      # it immediately, CI result notwithstanding. The four jobs in ci.yml are
+      # the ones to mark required — `Tests (PHPUnit against a local API)` above
+      # all, since it is the only one that runs the suite.
+      - name: Auto-merge minor and patch updates
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_AUTOMERGE_PAT || secrets.GITHUB_TOKEN }}

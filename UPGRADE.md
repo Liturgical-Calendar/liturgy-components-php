@@ -29,13 +29,56 @@ The library now implements **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories
 - **Circuit Breaker** - Prevent cascading failures when services are down
 - **Flexible HTTP Clients** - Swap between Guzzle, native PHP, or custom implementations
 
-**Good News:** All changes are **100% backward compatible**. Your existing code continues to work without modifications!
+**Good News:** Up to and including 3.x, all changes were **100% backward compatible** — existing code
+continued to work without modification. **v4.0.0 is the first release that changes rendered output**; see
+[Breaking Changes](#breaking-changes) below.
 
 ---
 
 ## Breaking Changes
 
-**None!** This release is fully backward compatible.
+### v4.0.0 — Rite awareness
+
+Three changes to rendered output. None is opt-in, and no flag restores the old behaviour, which is why this is a
+major rather than a minor with a note. No method was removed and no signature changed, so code that compiles
+against 3.x still compiles against 4.0.
+
+**1. `data-calendartype` values changed.** They now match liturgy-components-js:
+
+| Before                                 | After                          |
+| -------------------------------------- | ------------------------------ |
+| `data-calendartype="nationalcalendar"` | `data-calendartype="national"` |
+| `data-calendartype="diocesancalendar"` | `data-calendartype="diocesan"` |
+
+The library emits this attribute and never reads it back, so this affects you only if your own CSS or JavaScript
+selects on it. The API's `/calendar/nation/` and `/calendar/diocese/` route segments are a separate spelling and
+are unchanged.
+
+**2. Ambrosian dioceses no longer appear in the default diocese list.** `milano_it`, `bergam_it`, `novara_it` and
+`lugano_ch` belong to the Ambrosian rite, and a `CalendarSelect` defaults to the Roman one. This is a correction —
+they never belonged in the Roman list — but it is visible if you relied on the old rite-unaware list. To render
+them, ask for the rite:
+
+```php
+$calendarSelect = new CalendarSelect(['locale' => 'it', 'rite' => 'ambrosian']);
+```
+
+Under a rite with no national tier the dioceses render as a flat list, with no national options and no
+`<optgroup>` wrappers, because there is no national calendar to group them under.
+
+**3. The empty option is named.** With `allowNull` set, its text changes from `---` to the rite-level calendar's
+own localized name — "General Roman Calendar" or "Ambrosian Calendar". Selecting neither a nation nor a diocese
+was never selecting nothing; the option now says what it selects.
+
+**Also fixed in this release:** constructing a `CalendarSelect` against live metadata threw
+`TypeError: hasNationalCalendarWithDioceses(): Argument #1 ($item) must be of type NationalCalendar, null given`.
+The nation pass assumed every diocese's nation owns a national calendar, which is true only within the Roman
+rite; `lugano_ch` sits in nation `CH`, which owns none. If you removed this component from a page because of that
+crash, it can go back.
+
+### Before v4.0.0
+
+**None!** Those releases were fully backward compatible.
 
 If you're using the library with default settings, no code changes are required.
 

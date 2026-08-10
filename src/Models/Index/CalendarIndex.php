@@ -20,6 +20,8 @@ class CalendarIndex
      * @param WiderRegion[] $widerRegions Wider regions (e.g., continents)
      * @param string[] $widerRegionsKeys Keys for all wider regions
      * @param string[] $locales All available locales
+     * @param RiteCalendar[] $ambrosianCalendars Rite-level calendars for the Ambrosian rite
+     * @param string[] $ambrosianCalendarsKeys Calendar IDs for all Ambrosian rite-level calendars
      */
     public function __construct(
         public readonly array $nationalCalendars,
@@ -29,7 +31,9 @@ class CalendarIndex
         public readonly array $diocesanGroups,
         public readonly array $widerRegions,
         public readonly array $widerRegionsKeys,
-        public readonly array $locales
+        public readonly array $locales,
+        public readonly array $ambrosianCalendars = [],
+        public readonly array $ambrosianCalendarsKeys = []
     ) {
     }
 
@@ -127,6 +131,31 @@ class CalendarIndex
         $locales = self::getArray($data, 'locales');
         /** @var array<string> $locales */
 
+        // Read leniently rather than through self::getArray(): an API older
+        // than rite awareness announces no `ambrosian_calendars` at all, and
+        // that is not a malformed index — it is one that serves the Roman rite
+        // only. Both default to empty.
+        $ambrosianCalendarsData = $data['ambrosian_calendars'] ?? [];
+        if (!is_array($ambrosianCalendarsData)) {
+            throw new \InvalidArgumentException('Expected array for ambrosian_calendars');
+        }
+        $ambrosianCalendars = array_map(
+            function ($item) {
+                if (!is_array($item)) {
+                    throw new \InvalidArgumentException('Expected array item in ambrosian_calendars');
+                }
+                /** @var array<string,mixed> $item */
+                return RiteCalendar::fromArray($item);
+            },
+            $ambrosianCalendarsData
+        );
+
+        $ambrosianCalendarsKeys = $data['ambrosian_calendars_keys'] ?? [];
+        if (!is_array($ambrosianCalendarsKeys)) {
+            throw new \InvalidArgumentException('Expected array for ambrosian_calendars_keys');
+        }
+        /** @var array<string> $ambrosianCalendarsKeys */
+
         return new self(
             nationalCalendars: $nationalCalendars,
             nationalCalendarsKeys: $nationalCalendarsKeys,
@@ -135,7 +164,9 @@ class CalendarIndex
             diocesanGroups: $diocesanGroups,
             widerRegions: $widerRegions,
             widerRegionsKeys: $widerRegionsKeys,
-            locales: $locales
+            locales: $locales,
+            ambrosianCalendars: $ambrosianCalendars,
+            ambrosianCalendarsKeys: $ambrosianCalendarsKeys
         );
     }
 
@@ -182,32 +213,43 @@ class CalendarIndex
      *         api_path: string
      *     }>,
      *     wider_regions_keys: string[],
-     *     locales: string[]
+     *     locales: string[],
+     *     ambrosian_calendars: array<int,array{
+     *         calendar_id: string,
+     *         rite: string,
+     *         locales: string[]
+     *     }>,
+     *     ambrosian_calendars_keys: string[]
      * }
      */
     public function toArray(): array
     {
         return [
-            'national_calendars'      => array_values(array_map(
+            'national_calendars'       => array_values(array_map(
                 fn(NationalCalendar $calendar) => $calendar->toArray(),
                 $this->nationalCalendars
             )),
-            'national_calendars_keys' => $this->nationalCalendarsKeys,
-            'diocesan_calendars'      => array_values(array_map(
+            'national_calendars_keys'  => $this->nationalCalendarsKeys,
+            'diocesan_calendars'       => array_values(array_map(
                 fn(DiocesanCalendar $calendar) => $calendar->toArray(),
                 $this->diocesanCalendars
             )),
-            'diocesan_calendars_keys' => $this->diocesanCalendarsKeys,
-            'diocesan_groups'         => array_values(array_map(
+            'diocesan_calendars_keys'  => $this->diocesanCalendarsKeys,
+            'diocesan_groups'          => array_values(array_map(
                 fn(DiocesanGroup $group) => $group->toArray(),
                 $this->diocesanGroups
             )),
-            'wider_regions'           => array_values(array_map(
+            'wider_regions'            => array_values(array_map(
                 fn(WiderRegion $region) => $region->toArray(),
                 $this->widerRegions
             )),
-            'wider_regions_keys'      => $this->widerRegionsKeys,
-            'locales'                 => $this->locales
+            'wider_regions_keys'       => $this->widerRegionsKeys,
+            'locales'                  => $this->locales,
+            'ambrosian_calendars'      => array_values(array_map(
+                fn(RiteCalendar $calendar) => $calendar->toArray(),
+                $this->ambrosianCalendars
+            )),
+            'ambrosian_calendars_keys' => $this->ambrosianCalendarsKeys
         ];
     }
 }

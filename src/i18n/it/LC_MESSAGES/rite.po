@@ -1,0 +1,36 @@
+# Italian translations for the rite domain.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-10 00:00+0000\n"
+"PO-Revision-Date: 2026-08-10 00:00+0000\n"
+"Last-Translator: John Romano D'Orazio <priest@johnromanodorazio.com>\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/Rite.php
+msgid "General Roman Calendar"
+msgstr "Calendario Romano Generale"
+
+#: src/Rite.php
+msgid "Ambrosian Calendar"
+msgstr "Calendario Ambrosiano"
+
+#: src/RiteSelect.php
+msgid "Roman Rite"
+msgstr "Rito Romano"
+
+#: src/RiteSelect.php
+msgid "Ambrosian Rite"
+msgstr "Rito Ambrosiano"
+
+#: src/RiteSelect.php
+msgid "Select a rite"
+msgstr "Seleziona un rito"

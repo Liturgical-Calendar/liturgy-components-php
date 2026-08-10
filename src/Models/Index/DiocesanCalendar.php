@@ -15,6 +15,7 @@ class DiocesanCalendar
      * @param string $nation The nation this diocese belongs to (ISO 3166-1 alpha-2 country code)
      * @param string[] $locales The locales supported by this calendar
      * @param string $timezone The timezone for this diocese
+     * @param string $rite The liturgical rite this diocese follows, e.g. `roman` or `ambrosian`
      * @param string|null $group The group this diocese belongs to (optional)
      * @param array{epiphany?: string, ascension?: string, corpus_christi?: string}|null $settings Optional settings that override national defaults
      */
@@ -25,7 +26,12 @@ class DiocesanCalendar
         public readonly array $locales,
         public readonly string $timezone,
         public readonly ?string $group = null,
-        public readonly ?array $settings = null
+        public readonly ?array $settings = null,
+        // Appended rather than slotted in beside the other identity fields, so
+        // that positional construction against 3.x keeps mapping arguments to
+        // the same parameters. fromArray() passes by name, so ordering is
+        // invisible there.
+        public readonly string $rite = 'roman'
     ) {
     }
 
@@ -120,6 +126,10 @@ class DiocesanCalendar
             nation: self::getString($data, 'nation'),
             locales: $locales,
             timezone: self::getString($data, 'timezone'),
+            // Absent for an API older than rite awareness. Defaulting to the
+            // Roman rite is what keeps this library working against one: every
+            // diocese it knows about is Roman, which is exactly what it means.
+            rite: self::getNullableString($data, 'rite') ?? 'roman',
             group: self::getNullableString($data, 'group'),
             settings: $settings
         );
@@ -134,6 +144,7 @@ class DiocesanCalendar
      *     nation: string,
      *     locales: string[],
      *     timezone: string,
+     *     rite: string,
      *     group?: string,
      *     settings?: array{
      *         epiphany?: string,
@@ -149,7 +160,8 @@ class DiocesanCalendar
             'diocese'     => $this->diocese,
             'nation'      => $this->nation,
             'locales'     => $this->locales,
-            'timezone'    => $this->timezone
+            'timezone'    => $this->timezone,
+            'rite'        => $this->rite
         ];
 
         if ($this->group !== null) {

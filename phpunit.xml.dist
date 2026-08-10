@@ -3,6 +3,7 @@
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/12.4/phpunit.xsd"
          colors="true"
          cacheDirectory=".phpunit.cache"
+         bootstrap="tests/bootstrap.php"
          >
   <testsuites>
     <testsuite name="REST API Client Test Suite">

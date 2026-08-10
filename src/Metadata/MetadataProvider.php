@@ -67,8 +67,6 @@ use Psr\Log\NullLogger;
  */
 class MetadataProvider
 {
-    private const DEFAULT_API_URL = 'https://litcal.johnromanodorazio.com/api/dev';
-
     /** @var array<string, CalendarIndex> Process-wide metadata cache keyed by API URL */
     private static array $metadataCache = [];
 
@@ -143,7 +141,7 @@ class MetadataProvider
         }
 
         // First initialization - pull all configuration from ApiClient
-        self::$globalApiUrl     = ApiClient::getApiUrl() ?? self::DEFAULT_API_URL;
+        self::$globalApiUrl     = ApiClient::getApiUrl() ?? ApiClient::defaultApiUrl();
         self::$globalHttpClient = ApiClient::getHttpClient();
         self::$globalLogger     = ApiClient::getLogger();
 

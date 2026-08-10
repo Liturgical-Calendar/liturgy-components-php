@@ -12,6 +12,7 @@ use LiturgicalCalendar\Components\Http\LoggingHttpClient;
 use LiturgicalCalendar\Components\Http\CachingHttpClient;
 use LiturgicalCalendar\Components\Logging\LoggerAwareTrait;
 use LiturgicalCalendar\Components\Metadata\MetadataProvider;
+use LiturgicalCalendar\Components\Rite\TextDomainTrait;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Psr\SimpleCache\CacheInterface;
@@ -50,6 +51,7 @@ use Psr\SimpleCache\CacheInterface;
 class CalendarSelect
 {
     use LoggerAwareTrait;
+    use TextDomainTrait;
 
     private CalendarIndex $calendarIndex;
     private MetadataProvider $metadataProvider;
@@ -78,6 +80,7 @@ class CalendarSelect
     private bool $allowNull                        = false;
     private bool $disabled                         = false;
     private OptionsType $optionsType               = OptionsType::ALL;
+    private Rite $rite                             = Rite::ROMAN;
 
     /** @var array<string,string> $dataAttributes Data attributes (name => value, without 'data-' prefix) */
     private array $dataAttributes = [];
@@ -138,7 +141,7 @@ class CalendarSelect
      * ]);
      * ```
      *
-     * @param array{locale?:string,class?:string,id?:string,name?:string,nationFilter?:string,setOptions?:OptionsType,selectedOption?:string,label?:bool,labelStr?:string,allowNull?:bool} $options The options for the instance.
+     * @param array{locale?:string,class?:string,id?:string,name?:string,nationFilter?:string,rite?:Rite|string,setOptions?:OptionsType,selectedOption?:string,label?:bool,labelStr?:string,allowNull?:bool} $options The options for the instance.
      */
     public function __construct(array $options = [])
     {
@@ -148,6 +151,8 @@ class CalendarSelect
         if (isset($options['locale'])) {
             $this->locale($options['locale']);
         }
+
+        $this->bindRiteTextDomain();
 
         // Fetch metadata from MetadataProvider
         // This will throw an exception if metadata cannot be loaded
@@ -170,6 +175,10 @@ class CalendarSelect
                 throw new \Exception("Invalid nation: {$options['nationFilter']}, valid values are: " . implode(', ', $this->calendarIndex->nationalCalendarsKeys));
             }
             $this->nationFilterForDioceseOptions = $options['nationFilter'];
+        }
+
+        if (isset($options['rite'])) {
+            $this->rite($options['rite']);
         }
 
         if (isset($options['setOptions'])) {
@@ -329,6 +338,47 @@ class CalendarSelect
         }
         $this->nationFilterForDioceseOptions = $nation;
         return $this;
+    }
+
+    /**
+     * Sets the liturgical rite whose calendars this select offers.
+     *
+     * Defaults to the Roman rite, which preserves the behaviour of every
+     * release before rite awareness existed.
+     *
+     * Accepts either form for the same reason the class already accepts both
+     * styles elsewhere: `setOptions()` takes an enum, `nationFilter()` takes a
+     * validated string. A string goes through `Rite::tryFrom()` so an unknown
+     * rite is refused here rather than surfacing later as an empty select.
+     *
+     * @param Rite|string $rite A `Rite` case, or its string value.
+     *
+     * @return $this
+     *
+     * @throws \Exception If the string is not a valid rite.
+     */
+    public function rite(Rite|string $rite): self
+    {
+        if (is_string($rite)) {
+            $resolved = Rite::tryFrom($rite);
+            if (null === $resolved) {
+                $valid = implode(', ', array_map(fn(Rite $case) => $case->value, Rite::cases()));
+                throw new \Exception("Invalid rite: {$rite}, valid values are: {$valid}");
+            }
+            $rite = $resolved;
+        }
+        $this->rite = $rite;
+        return $this;
+    }
+
+    /**
+     * Returns the liturgical rite this select is built for.
+     *
+     * @return Rite The liturgical rite.
+     */
+    public function getRite(): Rite
+    {
+        return $this->rite;
     }
 
     /**
@@ -517,7 +567,7 @@ class CalendarSelect
         if ($this->selectedOption === $nationalCalendar->calendarId) {
             $selectedStr = ' selected';
         }
-        $optionOpenTag  = "<option data-calendartype=\"nationalcalendar\" value=\"{$nationalCalendar->calendarId}\"{$selectedStr}>";
+        $optionOpenTag  = "<option data-calendartype=\"national\" value=\"{$nationalCalendar->calendarId}\"{$selectedStr}>";
         $optionContents = \Locale::getDisplayRegion('-' . $nationalCalendar->calendarId, $this->locale);
         $optionCloseTag = '</option>';
         $optionHtml     = "{$optionOpenTag}{$optionContents}{$optionCloseTag}";
@@ -536,7 +586,7 @@ class CalendarSelect
         if ($this->selectedOption === $diocesanCalendar->calendarId) {
             $selectedStr = ' selected';
         }
-        $optionOpenTag  = "<option data-calendartype=\"diocesancalendar\" value=\"{$diocesanCalendar->calendarId}\"{$selectedStr}>";
+        $optionOpenTag  = "<option data-calendartype=\"diocesan\" value=\"{$diocesanCalendar->calendarId}\"{$selectedStr}>";
         $optionContents = $diocesanCalendar->diocese;
         $optionCloseTag = '</option>';
         $optionHtml     = "{$optionOpenTag}{$optionContents}{$optionCloseTag}";
@@ -563,33 +613,71 @@ class CalendarSelect
         }
         $col->setStrength(\Collator::PRIMARY); // only compare base characters; not accents, lower/upper-case, ...
 
-        foreach ($this->calendarIndex->diocesanCalendars as $diocesanCalendar) {
-            if (!$this->hasNationalCalendarWithDioceses($diocesanCalendar->nation)) {
-                // we add all nations with dioceses to the nations list
-                $this->addNationalCalendarWithDioceses($diocesanCalendar->nation);
+        // The rite partition comes FIRST, before anything asks which national
+        // calendar a diocese's nation has. That question only has an answer
+        // within the Roman rite: the Ambrosian rite has no national tier at
+        // all, so its dioceses sit in nations that own no national calendar —
+        // lugano_ch in CH is the live example, and letting it reach the nation
+        // pass is what took [0] of an empty filter result and passed null to a
+        // NationalCalendar parameter on every render.
+        $diocesanCalendars = array_filter(
+            $this->calendarIndex->diocesanCalendars,
+            fn(DiocesanCalendar $diocesanCalendar) => $diocesanCalendar->rite === $this->rite->value
+        );
+
+        foreach ($diocesanCalendars as $diocesanCalendar) {
+            if ($this->rite->hasNationalTier()) {
+                if (!$this->hasNationalCalendarWithDioceses($diocesanCalendar->nation)) {
+                    // we add all nations with dioceses to the nations list
+                    $this->addNationalCalendarWithDioceses($diocesanCalendar->nation);
+                }
+            } elseif (false === isset($this->dioceseOptions[$diocesanCalendar->nation])) {
+                // Under a rite with no national tier there is no NationalCalendar
+                // to register — that is the whole point — but addDioceseOption()
+                // still buckets by nation, so the bucket has to exist. Opening it
+                // directly is what registering one used to do as a side effect.
+                $this->dioceseOptions[$diocesanCalendar->nation] = [];
             }
             $this->addDioceseOption($diocesanCalendar);
         }
-        $sortedNationalCalendars = $this->calendarIndex->nationalCalendars;
-        usort($sortedNationalCalendars, function (NationalCalendar $a, NationalCalendar $b) use ($col): int {
-            $displayA = \Locale::getDisplayRegion('-' . $a->calendarId, $this->locale);
-            $displayB = \Locale::getDisplayRegion('-' . $b->calendarId, $this->locale);
-            if ($displayA === false) {
-                $displayA = $a->calendarId;
+
+        // A rite with no national tier skips the national pass entirely rather
+        // than rendering an empty group. The list below is not rite-partitioned
+        // — national calendars carry no rite, because having one is itself a
+        // property of the Roman rite.
+        if ($this->rite->hasNationalTier()) {
+            $sortedNationalCalendars = $this->calendarIndex->nationalCalendars;
+            usort($sortedNationalCalendars, function (NationalCalendar $a, NationalCalendar $b) use ($col): int {
+                $displayA = \Locale::getDisplayRegion('-' . $a->calendarId, $this->locale);
+                $displayB = \Locale::getDisplayRegion('-' . $b->calendarId, $this->locale);
+                if ($displayA === false) {
+                    $displayA = $a->calendarId;
+                }
+                if ($displayB === false) {
+                    $displayB = $b->calendarId;
+                }
+                $result = $col->compare($displayA, $displayB);
+                return $result === false ? 0 : $result;
+            });
+            foreach ($sortedNationalCalendars as $nationalCalendar) {
+                if (!$this->hasNationalCalendarWithDioceses($nationalCalendar->calendarId)) {
+                    // This is the first time we call CalendarSelect::addNationOption().
+                    // This will ensure that the VATICAN (or any other nation without any diocese) will be added as the first option,
+                    // thus ensuring that VATICAN is always the default selected option when allowNull is false.
+                    $this->addNationOption($nationalCalendar);
+                }
             }
-            if ($displayB === false) {
-                $displayB = $b->calendarId;
+        }
+
+        // A rite with no national tier has no nation to label a group with, so
+        // its dioceses render as a flat list. This matches what
+        // liturgy-components-js shows for the Ambrosian rite: Lugano, Bergamo,
+        // Milano and Novara in one run, no optgroups.
+        if (false === $this->rite->hasNationalTier()) {
+            foreach ($this->dioceseOptions as $optionsForNation) {
+                array_push($this->dioceseOptionsGrouped, implode('', $optionsForNation));
             }
-            $result = $col->compare($displayA, $displayB);
-            return $result === false ? 0 : $result;
-        });
-        foreach ($sortedNationalCalendars as $nationalCalendar) {
-            if (!$this->hasNationalCalendarWithDioceses($nationalCalendar->calendarId)) {
-                // This is the first time we call CalendarSelect::addNationOption().
-                // This will ensure that the VATICAN (or any other nation without any diocese) will be added as the first option,
-                // thus ensuring that VATICAN is always the default selected option when allowNull is false.
-                $this->addNationOption($nationalCalendar);
-            }
+            return;
         }
 
         // now we can add the options for the nations in the nationalCalendarsWithDioceses list
@@ -677,6 +765,18 @@ class CalendarSelect
      */
     public function getSelect(): string
     {
+        return $this->withRiteMessagesLocale($this->locale, fn(): string => $this->renderSelect());
+    }
+
+    /**
+     * Renders the select. Called with LC_MESSAGES already set to this
+     * instance's locale, so the empty option's rite-level calendar name
+     * resolves in it.
+     *
+     * @return string The HTML for the select element.
+     */
+    private function renderSelect(): string
+    {
         $labelClass  = !empty($this->labelClass) ? " class=\"{$this->labelClass}\"" : '';
         $id          = $this->id && !empty($this->id) ? " id=\"{$this->id}\"" : '';
         $name        = $this->name && !empty($this->name) ? " name=\"{$this->name}\"" : '';
@@ -685,7 +785,11 @@ class CalendarSelect
         $dataAttrs   = $this->getData();
         $optionsHtml = $this->getOptions();
         if ($this->allowNull) {
-            $optionsHtml = "<option value=\"\">---</option>{$optionsHtml}";
+            // dgettext rather than _(): the lookup names its domain explicitly,
+            // so it cannot be disturbed by whichever domain another component
+            // last made current with textdomain().
+            $emptyLabel  = dgettext('rite', $this->rite->emptyOptionLabel());
+            $optionsHtml = "<option value=\"\">{$emptyLabel}</option>{$optionsHtml}";
         }
         return ( $this->label ? "<label for=\"{$this->id}\"{$labelClass}>{$this->labelStr}</label>" : '' )
             . "<select{$id}{$name}{$class}{$disabled}{$dataAttrs}>{$optionsHtml}</select>";

@@ -680,7 +680,11 @@ class MetadataProviderTest extends TestCase
         $provider = MetadataProvider::getInstance();
 
         $this->assertInstanceOf(MetadataProvider::class, $provider);
-        $this->assertEquals(self::API_URL, MetadataProvider::getApiUrl());
+        // Against the resolved default rather than the class constant: the
+        // default is now whatever ApiClient::defaultApiUrl() returns, which
+        // honours LITCAL_API_URL so the suite can run on a local API. The two
+        // tests above keep the constant, since they configure it explicitly.
+        $this->assertEquals(ApiClient::defaultApiUrl(), MetadataProvider::getApiUrl());
     }
 
     /**

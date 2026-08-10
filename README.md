@@ -19,9 +19,16 @@ A collection of reusable frontend components, that work with the Liturgical Cale
 Installing the package in your project is as simple as `composer require liturgical-calendar/components`.
 Include in your project's PHP script with `include_once 'vendor/autoload.php';` (adjust the path to vendor/autoload.php accordingly).
 
-Note that this package requires <b>PHP >= 8.1</b>, seeing it makes use of [Enums](https://www.php.net/manual/en/language.types.enumerations.php) (which were introduced in PHP 8.1).
+Note that this package requires <b>PHP >= 8.2</b>. It uses [Enums](https://www.php.net/manual/en/language.types.enumerations.php),
+introduced in 8.1, but `WebCalendar\Column` composes one enum case from the values of others, which 8.1 rejects with
+"Enum case value must be compile-time evaluatable". The constraint said 8.1 until CI began checking every version and found
+that the package had never actually parsed there.
 It also requires PHP `ext-intl`. To check if you have all the requirements you can run `composer check-platform-reqs --no-dev`.
-If you intend on contributing to the repository and installing development requirements, you should run `composer check-platform-reqs`.
+
+<b>Contributing requires PHP >= 8.4.1</b>, which is a higher bar than using the package. `composer.lock` pins development
+tooling — PHPUnit 12, and `symfony/var-exporter` by way of `symfony/cache` — that requires 8.4, so `composer install` cannot
+resolve below it. Consumers are unaffected: `composer require` reads only the runtime `require` section and never this lock.
+If you intend on contributing and installing development requirements, run `composer check-platform-reqs`.
 
 ## Quick Start
 
@@ -258,10 +265,15 @@ with the following keys:
 - `nationFilter`: When `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`, this is the nation for which dioceses will be filtered, default `null`.
   This option MUST be set, and MUST NOT be `null` or empty, when `setOptions` is set to `OptionsType::DIOCESES_FOR_NATION`,
   otherwise an exception will occur.
+- `rite`: The liturgical rite whose calendars the select offers. A case of the `Rite` enum, or its string value
+  (`'roman'` or `'ambrosian'`), default `Rite::ROMAN`. Dioceses are filtered to the chosen rite, and a rite with
+  no national tier — the Ambrosian rite has none — renders its dioceses as a flat list with no national options.
 - `selectedOption`: Set one of the options in the select as the default selected option, by value, default `null`.
 - `label`: A boolean indicating whether to include a label element or not, default `false`.
-- `labelText`: The text to use for the label element, default `"Select a calendar"`.
+- `labelStr`: The text to use for the label element, default `"Select a calendar"`. The chainable setter for it is `labelText()`.
 - `allowNull`: Whether an option with an empty value should be added as the first option of the select, to allow the user to submit a null value, default `false`.
+  That option is labelled with the name of the rite-level calendar — "General Roman Calendar" or "Ambrosian Calendar", localized — rather than a bare `---`,
+  because selecting neither a nation nor a diocese means selecting that calendar.
 - `disabled`: Whether to set the `disabled` attribute on the select element, default `false`.
 - `data`: An associative array of data attributes to add to the select element. Keys are the attribute names (without the `data-` prefix)
   and values are the attribute values. Keys must start with a letter and may contain letters, digits, hyphens, underscores, or colons.
@@ -320,6 +332,59 @@ echo $CalendarSelect->getSelect();
 > [!CAUTION]
 > When using the `->setOptions()` method with a value of `OptionsType::DIOCESES_FOR_NATION`,
 > the `->nationFilter()` method <b>MUST</b> be called <b>BEFORE</b> calling the `->setOptions()` method, otherwise an exception will occur.
+
+### RiteSelect
+
+Produces an HTML <kbd>\<select\></kbd> element with one <kbd>\<option\></kbd> per liturgical rite. Unlike
+`CalendarSelect` it makes no API request: the set of rites comes from the `Rite` enum, because it is a fact about
+the liturgy rather than about which calendars a given API serves. Can be instantiated passing in an array of
+options with the following keys:
+
+- `locale`: The locale to use for the option labels. Defaults to 'en'.
+- `class`: The class or classes to apply to the select element, default `riteSelect`.
+- `id`: The id to apply to the select element, default `riteSelect`.
+- `name`: The name to apply to the select element, default `riteSelect`.
+- `label`: A boolean indicating whether to include a label element or not, default `false`.
+- `labelStr`: The text to use for the label element, default a translated `"Select a rite"`.
+- `labelClass`: The class or classes to apply to the label element.
+- `disabled`: Whether to set the `disabled` attribute on the select element, default `false`.
+- `selectedOption`: The rite to mark as selected. A case of the `Rite` enum, or its string value.
+
+To produce the <kbd>\<select\></kbd> element, call the `->getSelect()` method, or simply echo the instance.
+
+```php
+<?php
+include_once 'vendor/autoload.php';
+use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\Rite;
+use LiturgicalCalendar\Components\RiteSelect;
+
+$riteSelect = new RiteSelect(['locale' => 'it']);
+$riteSelect->class('form-select')
+    ->id('riteSelect')
+    ->name('rite')
+    ->label(true);
+
+echo $riteSelect;
+```
+
+> [!IMPORTANT]
+> There is no linking method, and this is deliberate. liturgy-components-js offers `linkToRiteSelect()`, but that
+> is a runtime DOM listener with no server-side analogue: this library renders once and ships no JavaScript.
+> Reacting to a rite change is the integrator's business — a form submit, a query parameter, or a re-render with
+> the rite set on the `CalendarSelect`:
+>
+> ```php
+> // Normalize before use: both components throw on an unknown rite, so a
+> // hand-edited ?rite=whatever would otherwise be a 500 rather than a default.
+> $requested = $_GET['rite'] ?? null;
+> $rite      = is_string($requested) ? ( Rite::tryFrom($requested) ?? Rite::ROMAN ) : Rite::ROMAN;
+>
+> $calendarSelect = new CalendarSelect(['locale' => 'it', 'rite' => $rite]);
+> $riteSelect     = new RiteSelect(['locale' => 'it', 'selectedOption' => $rite]);
+> ```
+>
+> Anything interactive belongs in liturgy-components-js.
 
 ### ApiOptions
 
