@@ -78,6 +78,7 @@ class CalendarSelect
     private bool $allowNull                        = false;
     private bool $disabled                         = false;
     private OptionsType $optionsType               = OptionsType::ALL;
+    private Rite $rite                             = Rite::ROMAN;
 
     /** @var array<string,string> $dataAttributes Data attributes (name => value, without 'data-' prefix) */
     private array $dataAttributes = [];
@@ -138,7 +139,7 @@ class CalendarSelect
      * ]);
      * ```
      *
-     * @param array{locale?:string,class?:string,id?:string,name?:string,nationFilter?:string,setOptions?:OptionsType,selectedOption?:string,label?:bool,labelStr?:string,allowNull?:bool} $options The options for the instance.
+     * @param array{locale?:string,class?:string,id?:string,name?:string,nationFilter?:string,rite?:Rite|string,setOptions?:OptionsType,selectedOption?:string,label?:bool,labelStr?:string,allowNull?:bool} $options The options for the instance.
      */
     public function __construct(array $options = [])
     {
@@ -170,6 +171,10 @@ class CalendarSelect
                 throw new \Exception("Invalid nation: {$options['nationFilter']}, valid values are: " . implode(', ', $this->calendarIndex->nationalCalendarsKeys));
             }
             $this->nationFilterForDioceseOptions = $options['nationFilter'];
+        }
+
+        if (isset($options['rite'])) {
+            $this->rite($options['rite']);
         }
 
         if (isset($options['setOptions'])) {
@@ -329,6 +334,47 @@ class CalendarSelect
         }
         $this->nationFilterForDioceseOptions = $nation;
         return $this;
+    }
+
+    /**
+     * Sets the liturgical rite whose calendars this select offers.
+     *
+     * Defaults to the Roman rite, which preserves the behaviour of every
+     * release before rite awareness existed.
+     *
+     * Accepts either form for the same reason the class already accepts both
+     * styles elsewhere: `setOptions()` takes an enum, `nationFilter()` takes a
+     * validated string. A string goes through `Rite::tryFrom()` so an unknown
+     * rite is refused here rather than surfacing later as an empty select.
+     *
+     * @param Rite|string $rite A `Rite` case, or its string value.
+     *
+     * @return $this
+     *
+     * @throws \Exception If the string is not a valid rite.
+     */
+    public function rite(Rite|string $rite): self
+    {
+        if (is_string($rite)) {
+            $resolved = Rite::tryFrom($rite);
+            if (null === $resolved) {
+                $valid = implode(', ', array_map(fn(Rite $case) => $case->value, Rite::cases()));
+                throw new \Exception("Invalid rite: {$rite}, valid values are: {$valid}");
+            }
+            $rite = $resolved;
+        }
+        $this->rite = $rite;
+        return $this;
+    }
+
+    /**
+     * Returns the liturgical rite this select is built for.
+     *
+     * @return Rite The liturgical rite.
+     */
+    public function getRite(): Rite
+    {
+        return $this->rite;
     }
 
     /**
