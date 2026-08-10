@@ -5,6 +5,7 @@ This guide helps you upgrade to use the new PSR-compliant HTTP client features i
 ## Table of Contents
 
 - [Overview](#overview)
+- [What's new in v4.2.0](#whats-new-in-v420)
 - [What's new in v4.1.0](#whats-new-in-v410)
 - [Breaking Changes](#breaking-changes)
 - [New Features](#new-features)
@@ -32,8 +33,52 @@ The library now implements **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories
 
 **Good News:** Up to and including 3.x, all changes were **100% backward compatible** — existing code
 continued to work without modification. **v4.0.0 is the first release that changes rendered output**; see
-[Breaking Changes](#breaking-changes) below. For v4.1.0, which is additive and corrective, see
-[What's new in v4.1.0](#whats-new-in-v410).
+[Breaking Changes](#breaking-changes) below. For v4.1.0 and v4.2.0, which are additive and corrective, see
+[What's new in v4.2.0](#whats-new-in-v420) and [What's new in v4.1.0](#whats-new-in-v410).
+
+---
+
+## What's new in v4.2.0
+
+Additive: one new method, one new overload of an existing idea, and no signature changed. Code written against 4.1
+needs no changes, and an `ApiOptions` form that never mentions a rite renders exactly the markup it rendered before.
+
+### The year input knows the rite's floor
+
+`ApiOptions`'s year input has always rendered `min="1970"`, the first year the API computes for the Roman rite. The
+Ambrosian rite starts at 1976 — the first year of the reformed Ambrosian Missal — and the API refuses anything
+earlier. Until now nothing in the PHP components said so, so an Ambrosian form happily offered years the request
+built from it could not fetch.
+
+```php
+use LiturgicalCalendar\Components\Rite;
+
+$apiOptions->yearInput->rite(Rite::AMBROSIAN);   // renders min="1976"
+$apiOptions->yearInput->rite(Rite::ROMAN);       // back to min="1970"
+```
+
+The floor is read from `Rite::minYear()` rather than restated, so a rite that gains a floor gains it in one place.
+`rite()` takes a `Rite` case or its string value and throws on any other string, matching `CalendarSelect::rite()`
+and `CalendarRequest::rite()`.
+
+**A selected year below the new floor is clamped up to it.** Raising `min` alone would leave a re-rendered form
+carrying, say, `1970` — valid under the Roman rite, below the Ambrosian floor — and the request built from it would
+come back `400`. The input now renders `value="1976"` in that case. This is the one change in rendered output, and it
+only ever fires for a year the API would have rejected. `liturgy-components-js` does the same thing on the same
+transition, when a linked `RiteSelect` changes the rite.
+
+### `Year::min()`
+
+The floor is also settable directly, for a range the rite does not dictate — an archive that begins later than the
+API does, for instance:
+
+```php
+$apiOptions->yearInput->min(2000);
+```
+
+It accepts any year the API serves and throws for anything outside 1970–9999. There is no "already set" guard: the
+floor is meant to be re-set whenever the rite changes, and the last call between `min()` and `rite()` wins. This
+mirrors `YearInput.min()` in liturgy-components-js.
 
 ---
 

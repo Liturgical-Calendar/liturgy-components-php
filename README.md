@@ -700,6 +700,7 @@ on the `ApiOptions` instance as the following properties:
 - `ascensionInput`
 - `corpusChristiInput`
 - `eternalHighPriestInput`
+- `yearInput`
 - `yearTypeInput`
 - `localeInput`
 - `acceptHeaderInput`
@@ -736,6 +737,52 @@ Output:
   </div>
   ...
 </div>
+```
+
+#### Setting the earliest selectable year on the Year input
+
+The `yearInput` renders as a `<input type="number">` with `min="1970"` — the first year the API will compute for the
+Roman rite — and `max="9999"`. The floor is not the same for every rite: the Ambrosian rite is computed from 1976, the
+first year of the reformed Ambrosian Missal, and a request for an earlier year is refused by the API.
+
+Rather than restate that year at the call site, hand the input the rite and let it read the floor off it:
+
+```php
+<?php
+require 'vendor/autoload.php';
+use LiturgicalCalendar\Components\ApiOptions;
+use LiturgicalCalendar\Components\Rite;
+
+$apiOptions = new ApiOptions(['locale' => 'it-IT']);
+$apiOptions->yearInput->rite(Rite::AMBROSIAN);
+echo $apiOptions->getForm();
+```
+
+Output:
+
+```html
+<label for="year">year</label>
+<input type="number" id="year" name="year" data-param="year" min="1976" max="9999" value="2026" />
+```
+
+`->rite()` accepts a `Rite` case or its string value (`'roman'`, `'ambrosian'`), and throws on any other string.
+Setting the Roman rite puts the floor back to 1970, so the input can be re-pointed as often as the rite changes —
+the last call wins.
+
+Raising the floor also raises a selected year that sits below it. A form that submitted `1970` under the Roman rite
+and is then re-rendered under the Ambrosian re-renders with `1976`, rather than round-tripping a year the API would
+reject:
+
+```php
+$apiOptions->yearInput->rite(Rite::AMBROSIAN)->selectedValue(1970);
+// renders min="1976" ... value="1976"
+```
+
+To set the floor to something the rite does not dictate — an archive that begins later than the API does, say — use
+`->min()` directly. It takes any year the API serves, and throws for anything outside 1970–9999:
+
+```php
+$apiOptions->yearInput->min(2000);
 ```
 
 #### Updating the options for the Locale input
