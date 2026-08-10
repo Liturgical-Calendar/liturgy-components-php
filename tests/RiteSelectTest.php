@@ -141,7 +141,13 @@ final class RiteSelectTest extends TestCase
 
     /**
      * Rendering must not strand the caller's process in a locale it never chose,
-     * even when it throws part-way through.
+     * even when it throws part-way through — that is what the `finally` is for.
+     *
+     * The callback is driven through reflection rather than by provoking a real
+     * failure in getSelect(): every input that reaches the renderer is validated
+     * on the way in, so there is no natural way to make it throw, and an earlier
+     * version of this test that tried to force one never threw at all and so
+     * asserted nothing the success-path test above had not already covered.
      */
     public function testRestoresTheProcessMessagesLocaleWhenRenderingThrows(): void
     {
@@ -150,17 +156,21 @@ final class RiteSelectTest extends TestCase
         $before = setlocale(LC_MESSAGES, '0');
         $select = new RiteSelect(['locale' => 'it']);
 
+        $method = new \ReflectionMethod($select, 'withRiteMessagesLocale');
+        $threw  = false;
+
         try {
-            // A label that is not a string reaches htmlspecialchars() and throws
-            // from inside the locale-scoped render.
-            $select->label(true)->labelText('ok');
-            $reflection = new \ReflectionProperty($select, 'labelStr');
-            $reflection->setValue($select, null);
-            $select->getSelect();
-        } catch (\Throwable) {
-            // Whether or not it threw, the locale must be back.
+            $method->invoke($select, 'it', static function (): string {
+                throw new \RuntimeException('rendering blew up');
+            });
+        } catch (\RuntimeException $e) {
+            $threw = true;
+            $this->assertSame('rendering blew up', $e->getMessage());
         }
 
+        // Without this the test would pass on a silently swallowed exception,
+        // which is the failure mode it exists to rule out.
+        $this->assertTrue($threw, 'Expected the callback exception to propagate.');
         $this->assertSame($before, setlocale(LC_MESSAGES, '0'));
     }
 
