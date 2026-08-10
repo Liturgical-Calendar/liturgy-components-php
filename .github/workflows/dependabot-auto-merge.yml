@@ -1,7 +1,17 @@
 name: Dependabot auto-merge
 
+# pull_request_target, not pull_request. A Dependabot-triggered `pull_request`
+# runs with a read-only GITHUB_TOKEN and no access to Actions secrets — only to
+# Dependabot secrets — so WORKFLOW_AUTOMERGE_PAT resolves empty and the fallback
+# token cannot merge. pull_request_target runs in the base repository's context,
+# where both are available.
+#
+# That elevation is only safe because this workflow never checks out or executes
+# pull request code: it reads metadata and calls `gh pr merge`. Do not add an
+# actions/checkout of the PR head here — under pull_request_target that would
+# run untrusted code with a writable token and repository secrets in scope.
 on:
-  pull_request:
+  pull_request_target:
 
 permissions:
   contents: write

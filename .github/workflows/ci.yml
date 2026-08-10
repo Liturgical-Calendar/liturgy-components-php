@@ -139,6 +139,13 @@ jobs:
       - name: Check out the library
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # `development` deliberately, not a pinned SHA — the opposite of the policy
+      # for actions above, and for the opposite reason. An action is third-party
+      # code we execute, so it is pinned to stop it changing under us. The API is
+      # the contract this library is written against, so tracking its head is the
+      # point: when the API changes shape, these tests should break here rather
+      # than in a consumer's application. A pin would convert that signal into
+      # silence until someone remembered to bump it.
       - name: Check out the API
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
