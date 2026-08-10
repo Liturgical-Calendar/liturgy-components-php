@@ -131,6 +131,42 @@ class CalendarRequestRiteTest extends TestCase
         );
     }
 
+    public function testNationIsRefusedUnderARiteWithNoNationalTier(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('The ambrosian rite has no national calendars');
+        ( new CalendarRequest() )->rite(Rite::AMBROSIAN)->nation('CH');
+    }
+
+    public function testARiteWithNoNationalTierIsRefusedOnceANationIsSet(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('The ambrosian rite has no national calendars');
+        ( new CalendarRequest() )->nation('CH')->rite(Rite::AMBROSIAN);
+    }
+
+    public function testNationIsAllowedUnderTheRomanRite(): void
+    {
+        $url = ( new CalendarRequest() )->rite(Rite::ROMAN)->nation('IT')->getRequestUrl();
+
+        $this->assertEquals(
+            self::API_URL . '/calendar/roman/nation/IT',
+            $url,
+            'The Roman rite has a national tier, so the guard must not fire under it'
+        );
+    }
+
+    public function testDioceseIsAllowedUnderARiteWithNoNationalTier(): void
+    {
+        $url = ( new CalendarRequest() )->rite(Rite::AMBROSIAN)->diocese('lugano_ch')->getRequestUrl();
+
+        $this->assertEquals(
+            self::API_URL . '/calendar/ambrosian/diocese/lugano_ch',
+            $url,
+            'The guard is about the national tier only; Ambrosian dioceses are the whole point of the rite'
+        );
+    }
+
     public function testEncodesTheRiteSegment(): void
     {
         $url = ( new CalendarRequest() )->rite(Rite::AMBROSIAN)->diocese('test diocese')->getRequestUrl();

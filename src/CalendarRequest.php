@@ -109,11 +109,22 @@ class CalendarRequest
     /**
      * Request national calendar
      *
+     * Refused under a rite that has no national tier. The Ambrosian rite is the
+     * rite of a handful of sees in Lombardy and Ticino with nothing above them,
+     * so `/calendar/ambrosian/nation/CH` is not a route and never will be. A
+     * `CalendarSelect` expresses the same fact by skipping the national pass
+     * entirely; here it is an exception, thrown where the mistake is made rather
+     * than surfacing later as a 400 from `get()`.
+     *
      * @param string $nationCode ISO 3166-1 alpha-2 country code (e.g., 'US', 'IT', 'FR')
      * @return self
+     * @throws \InvalidArgumentException If the rite has no national tier.
      */
     public function nation(string $nationCode): self
     {
+        if ($this->rite !== null) {
+            $this->assertRiteHasNationalTier($this->rite, $nationCode);
+        }
         $this->calendarType = 'nation';
         $this->calendarId   = $nationCode;
         return $this;
@@ -148,6 +159,7 @@ class CalendarRequest
      * @param Rite|string $rite A `Rite` case, or its string value.
      * @return self
      * @throws \Exception If the string is not a valid rite.
+     * @throws \InvalidArgumentException If a nation is already set and the rite has no national tier.
      */
     public function rite(Rite|string $rite): self
     {
@@ -159,8 +171,35 @@ class CalendarRequest
             }
             $rite = $resolved;
         }
+
+        // Guard both orders. Setting the rite last would otherwise walk straight
+        // past the check in nation() and rebuild the unroutable URL.
+        if ($this->calendarType === 'nation' && $this->calendarId !== null) {
+            $this->assertRiteHasNationalTier($rite, $this->calendarId);
+        }
+
         $this->rite = $rite;
         return $this;
+    }
+
+    /**
+     * Refuse a nation under a rite that has no national tier
+     *
+     * @param Rite $rite The rite in play.
+     * @param string $nationCode The nation that cannot be requested under it.
+     * @return void
+     * @throws \InvalidArgumentException If the rite has no national tier.
+     */
+    private function assertRiteHasNationalTier(Rite $rite, string $nationCode): void
+    {
+        if ($rite->hasNationalTier()) {
+            return;
+        }
+
+        throw new \InvalidArgumentException(
+            "The {$rite->value} rite has no national calendars, so nation('{$nationCode}') cannot be requested under it. "
+            . 'Request one of its dioceses instead.'
+        );
     }
 
     /**

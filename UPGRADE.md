@@ -76,6 +76,11 @@ and not just the components that render the choice. Without it a rite-aware `Cal
 is a `400` — the two halves of the library disagreed. The method is additive and the URL is unchanged for any
 request that does not call it.
 
+Requesting a nation under a rite with no national tier now throws an `InvalidArgumentException` rather than
+building `/calendar/ambrosian/nation/CH` and failing at `get()`. The guard fires in either order —
+`->rite('ambrosian')->nation('CH')` and `->nation('CH')->rite('ambrosian')` alike — and only ever fires for a
+combination the API cannot route, so no previously working call is affected.
+
 **Also fixed in this release:** constructing a `CalendarSelect` against live metadata threw
 `TypeError: hasNationalCalendarWithDioceses(): Argument #1 ($item) must be of type NationalCalendar, null given`.
 The nation pass assumed every diocese's nation owns a national calendar, which is true only within the Roman

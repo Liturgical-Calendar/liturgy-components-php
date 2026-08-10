@@ -405,6 +405,19 @@ components do. It emits the segment for whichever rite you set, `roman` included
 `/calendar/2026` serve the same calendar, and a request built from a `RiteSelect` knows its rite explicitly, so
 it says so. Leave the rite unset and the URL keeps its historic prefix-free shape.
 
+Asking for a nation under a rite that has no national tier throws an `InvalidArgumentException`, in whichever
+order you set the two:
+
+```php
+$apiClient->calendar()->rite('ambrosian')->nation('CH'); // InvalidArgumentException
+$apiClient->calendar()->nation('CH')->rite('ambrosian'); // the same, guarded both ways
+```
+
+The Ambrosian rite is the rite of a handful of sees in Lombardy and Ticino with nothing above them, so
+`/calendar/ambrosian/nation/CH` is not a route and never will be. `CalendarSelect` expresses the same fact by
+skipping the national pass entirely; here it is an exception, raised where the mistake is made rather than
+arriving later as a `400` from `get()`. Dioceses are unaffected — they are the whole point of the rite.
+
 ### ApiOptions
 
 Produces a number of HTML <kbd>\<select\></kbd> elements, with <kbd>\<option\></kbd>s that correspond to the values of parameters
