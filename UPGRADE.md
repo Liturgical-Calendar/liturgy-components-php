@@ -5,6 +5,7 @@ This guide helps you upgrade to use the new PSR-compliant HTTP client features i
 ## Table of Contents
 
 - [Overview](#overview)
+- [What's new in v4.1.0](#whats-new-in-v410)
 - [Breaking Changes](#breaking-changes)
 - [New Features](#new-features)
 - [Migration Examples](#migration-examples)
@@ -31,7 +32,72 @@ The library now implements **PSR-7** (HTTP Messages), **PSR-17** (HTTP Factories
 
 **Good News:** Up to and including 3.x, all changes were **100% backward compatible** — existing code
 continued to work without modification. **v4.0.0 is the first release that changes rendered output**; see
-[Breaking Changes](#breaking-changes) below.
+[Breaking Changes](#breaking-changes) below. For v4.1.0, which is additive and corrective, see
+[What's new in v4.1.0](#whats-new-in-v410).
+
+---
+
+## What's new in v4.1.0
+
+Additive and corrective: no method was removed, no signature changed, and nothing here alters the rendered output of a
+component that was already resolving its locale successfully. Code written against 4.0 needs no changes.
+
+### `CalendarRequest` understands rites
+
+`CalendarSelect` became rite-aware in 4.0.0 and `CalendarRequest` did not, so the two halves of the library disagreed:
+the select offered `lugano_ch`, and `$apiClient->calendar()->diocese('lugano_ch')` then built
+`/calendar/diocese/lugano_ch`, which the API answers with a `400`.
+
+```php
+$calendar = $apiClient->calendar()
+    ->rite(Rite::AMBROSIAN)
+    ->diocese('lugano_ch')
+    ->year(2026)
+    ->get();
+```
+
+The API routes a rite as a bare segment named by the rite itself, between `calendar` and any nation or diocese pair —
+`/calendar/ambrosian/diocese/lugano_ch/2026`. There is no `/calendar/rite/{rite}` spelling. The segment is emitted for
+whichever rite you set, `roman` included; leave the rite unset and the URL keeps the prefix-free shape every earlier
+release produced.
+
+Requesting a nation under a rite with no national tier now throws an `InvalidArgumentException` rather than building
+`/calendar/ambrosian/nation/CH` and failing at `get()`. The guard fires in either order, and only ever for a combination
+the API cannot route — so no previously working call is affected.
+
+### Components render in the locale you asked for
+
+Two defects, both of which made a component fall back to the host process's locale without saying so.
+
+**`en` never resolved.** The candidate ladder built its regional fallback by uppercasing the language, so `it` produced
+`it_IT` and `fr` produced `fr_FR` — correct only because those are real locale names. English produced `en_EN`, which
+exists on no system, so `setlocale()` returned false and the component rendered in whatever locale the process already
+held. Region resolution now goes through CLDR likely subtags (`en` → `en_US`, `pt` → `pt_BR`), borrowed from the API's
+`LocaleConfigurator`. An explicit region still wins: `pt_PT` is not rewritten to `pt_BR`.
+
+**`LANGUAGE` was never set.** glibc's gettext reads it above `LC_MESSAGES`, so any host exporting `LANGUAGE` silently
+overrode the library, and `LANGUAGE=C` switched translation off altogether. It is now pinned alongside the locale, and
+restored with it by `CalendarSelect`, `RiteSelect` and `WebCalendar` — including the case where the host never set it,
+and including the path where rendering throws.
+
+If you were relying on a component rendering English because its locale silently failed to apply, it will now render the
+locale you actually requested.
+
+> [!IMPORTANT]
+> `ApiOptions` is the exception, and this is the one behaviour worth checking before you upgrade. Its inputs translate
+> when they render rather than when they are constructed, so it sets the locale and `LANGUAGE` and leaves both set. The
+> locale half is long-standing; **the `LANGUAGE` pin is new in 4.1.0**, it overwrites whatever `LANGUAGE` the host had,
+> and it is not restored. If your application relies on `LANGUAGE` for its own gettext output, set it again after
+> rendering an `ApiOptions` form.
+
+### Also in this release
+
+- `WebCalendar::buildTable()` restores the process locale in a `finally`, so a render that throws part-way no longer
+  strands the host in a locale it never chose.
+- New `LocaleResolver` and `ScopedLocale` classes under `LiturgicalCalendar\Components\Locale`, should you want the
+  same locale handling for your own gettext calls.
+- `ApiOptions::resetForTesting()` and `Input::resetGlobals()` clear the process-global state those classes keep between
+  instances. For tests only.
 
 ---
 
@@ -69,35 +135,6 @@ Under a rite with no national tier the dioceses render as a flat list, with no n
 **3. The empty option is named.** With `allowNull` set, its text changes from `---` to the rite-level calendar's
 own localized name — "General Roman Calendar" or "Ambrosian Calendar". Selecting neither a nation nor a diocese
 was never selecting nothing; the option now says what it selects.
-
-**Also new in this release:** `CalendarRequest::rite()`, so a rite can reach the request that fetches the data
-and not just the components that render the choice. Without it a rite-aware `CalendarSelect` offered
-`lugano_ch` and `$apiClient->calendar()->diocese('lugano_ch')` then built `/calendar/diocese/lugano_ch`, which
-is a `400` — the two halves of the library disagreed. The method is additive and the URL is unchanged for any
-request that does not call it.
-
-Requesting a nation under a rite with no national tier now throws an `InvalidArgumentException` rather than
-building `/calendar/ambrosian/nation/CH` and failing at `get()`. The guard fires in either order —
-`->rite('ambrosian')->nation('CH')` and `->nation('CH')->rite('ambrosian')` alike — and only ever fires for a
-combination the API cannot route, so no previously working call is affected.
-
-**Also fixed in this release: components now render in the locale you asked for.** Two defects, both of which made a
-component fall back to the host process's locale without saying so.
-
-`en` never resolved. The candidate ladder built its regional fallback by uppercasing the language, so `it` produced
-`it_IT` and `fr` produced `fr_FR` — correct only because those are real locale names. English produced `en_EN`, which
-exists on no system, so `setlocale()` returned false and the component rendered in whatever locale the process already
-held. Region resolution now goes through CLDR likely subtags (`en` → `en_US`, `pt` → `pt_BR`), borrowed from the API's
-`LocaleConfigurator`. An explicit region still wins: `pt_PT` is not rewritten to `pt_BR`.
-
-`LANGUAGE` was never set. glibc's gettext reads it above `LC_MESSAGES`, so any host exporting `LANGUAGE` silently
-overrode the library, and `LANGUAGE=C` switched translation off altogether. It is now pinned alongside the locale and
-restored with it by `CalendarSelect`, `RiteSelect` and `WebCalendar` — `LANGUAGE` included, and including the case where
-the host never set it. `ApiOptions` keeps its long-standing set-and-leave behaviour, because its inputs translate at
-render time rather than at construction; it now leaves `LANGUAGE` set as well as the locale.
-
-If you were relying on a component rendering English because its locale silently failed to apply, it will now render the
-locale you actually requested.
 
 **Also fixed in this release:** constructing a `CalendarSelect` against live metadata threw
 `TypeError: hasNationalCalendarWithDioceses(): Argument #1 ($item) must be of type NationalCalendar, null given`.
