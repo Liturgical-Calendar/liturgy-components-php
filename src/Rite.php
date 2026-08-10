@@ -24,6 +24,41 @@ enum Rite: string
     case AMBROSIAN = 'ambrosian';
 
     /**
+     * Resolves a rite given as either a case or its string value.
+     *
+     * Every public method in the library that takes a rite takes `Rite|string`,
+     * because the components already mix the two styles — an enum where a caller
+     * has one to hand, a validated string where the value arrived from a form
+     * post or a URL. Each of them needs the same three lines to normalize it, so
+     * the three lines live here instead of in each of them.
+     *
+     * **Not to be replaced by the built-in `Rite::from()`.** A backed enum
+     * already has one, and it throws a `\ValueError` that does not name the
+     * valid values — which is precisely why every caller hand-rolled this
+     * instead of using it. The message below is asserted by the tests of each
+     * component that refuses a rite, so it is observable behaviour: preserve it
+     * verbatim.
+     *
+     * @param Rite|string $rite A `Rite` case, or its string value.
+     *
+     * @return self The resolved rite.
+     *
+     * @throws \Exception If the string is not a valid rite.
+     */
+    public static function resolve(Rite|string $rite): self
+    {
+        if ($rite instanceof self) {
+            return $rite;
+        }
+        $resolved = self::tryFrom($rite);
+        if (null === $resolved) {
+            $valid = implode(', ', array_map(fn(self $case) => $case->value, self::cases()));
+            throw new \Exception("Invalid rite: {$rite}, valid values are: {$valid}");
+        }
+        return $resolved;
+    }
+
+    /**
      * Whether the rite has national calendars at all.
      *
      * The Ambrosian rite has none: it is the rite of a handful of sees in

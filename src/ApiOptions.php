@@ -18,6 +18,7 @@ use LiturgicalCalendar\Components\ApiOptions\Input\Locale;
 use LiturgicalCalendar\Components\ApiOptions\Wrapper;
 use LiturgicalCalendar\Components\ApiOptions\Submit;
 use LiturgicalCalendar\Components\ApiOptions\PathType;
+use LiturgicalCalendar\Components\Rite;
 
 /**
  * Generate an options form for the Liturgical Calendar API.
@@ -26,7 +27,7 @@ use LiturgicalCalendar\Components\ApiOptions\PathType;
  * The form elements can be fully customized using the methods provided by the class.
  *
  * @see LiturgicalCalendar\Components\ApiOptions::__construct() Initializes the ApiOptions object with default or provided settings:
- * - __$options__: An array of options, including `locale`, `formLabel`, `wrapper`, `submit`, `after`, and `url`.
+ * - __$options__: An array of options, including `locale`, `rite`, `formLabel`, `wrapper`, `submit`, `after`, and `url`.
  *
  * The following properties are initialized on the object instance:
  * - __formLabel__: A {@see LiturgicalCalendar\Components\ApiOptions\FormLabel} object if the `formLabel` key is present in the options array.
@@ -77,6 +78,9 @@ class ApiOptions
      * sets the corresponding property values accordingly.
      * If the `formLabel` key is present, instantiates a new {@see LiturgicalCalendar\Components\ApiOptions\FormLabel} object with the provided value.
      * If the `locale` key is present, canonicalizes the locale value and stores it in the static $locale property.
+     * If the `rite` key is present, the year input is given that rite's floor — 1970 for the Roman rite, 1976 for the
+     * Ambrosian — so a caller never has to reach through this object into the input to set it. Takes a
+     * {@see LiturgicalCalendar\Components\Rite} case or its string value, and defaults to the Roman rite.
      *
      * If the `submit` or `wrapper` keys are present in the options array,
      * checks the boolean value associated with them and instantiates a new Submit or Wrapper object accordingly.
@@ -99,6 +103,11 @@ class ApiOptions
      */
     public function __construct(?array $options = null)
     {
+        // Held until the inputs exist further down, since the rite governs the
+        // year input's floor and that input is not constructed yet. Defaulting to
+        // the Roman rite is what every release before this one did implicitly.
+        $rite = Rite::ROMAN;
+
         if ($options !== null && count($options) > 0) {
             foreach ($options as $key => $value) {
                 switch ($key) {
@@ -150,6 +159,16 @@ class ApiOptions
                             $this->$key = new Submit();
                         }
                         break;
+                    case 'rite':
+                        // Only the type is this class's business, and it refuses a
+                        // wrong one the way it refuses a non-string locale. What
+                        // counts as a valid rite belongs to Rite::resolve(), which
+                        // is also what raises the message naming the valid values.
+                        if (false === $value instanceof Rite && false === is_string($value)) {
+                            throw new \InvalidArgumentException('Expected Rite or string for rite, got ' . gettype($value));
+                        }
+                        $rite = Rite::resolve($value);
+                        break;
                     case 'after':
                         if (is_string($value)) {
                             $value = preg_replace('/<\?php.*?\?>/s', '', $value);
@@ -178,6 +197,11 @@ class ApiOptions
         $this->localeInput               = new Locale();
         $this->acceptHeaderInput         = new AcceptHeader();
         $this->holydaysOfObligationInput = new HolydaysOfObligation();
+
+        // Applied once the input exists. A resolved case by this point, since an
+        // unknown rite was refused up in the options loop — out of the
+        // constructor, before any of these inputs were built.
+        $this->yearInput->rite($rite);
     }
 
     /**

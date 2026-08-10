@@ -348,8 +348,9 @@ class CalendarSelect
      *
      * Accepts either form for the same reason the class already accepts both
      * styles elsewhere: `setOptions()` takes an enum, `nationFilter()` takes a
-     * validated string. A string goes through `Rite::tryFrom()` so an unknown
-     * rite is refused here rather than surfacing later as an empty select.
+     * validated string. A string goes through {@see Rite::resolve()} so an
+     * unknown rite is refused here rather than surfacing later as an empty
+     * select.
      *
      * @param Rite|string $rite A `Rite` case, or its string value.
      *
@@ -359,15 +360,7 @@ class CalendarSelect
      */
     public function rite(Rite|string $rite): self
     {
-        if (is_string($rite)) {
-            $resolved = Rite::tryFrom($rite);
-            if (null === $resolved) {
-                $valid = implode(', ', array_map(fn(Rite $case) => $case->value, Rite::cases()));
-                throw new \Exception("Invalid rite: {$rite}, valid values are: {$valid}");
-            }
-            $rite = $resolved;
-        }
-        $this->rite = $rite;
+        $this->rite = Rite::resolve($rite);
         return $this;
     }
 

@@ -241,15 +241,7 @@ class RiteSelect
      */
     public function selectedOption(Rite|string $rite): self
     {
-        if (is_string($rite)) {
-            $resolved = Rite::tryFrom($rite);
-            if (null === $resolved) {
-                $valid = implode(', ', array_map(fn(Rite $case) => $case->value, Rite::cases()));
-                throw new \Exception("Invalid rite: {$rite}, valid values are: {$valid}");
-            }
-            $rite = $resolved;
-        }
-        $this->selectedOption = $rite;
+        $this->selectedOption = Rite::resolve($rite);
         return $this;
     }
 
