@@ -671,6 +671,36 @@ with:
         }
 ```
 
+**Correction, found by executing this task.** The partition alone is not enough. It stops the crash under the
+Roman rite, where `lugano_ch` is filtered out — but under the **Ambrosian** rite that diocese is deliberately
+admitted, and the nation _grouping_ then crashes identically, because the nations its dioceses belong to own no
+national calendar by definition. So the grouping is conditional too. In the loop above, register a national
+calendar only when the rite has a tier, and otherwise open the bucket directly:
+
+```php
+            if ($this->rite->hasNationalTier()) {
+                if (!$this->hasNationalCalendarWithDioceses($diocesanCalendar->nation)) {
+                    $this->addNationalCalendarWithDioceses($diocesanCalendar->nation);
+                }
+            } elseif (false === isset($this->dioceseOptions[$diocesanCalendar->nation])) {
+                $this->dioceseOptions[$diocesanCalendar->nation] = [];
+            }
+```
+
+and render a flat list instead of optgroups, immediately before the `nationalCalendarsWithDioceses` sort:
+
+```php
+        if (false === $this->rite->hasNationalTier()) {
+            foreach ($this->dioceseOptions as $optionsForNation) {
+                array_push($this->dioceseOptionsGrouped, implode('', $optionsForNation));
+            }
+            return;
+        }
+```
+
+Flat is what liturgy-components-js renders for the Ambrosian rite — Lugano, Bergamo, Milano and Novara in one
+run, no optgroups.
+
 Then guard the national pass. Wrap the `$sortedNationalCalendars` block and the `foreach ($sortedNationalCalendars ...)` loop that follows it:
 
 ```php
