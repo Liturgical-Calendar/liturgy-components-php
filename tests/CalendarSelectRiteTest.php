@@ -74,6 +74,21 @@ final class CalendarSelectRiteTest extends TestCase
         $this->assertStringContainsString('milano_it', $html);
     }
 
+    /**
+     * Nothing pinned these values before, which is how the two libraries drifted
+     * apart unnoticed. The PHP library emits the attribute in two places and
+     * reads it back nowhere, so this is rendered output only.
+     */
+    public function testEmitsTheSameCalendarTypeValuesAsTheJsLibrary(): void
+    {
+        $html = ( new CalendarSelect(['locale' => 'en']) )->getSelect();
+
+        $this->assertStringContainsString('data-calendartype="national"', $html);
+        $this->assertStringContainsString('data-calendartype="diocesan"', $html);
+        $this->assertStringNotContainsString('nationalcalendar', $html);
+        $this->assertStringNotContainsString('diocesancalendar', $html);
+    }
+
     public function testNoNationalTierUnderARiteThatHasNone(): void
     {
         $html = ( new CalendarSelect(['locale' => 'en', 'rite' => 'ambrosian']) )->getSelect();

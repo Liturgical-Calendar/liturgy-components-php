@@ -563,7 +563,7 @@ class CalendarSelect
         if ($this->selectedOption === $nationalCalendar->calendarId) {
             $selectedStr = ' selected';
         }
-        $optionOpenTag  = "<option data-calendartype=\"nationalcalendar\" value=\"{$nationalCalendar->calendarId}\"{$selectedStr}>";
+        $optionOpenTag  = "<option data-calendartype=\"national\" value=\"{$nationalCalendar->calendarId}\"{$selectedStr}>";
         $optionContents = \Locale::getDisplayRegion('-' . $nationalCalendar->calendarId, $this->locale);
         $optionCloseTag = '</option>';
         $optionHtml     = "{$optionOpenTag}{$optionContents}{$optionCloseTag}";
@@ -582,7 +582,7 @@ class CalendarSelect
         if ($this->selectedOption === $diocesanCalendar->calendarId) {
             $selectedStr = ' selected';
         }
-        $optionOpenTag  = "<option data-calendartype=\"diocesancalendar\" value=\"{$diocesanCalendar->calendarId}\"{$selectedStr}>";
+        $optionOpenTag  = "<option data-calendartype=\"diocesan\" value=\"{$diocesanCalendar->calendarId}\"{$selectedStr}>";
         $optionContents = $diocesanCalendar->diocese;
         $optionCloseTag = '</option>';
         $optionHtml     = "{$optionOpenTag}{$optionContents}{$optionCloseTag}";
