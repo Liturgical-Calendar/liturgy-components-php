@@ -137,7 +137,12 @@ final class ScopedLocale
         }
 
         $preferences = [];
-        if (false !== $appliedLocale) {
+        // setlocale(LC_ALL, …) reports a composite — "LC_CTYPE=C;LC_NUMERIC=it_IT.utf8;…" —
+        // when the categories disagree. Setting LC_ALL to a single name returns a
+        // plain locale name on glibc, so this has not been observed here, but the
+        // value goes on to become an environment variable and a composite would
+        // make LANGUAGE nonsense. Only a real locale name is admitted.
+        if (false !== $appliedLocale && false === str_contains($appliedLocale, '=') && false === str_contains($appliedLocale, ';')) {
             $preferences[] = $appliedLocale;
             // "it_IT.utf8" also has to be offered as "it_IT": gettext matches
             // catalog directory names, which never carry a codeset suffix.

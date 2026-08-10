@@ -3,6 +3,7 @@
 namespace LiturgicalCalendar\Components;
 
 use LiturgicalCalendar\Components\ApiOptions\FormLabel;
+use LiturgicalCalendar\Components\ApiOptions\Input;
 use LiturgicalCalendar\Components\Locale\LocaleResolver;
 use LiturgicalCalendar\Components\Locale\ScopedLocale;
 use LiturgicalCalendar\Components\ApiOptions\Input\AcceptHeader;
@@ -217,9 +218,18 @@ class ApiOptions
      * a warning is triggered but the component continues to function. Translations may fall back to
      * English or display untranslated strings.
      *
-     * Unlike WebCalendar, this does not restore the previous locale: the Input classes translate at
-     * render time (`get()`), not at construction, so the locale has to remain in force after this
-     * returns. That pre-existing leak is unchanged here.
+     * Unlike WebCalendar, this restores nothing: the Input classes translate at render time
+     * (`get()`), not at construction, so the locale has to remain in force after this returns. Two
+     * process-global mutations therefore outlive the call, and they are not the same age:
+     *
+     * - The `setlocale(LC_ALL, …)` change is long-standing behaviour, unchanged here.
+     * - The `LANGUAGE` pin is **new**. It overwrites whatever `LANGUAGE` the host had — including an
+     *   empty one — and does not put it back, because restoring it would immediately undo the locale
+     *   the inputs are about to translate in.
+     *
+     * A host that cares about either must set them again after rendering; there is no release call,
+     * because there is no point at which this component knows the inputs are done rendering.
+     * {@see self::resetForTesting()} deliberately does not touch them either.
      *
      * After attempting to set the locale, it binds the textdomain 'litcompphp' to the 'i18n' directory.
      */
@@ -364,6 +374,29 @@ class ApiOptions
      *
      * @return string|null The locale, or null if no locale has been set.
      */
+    /**
+     * Clears the process-global state this component keeps between instances.
+     *
+     * That is the static `$locale` and the global wrapper/class settings on
+     * {@see Input}. Both are deliberate — the component is configured once and
+     * every instance and input honours it — but a test suite needs them back at
+     * their defaults, or a test that configured them dictates the markup every
+     * later test renders.
+     *
+     * Does not touch the process locale or `LANGUAGE`: {@see self::prepareL10n()}
+     * sets those and does not restore them, so a caller wanting its own locale
+     * back must set it itself.
+     *
+     * **WARNING**: for tests only. Never call this in production code.
+     *
+     * @return void
+     */
+    public static function resetForTesting(): void
+    {
+        self::$locale = null;
+        Input::resetGlobals();
+    }
+
     public static function getLocale(): ?string
     {
         return self::$locale;

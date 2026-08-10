@@ -3,7 +3,9 @@
 namespace LiturgicalCalendar\Components\Tests;
 
 use LiturgicalCalendar\Components\CalendarSelect;
+use LiturgicalCalendar\Components\ApiClient;
 use LiturgicalCalendar\Components\Locale\ScopedLocale;
+use LiturgicalCalendar\Components\Metadata\MetadataProvider;
 use LiturgicalCalendar\Components\Rite;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
@@ -11,6 +13,24 @@ use PHPUnit\Framework\TestCase;
 
 final class CalendarSelectRiteTest extends TestCase
 {
+    /**
+     * Once per class, not once per test.
+     *
+     * This class reads live metadata, and without a reset it inherits whatever
+     * provider an earlier class installed — a mocked one serving two national
+     * calendars and no dioceses, which renders an empty select and fails here
+     * rather than where the mock was set up. Resetting per *test* fixed that but
+     * made every test in the class re-fetch /calendars, which earns an HTTP 429
+     * and fails far more confusingly. PHPUnit keeps a class's tests contiguous
+     * even under --order-by=random, so once per class is enough isolation.
+     */
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+        ApiClient::resetForTesting();
+        MetadataProvider::resetForTesting();
+    }
+
     public function testDefaultsToTheRomanRite(): void
     {
         $select = new CalendarSelect(['locale' => 'en']);

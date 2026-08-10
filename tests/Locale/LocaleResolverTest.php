@@ -74,14 +74,66 @@ class LocaleResolverTest extends TestCase
     public function testCandidatesForEnglishActuallySetTheLocale(): void
     {
         $previous = setlocale(LC_MESSAGES, '0');
-        $applied  = setlocale(LC_MESSAGES, LocaleResolver::candidates('en'));
+
+        // Guard on whether the machine has *any* English locale, probed directly.
+        // Guarding on whether our own ladder works would make the test vacuous:
+        // it would skip in exactly the case it exists to catch.
+        $installed = setlocale(LC_MESSAGES, 'en_US.utf8', 'en_US.UTF-8', 'en_US', 'en_GB.utf8', 'en_GB');
+        $applied   = false === $installed ? null : setlocale(LC_MESSAGES, LocaleResolver::candidates('en'));
+
         if (false !== $previous) {
             setlocale(LC_MESSAGES, $previous);
+        }
+        if (false === $installed) {
+            $this->markTestSkipped('No English locale installed; the ladder has nothing to resolve to.');
         }
 
         $this->assertNotFalse(
             $applied,
             'The whole point: a language-only "en" must resolve to an installed system locale'
         );
+    }
+
+    public function testAnUnreadableDataFileDegradesInsteadOfThrowing(): void
+    {
+        $caught = null;
+        set_error_handler(static function (int $errno, string $message) use (&$caught): bool {
+            $caught = $message;
+            return true;
+        }, E_USER_WARNING);
+
+        try {
+            $load   = new \ReflectionMethod(LocaleResolver::class, 'loadLikelyRegions');
+            $result = $load->invoke(null, __DIR__ . '/no-such-file.json');
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $result, 'A missing data file must not throw out of a locale lookup');
+        $this->assertIsString($caught);
+        $this->assertStringContainsString('likely region', $caught);
+    }
+
+    public function testCorruptDataFileDegradesInsteadOfThrowing(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'likely') . '.json';
+        file_put_contents($path, '{ this is not json');
+
+        $caught = null;
+        set_error_handler(static function (int $errno, string $message) use (&$caught): bool {
+            $caught = $message;
+            return true;
+        }, E_USER_WARNING);
+
+        try {
+            $load   = new \ReflectionMethod(LocaleResolver::class, 'loadLikelyRegions');
+            $result = $load->invoke(null, $path);
+        } finally {
+            restore_error_handler();
+            unlink($path);
+        }
+
+        $this->assertSame([], $result, 'Malformed JSON must not surface as an uncaught JsonException');
+        $this->assertIsString($caught);
     }
 }

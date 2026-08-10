@@ -75,15 +75,63 @@ final class LocaleResolver
     public static function likelyRegion(string $language): string
     {
         if (null === self::$likelyRegions) {
-            /** @var array{likelyRegions:array<string,string>} $data */
-            $data                = json_decode(
-                (string) file_get_contents(__DIR__ . '/likelyRegions.json'),
-                associative: true,
-                flags: JSON_THROW_ON_ERROR
-            );
-            self::$likelyRegions = $data['likelyRegions'];
+            self::$likelyRegions = self::loadLikelyRegions(__DIR__ . '/likelyRegions.json');
         }
 
         return self::$likelyRegions[$language] ?? '';
+    }
+
+    /**
+     * Read the language => region map, degrading to an empty map on any failure.
+     *
+     * A shipped data file that cannot be read or parsed means a broken install,
+     * not a broken request, and this sits on the render path of every component.
+     * Throwing a `JsonException` out of a locale lookup would turn a packaging
+     * problem into an unhandled error in the caller's page, so this warns and
+     * returns nothing — matching how the components already treat an unbindable
+     * text domain. Callers then fall back to the language-only candidates, which
+     * is the pre-CLDR behaviour rather than a new failure mode.
+     *
+     * The empty map is cached like any other, so a broken file warns once rather
+     * than on every lookup.
+     *
+     * @param string $path Absolute path to the JSON map.
+     * @return array<string,string> The language => region map, or `[]` on failure.
+     */
+    private static function loadLikelyRegions(string $path): array
+    {
+        $json = @file_get_contents($path);
+        if (false === $json) {
+            trigger_error(
+                "Failed to read the likely region map at {$path}. Locales without an explicit region "
+                . 'will fall back to language-only candidates.',
+                E_USER_WARNING
+            );
+            return [];
+        }
+
+        try {
+            $data = json_decode($json, associative: true, flags: JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            trigger_error(
+                "Failed to parse the likely region map at {$path}: {$e->getMessage()}. Locales without "
+                . 'an explicit region will fall back to language-only candidates.',
+                E_USER_WARNING
+            );
+            return [];
+        }
+
+        if (false === is_array($data) || false === isset($data['likelyRegions']) || false === is_array($data['likelyRegions'])) {
+            trigger_error(
+                "The likely region map at {$path} has no likelyRegions object. Locales without an "
+                . 'explicit region will fall back to language-only candidates.',
+                E_USER_WARNING
+            );
+            return [];
+        }
+
+        /** @var array<string,string> $regions */
+        $regions = $data['likelyRegions'];
+        return $regions;
     }
 }

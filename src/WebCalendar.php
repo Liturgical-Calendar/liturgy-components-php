@@ -945,6 +945,26 @@ class WebCalendar
     {
         $this->setLocale($this->LiturgicalCalendar->settings->locale);
 
+        try {
+            return $this->renderTable();
+        } finally {
+            // In a finally, not after the render: setLocale() changes the
+            // process locale and LANGUAGE, and there are throw sites all the
+            // way through the render. Restoring only on success would strand
+            // the host in a locale it never chose.
+            $this->resetGlobalLocale();
+        }
+    }
+
+    /**
+     * Renders the table. Called by {@see self::buildTable()} inside the locale scope.
+     *
+     * @return string The HTML for the table.
+     * @throws \Exception If the DOM cannot be built or serialized.
+     */
+    private function renderTable(): string
+    {
+
         $table = $this->dom->createElement('table');
         if (null !== $this->id) {
             $table->setAttribute('id', $this->id);
@@ -1148,7 +1168,6 @@ class WebCalendar
                 }
             }
         }
-        $this->resetGlobalLocale();
         $html = $this->dom->saveHTML();
         if ($html === false) {
             throw new \Exception('Failed to generate HTML from DOM');

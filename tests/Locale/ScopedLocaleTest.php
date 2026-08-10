@@ -2,6 +2,7 @@
 
 namespace LiturgicalCalendar\Components\Tests\Locale;
 
+use LiturgicalCalendar\Components\Locale\LocaleResolver;
 use LiturgicalCalendar\Components\Locale\ScopedLocale;
 use PHPUnit\Framework\TestCase;
 
@@ -21,9 +22,32 @@ class ScopedLocaleTest extends TestCase
 {
     private const CATALOG = __DIR__ . '/../../src/i18n';
 
+    private string|false $languageBefore = false;
+    private string|false $localeBefore   = false;
+
     protected function setUp(): void
     {
         bindtextdomain('rite', self::CATALOG);
+        $this->languageBefore = getenv('LANGUAGE');
+        $this->localeBefore   = setlocale(LC_MESSAGES, '0');
+    }
+
+    /**
+     * Every test here mutates process-global state on purpose. Putting it back
+     * per-test inside each one is easy to forget, and forgetting it makes some
+     * *other* test fail — which is the exact failure mode this whole class exists
+     * to prevent.
+     */
+    protected function tearDown(): void
+    {
+        if (false === $this->languageBefore) {
+            putenv('LANGUAGE');
+        } else {
+            putenv('LANGUAGE=' . $this->languageBefore);
+        }
+        if (false !== $this->localeBefore) {
+            setlocale(LC_MESSAGES, $this->localeBefore);
+        }
     }
 
     private function skipWithoutItalianLocale(): void
@@ -134,7 +158,7 @@ class ScopedLocaleTest extends TestCase
 
         // The set-and-leave path ApiOptions needs: it translates at render time,
         // long after the locale was configured, so nothing may be put back.
-        $applied = setlocale(LC_MESSAGES, \LiturgicalCalendar\Components\Locale\LocaleResolver::candidates('it'));
+        $applied = setlocale(LC_MESSAGES, LocaleResolver::candidates('it'));
         ScopedLocale::pinLanguage('it', $applied);
         $translated = dgettext('rite', 'Roman Rite');
 
@@ -156,6 +180,21 @@ class ScopedLocaleTest extends TestCase
 
         $this->assertIsString($pinned);
         $this->assertStringContainsString('it', $pinned, 'A failed setlocale still leaves the language known');
+    }
+
+    public function testACompositeLocaleNeverReachesLanguage(): void
+    {
+        // setlocale(LC_ALL, '0') returns this shape when categories disagree.
+        // Setting LC_ALL to one name returns a plain name on glibc, so this is
+        // defensive rather than reproduced — but the value becomes an env var,
+        // and `LANGUAGE=LC_CTYPE=C;LC_NUMERIC=it_IT.utf8` would be baffling.
+        ScopedLocale::pinLanguage('it', 'LC_CTYPE=C;LC_NUMERIC=it_IT.utf8;LC_MESSAGES=C');
+        $pinned = getenv('LANGUAGE');
+
+        $this->assertIsString($pinned);
+        $this->assertStringNotContainsString('=', $pinned);
+        $this->assertStringNotContainsString(';', $pinned);
+        $this->assertStringContainsString('it', $pinned, 'The requested language still has to survive');
     }
 
     public function testDoesNotWidenBeyondTheRequestedCategory(): void
