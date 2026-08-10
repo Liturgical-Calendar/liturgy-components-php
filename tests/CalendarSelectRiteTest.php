@@ -75,6 +75,27 @@ final class CalendarSelectRiteTest extends TestCase
     }
 
     /**
+     * `---` said nothing about what selecting it meant. Choosing neither a
+     * nation nor a diocese is not choosing nothing: it is choosing the
+     * rite-level calendar, and the option now names it.
+     */
+    public function testEmptyOptionNamesTheRiteLevelCalendar(): void
+    {
+        $html = ( new CalendarSelect(['locale' => 'en', 'allowNull' => true]) )->getSelect();
+
+        $this->assertStringContainsString('>General Roman Calendar</option>', $html);
+        $this->assertStringNotContainsString('>---</option>', $html);
+    }
+
+    public function testEmptyOptionNamesTheAmbrosianCalendarUnderThatRite(): void
+    {
+        $html = ( new CalendarSelect(['locale' => 'en', 'rite' => 'ambrosian', 'allowNull' => true]) )->getSelect();
+
+        $this->assertStringContainsString('>Ambrosian Calendar</option>', $html);
+        $this->assertStringNotContainsString('>General Roman Calendar</option>', $html);
+    }
+
+    /**
      * Nothing pinned these values before, which is how the two libraries drifted
      * apart unnoticed. The PHP library emits the attribute in two places and
      * reads it back nowhere, so this is rendered output only.

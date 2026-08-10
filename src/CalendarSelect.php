@@ -150,6 +150,8 @@ class CalendarSelect
             $this->locale($options['locale']);
         }
 
+        $this->bindRiteTextDomain();
+
         // Fetch metadata from MetadataProvider
         // This will throw an exception if metadata cannot be loaded
         $this->fetchMetadata();
@@ -375,6 +377,32 @@ class CalendarSelect
     public function getRite(): Rite
     {
         return $this->rite;
+    }
+
+    /**
+     * Binds the `rite` gettext domain.
+     *
+     * This class used no gettext at all before rite awareness: it localized
+     * country names through \Locale::getDisplayRegion and nothing else. The
+     * catalogs live in src/i18n rather than a per-component directory — unlike
+     * `litcompphp` under ApiOptions and `webcalendar` under WebCalendar —
+     * because RiteSelect renders the same five strings, and neither component
+     * should have to bind a domain that lives under the other.
+     *
+     * Failure is a warning rather than an exception, matching ApiOptions: an
+     * unbound domain means untranslated English, not a broken component.
+     */
+    private function bindRiteTextDomain(): void
+    {
+        $expected = __DIR__ . '/i18n';
+        $bound    = bindtextdomain('rite', $expected);
+        if (false === $bound || $bound !== $expected) {
+            trigger_error(
+                "Failed to bind text domain. Expected path: {$expected}, got: " . var_export($bound, true) .
+                '. Translations may not be available.',
+                E_USER_WARNING
+            );
+        }
     }
 
     /**
@@ -769,7 +797,11 @@ class CalendarSelect
         $dataAttrs   = $this->getData();
         $optionsHtml = $this->getOptions();
         if ($this->allowNull) {
-            $optionsHtml = "<option value=\"\">---</option>{$optionsHtml}";
+            // dgettext rather than _(): the lookup names its domain explicitly,
+            // so it cannot be disturbed by whichever domain another component
+            // last made current with textdomain().
+            $emptyLabel  = dgettext('rite', $this->rite->emptyOptionLabel());
+            $optionsHtml = "<option value=\"\">{$emptyLabel}</option>{$optionsHtml}";
         }
         return ( $this->label ? "<label for=\"{$this->id}\"{$labelClass}>{$this->labelStr}</label>" : '' )
             . "<select{$id}{$name}{$class}{$disabled}{$dataAttrs}>{$optionsHtml}</select>";

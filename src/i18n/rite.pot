@@ -1,0 +1,46 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-10 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. The name of the rite-level calendar for the Roman rite, shown as the empty
+#. option of a CalendarSelect: choosing neither a nation nor a diocese means
+#. choosing this calendar.
+#: src/Rite.php:89
+msgid "General Roman Calendar"
+msgstr ""
+
+#. The name of the rite-level calendar for the Ambrosian rite.
+#: src/Rite.php:90
+msgid "Ambrosian Calendar"
+msgstr ""
+
+#. Option label for the Roman rite in a RiteSelect.
+#: src/RiteSelect.php
+msgid "Roman Rite"
+msgstr ""
+
+#. Option label for the Ambrosian rite, the rite of the Archdiocese of Milan
+#. and a few neighbouring sees.
+#: src/RiteSelect.php
+msgid "Ambrosian Rite"
+msgstr ""
+
+#. Default label text for a RiteSelect.
+#: src/RiteSelect.php
+msgid "Select a rite"
+msgstr ""
