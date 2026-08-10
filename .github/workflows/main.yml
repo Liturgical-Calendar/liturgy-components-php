@@ -1,28 +1,64 @@
-# This is a basic workflow to help you get started with Actions
-
 name: Update POTs
 
-# Controls when the workflow will run
-on:
-  # Triggers the workflow on push or pull request events but only for the given branch
-  push:
-    branches: [ main ]
-    paths: [ '**.php' ]
+# Regenerates the gettext templates from source whenever PHP changes on main,
+# and lands the result through a pull request that merges itself.
+#
+# It used to commit straight to main. Once main gained a ruleset requiring the
+# CI checks, that became impossible — a direct push can never satisfy a required
+# check — and the run failed with:
+#
+#   remote: error: GH013: Repository rule violations found for refs/heads/main.
+#   remote: - 6 of 6 required status checks are expected.
+#
+# The regenerated files were discarded with it, leaving main's POTs stale. The
+# failure was latent for months: the push step only fires when a line actually
+# moved, and until #40 none had since the ruleset came in.
+#
+# A pull request satisfies the ruleset the ordinary way — the checks run on it —
+# so main stays protected and nothing needs a bypass.
 
-  # Allows you to run this workflow manually from the Actions tab
+on:
+  push:
+    branches: [main]
+    # Only PHP sources produce translatable strings. This filter is also what
+    # stops the loop: merging the pull request this workflow opens lands nothing
+    # but .pot files, which does not match, so the merge cannot retrigger it.
+    paths: ['**.php']
+
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+permissions:
+  contents: write
+  pull-requests: write
+
+# One reconciliation at a time. Two pushes to main in quick succession would
+# otherwise race to force-push the same branch. Queued rather than cancelled:
+# the later run rebuilds the branch from the newer main and supersedes the
+# earlier one anyway, but cancelling mid-push could leave the branch half
+# written.
+concurrency:
+  group: update-pots
+  cancel-in-progress: false
+
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    # Whether the secret exists, resolved once here rather than tested in a step
+    # `if`. The secrets context is not dependably available in a step condition,
+    # and the value itself must never be the thing compared — only whether it is
+    # empty, which is what this records.
+    env:
+      HAS_AUTOMERGE_PAT: ${{ secrets.WORKFLOW_AUTOMERGE_PAT != '' }}
+
     steps:
-      # Check-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      # Checked out with the PAT rather than the default GITHUB_TOKEN, because
+      # of the recursion guard described on the pull request step below: work
+      # pushed with GITHUB_TOKEN cannot start another workflow run, and this
+      # branch needs CI to run on it before it can merge.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.WORKFLOW_AUTOMERGE_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Update source file translation strings
         id: update_pot
@@ -32,26 +68,58 @@ jobs:
           xgettext --from-code=UTF-8 --add-comments='translators:' -o src/WebCalendar/i18n/webcalendar.pot src/WebCalendar.php
           echo "POT_LINES_CHANGED=$(git diff -U0 | grep '^[+|-][^+|-]' | grep -Ev '^[+-]"POT-Creation-Date' | wc -l)" >> $GITHUB_OUTPUT
 
-      # push the output folder to your repo
-      - name: Push changes
+      # Without the PAT the pull request below is authored by GITHUB_TOKEN, and
+      # GitHub deliberately does not start workflow runs for anything it does —
+      # the recursion guard. No CI run means the required checks stay pending
+      # forever and --auto never fires, so the pull request just sits there.
+      # Nothing fails, which is worse than failing, hence the warning.
+      - name: Warn when the automerge PAT is unavailable
+        if: ${{ steps.update_pot.outputs.POT_LINES_CHANGED > 0 && env.HAS_AUTOMERGE_PAT != 'true' }}
+        run: |
+          echo "::warning::WORKFLOW_AUTOMERGE_PAT is not available. The pull request will be opened by GITHUB_TOKEN, which does not trigger CI, so its required checks will never run and auto-merge will never fire. Merge it by hand, or make the org secret available to this repository."
+
+      - name: Open a pull request and let it merge itself
         if: ${{ steps.update_pot.outputs.POT_LINES_CHANGED > 0 }}
-        uses: actions-x/commit@803b20e5b72c0425eb7919c42c321e67c5bc5d2d # v6
-        with:
-          # The committer's email address
-          email: 41898282+github-actions[bot]@users.noreply.github.com
-          # The committer's name
-          name: github-actions
-          # The commit message
-          message: regenerated POTS from source files
-          # The branch to push the changes back to, defaults to the current branch
-          branch: ${{ github.ref }}
-          # The files to add separated by space, defaults to every file
-          files: src/ApiOptions/i18n/litcompphp.pot src/WebCalendar/i18n/webcalendar.pot
-          # The repository to push the code to, defaults to origin (e.g. this repository)
-          repository: origin
-          # The token used to push the code, not needed if you push to the same repository
-          #token: # default is ${{ github.token }}
-          # Whether to perform force push
-          force: 0
-          # The working directory that will be used for git commands
-          #directory: # default is .
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_AUTOMERGE_PAT || secrets.GITHUB_TOKEN }}
+          BRANCH: chore/pot-refresh
+        run: |
+          set -euo pipefail
+
+          git config user.name 'github-actions'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          # One long-lived branch, rebuilt from the commit that triggered this
+          # run and force-pushed. A per-run branch would leave a trail of stale
+          # ones, and a superseded pull request open alongside the current one.
+          git switch -c "$BRANCH"
+          git add src/ApiOptions/i18n/litcompphp.pot src/WebCalendar/i18n/webcalendar.pot
+          git commit -m 'regenerated POTS from source files'
+          git push --force origin "$BRANCH"
+
+          # Reuse the open pull request if there is one: force-pushing has
+          # already updated it, and `gh pr create` would fail rather than
+          # recognise it.
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')" ]; then
+            # Body via a file: written inline it would carry this block's
+            # indentation into the markdown, where four leading spaces mean a
+            # code block.
+            cat > /tmp/pot-pr-body.md <<'BODY'
+          Regenerated from source by the **Update POTs** workflow after a change to PHP files on `main`.
+
+          Line references move whenever code moves, so most of these diffs carry no translatable change at all and Weblate has nothing new to show. When a msgid really does change it appears here as an added or removed `msgid`, rather than as a shifted `#:` comment.
+
+          Opened as a pull request rather than pushed to `main` directly, because the branch ruleset requires the CI checks and a direct push can never satisfy one. Auto-merge is enabled, so this lands on its own once those checks pass.
+          BODY
+
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title 'Regenerate the gettext templates' \
+              --body-file /tmp/pot-pr-body.md
+          fi
+
+          # --auto waits for the branch's merge requirements, which is the whole
+          # point: the checks the ruleset demands run on this pull request and
+          # gate it, exactly as they would for a human's.
+          gh pr merge --auto --merge "$BRANCH"
