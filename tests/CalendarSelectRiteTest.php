@@ -4,6 +4,8 @@ namespace LiturgicalCalendar\Components\Tests;
 
 use LiturgicalCalendar\Components\CalendarSelect;
 use LiturgicalCalendar\Components\Rite;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 final class CalendarSelectRiteTest extends TestCase
@@ -110,6 +112,21 @@ final class CalendarSelectRiteTest extends TestCase
         $this->assertStringNotContainsString('diocesancalendar', $html);
     }
 
+    /**
+     * Runs in a separate process deliberately.
+     *
+     * glibc will not always re-resolve a gettext domain once it has been looked
+     * up under another locale in the same process, and a suite that renders in
+     * English before it renders in Italian hits exactly that: on a CI runner a
+     * direct dgettext returned 'Roman Rite' here while the identical probe in a
+     * fresh process on the same machine returned 'Rito Romano'. Locally the
+     * switch happens to work, so the behaviour is glibc-version dependent.
+     *
+     * This is a harness artefact rather than a product defect — a real request
+     * renders in one locale in one process, which is what this now reproduces.
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function testEmptyOptionIsTranslatedIntoTheConfiguredLocale(): void
     {
         $current = setlocale(LC_MESSAGES, '0');
