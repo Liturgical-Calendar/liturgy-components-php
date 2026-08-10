@@ -20,6 +20,8 @@ class CalendarIndex
      * @param WiderRegion[] $widerRegions Wider regions (e.g., continents)
      * @param string[] $widerRegionsKeys Keys for all wider regions
      * @param string[] $locales All available locales
+     * @param RiteCalendar[] $ambrosianCalendars Rite-level calendars for the Ambrosian rite
+     * @param string[] $ambrosianCalendarsKeys Calendar IDs for all Ambrosian rite-level calendars
      */
     public function __construct(
         public readonly array $nationalCalendars,
@@ -29,7 +31,9 @@ class CalendarIndex
         public readonly array $diocesanGroups,
         public readonly array $widerRegions,
         public readonly array $widerRegionsKeys,
-        public readonly array $locales
+        public readonly array $locales,
+        public readonly array $ambrosianCalendars = [],
+        public readonly array $ambrosianCalendarsKeys = []
     ) {
     }
 
@@ -127,6 +131,31 @@ class CalendarIndex
         $locales = self::getArray($data, 'locales');
         /** @var array<string> $locales */
 
+        // Read leniently rather than through self::getArray(): an API older
+        // than rite awareness announces no `ambrosian_calendars` at all, and
+        // that is not a malformed index — it is one that serves the Roman rite
+        // only. Both default to empty.
+        $ambrosianCalendarsData = $data['ambrosian_calendars'] ?? [];
+        if (!is_array($ambrosianCalendarsData)) {
+            throw new \InvalidArgumentException('Expected array for ambrosian_calendars');
+        }
+        $ambrosianCalendars = array_map(
+            function ($item) {
+                if (!is_array($item)) {
+                    throw new \InvalidArgumentException('Expected array item in ambrosian_calendars');
+                }
+                /** @var array<string,mixed> $item */
+                return RiteCalendar::fromArray($item);
+            },
+            $ambrosianCalendarsData
+        );
+
+        $ambrosianCalendarsKeys = $data['ambrosian_calendars_keys'] ?? [];
+        if (!is_array($ambrosianCalendarsKeys)) {
+            throw new \InvalidArgumentException('Expected array for ambrosian_calendars_keys');
+        }
+        /** @var array<string> $ambrosianCalendarsKeys */
+
         return new self(
             nationalCalendars: $nationalCalendars,
             nationalCalendarsKeys: $nationalCalendarsKeys,
@@ -135,7 +164,9 @@ class CalendarIndex
             diocesanGroups: $diocesanGroups,
             widerRegions: $widerRegions,
             widerRegionsKeys: $widerRegionsKeys,
-            locales: $locales
+            locales: $locales,
+            ambrosianCalendars: $ambrosianCalendars,
+            ambrosianCalendarsKeys: $ambrosianCalendarsKeys
         );
     }
 
