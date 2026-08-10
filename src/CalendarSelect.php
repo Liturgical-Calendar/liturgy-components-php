@@ -609,33 +609,71 @@ class CalendarSelect
         }
         $col->setStrength(\Collator::PRIMARY); // only compare base characters; not accents, lower/upper-case, ...
 
-        foreach ($this->calendarIndex->diocesanCalendars as $diocesanCalendar) {
-            if (!$this->hasNationalCalendarWithDioceses($diocesanCalendar->nation)) {
-                // we add all nations with dioceses to the nations list
-                $this->addNationalCalendarWithDioceses($diocesanCalendar->nation);
+        // The rite partition comes FIRST, before anything asks which national
+        // calendar a diocese's nation has. That question only has an answer
+        // within the Roman rite: the Ambrosian rite has no national tier at
+        // all, so its dioceses sit in nations that own no national calendar —
+        // lugano_ch in CH is the live example, and letting it reach the nation
+        // pass is what took [0] of an empty filter result and passed null to a
+        // NationalCalendar parameter on every render.
+        $diocesanCalendars = array_filter(
+            $this->calendarIndex->diocesanCalendars,
+            fn(DiocesanCalendar $diocesanCalendar) => $diocesanCalendar->rite === $this->rite->value
+        );
+
+        foreach ($diocesanCalendars as $diocesanCalendar) {
+            if ($this->rite->hasNationalTier()) {
+                if (!$this->hasNationalCalendarWithDioceses($diocesanCalendar->nation)) {
+                    // we add all nations with dioceses to the nations list
+                    $this->addNationalCalendarWithDioceses($diocesanCalendar->nation);
+                }
+            } elseif (false === isset($this->dioceseOptions[$diocesanCalendar->nation])) {
+                // Under a rite with no national tier there is no NationalCalendar
+                // to register — that is the whole point — but addDioceseOption()
+                // still buckets by nation, so the bucket has to exist. Opening it
+                // directly is what registering one used to do as a side effect.
+                $this->dioceseOptions[$diocesanCalendar->nation] = [];
             }
             $this->addDioceseOption($diocesanCalendar);
         }
-        $sortedNationalCalendars = $this->calendarIndex->nationalCalendars;
-        usort($sortedNationalCalendars, function (NationalCalendar $a, NationalCalendar $b) use ($col): int {
-            $displayA = \Locale::getDisplayRegion('-' . $a->calendarId, $this->locale);
-            $displayB = \Locale::getDisplayRegion('-' . $b->calendarId, $this->locale);
-            if ($displayA === false) {
-                $displayA = $a->calendarId;
+
+        // A rite with no national tier skips the national pass entirely rather
+        // than rendering an empty group. The list below is not rite-partitioned
+        // — national calendars carry no rite, because having one is itself a
+        // property of the Roman rite.
+        if ($this->rite->hasNationalTier()) {
+            $sortedNationalCalendars = $this->calendarIndex->nationalCalendars;
+            usort($sortedNationalCalendars, function (NationalCalendar $a, NationalCalendar $b) use ($col): int {
+                $displayA = \Locale::getDisplayRegion('-' . $a->calendarId, $this->locale);
+                $displayB = \Locale::getDisplayRegion('-' . $b->calendarId, $this->locale);
+                if ($displayA === false) {
+                    $displayA = $a->calendarId;
+                }
+                if ($displayB === false) {
+                    $displayB = $b->calendarId;
+                }
+                $result = $col->compare($displayA, $displayB);
+                return $result === false ? 0 : $result;
+            });
+            foreach ($sortedNationalCalendars as $nationalCalendar) {
+                if (!$this->hasNationalCalendarWithDioceses($nationalCalendar->calendarId)) {
+                    // This is the first time we call CalendarSelect::addNationOption().
+                    // This will ensure that the VATICAN (or any other nation without any diocese) will be added as the first option,
+                    // thus ensuring that VATICAN is always the default selected option when allowNull is false.
+                    $this->addNationOption($nationalCalendar);
+                }
             }
-            if ($displayB === false) {
-                $displayB = $b->calendarId;
+        }
+
+        // A rite with no national tier has no nation to label a group with, so
+        // its dioceses render as a flat list. This matches what
+        // liturgy-components-js shows for the Ambrosian rite: Lugano, Bergamo,
+        // Milano and Novara in one run, no optgroups.
+        if (false === $this->rite->hasNationalTier()) {
+            foreach ($this->dioceseOptions as $optionsForNation) {
+                array_push($this->dioceseOptionsGrouped, implode('', $optionsForNation));
             }
-            $result = $col->compare($displayA, $displayB);
-            return $result === false ? 0 : $result;
-        });
-        foreach ($sortedNationalCalendars as $nationalCalendar) {
-            if (!$this->hasNationalCalendarWithDioceses($nationalCalendar->calendarId)) {
-                // This is the first time we call CalendarSelect::addNationOption().
-                // This will ensure that the VATICAN (or any other nation without any diocese) will be added as the first option,
-                // thus ensuring that VATICAN is always the default selected option when allowNull is false.
-                $this->addNationOption($nationalCalendar);
-            }
+            return;
         }
 
         // now we can add the options for the nations in the nationalCalendarsWithDioceses list
