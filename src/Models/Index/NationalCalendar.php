@@ -171,14 +171,25 @@ class NationalCalendar
         $dioceses = self::getNullableArray($data, 'dioceses');
         /** @var array<string>|null $dioceses */
 
+        $widerRegion  = self::getNullableString($data, 'wider_region');
+        $widerRegions = self::getStringList($data, 'wider_regions');
+
+        // The legacy fallback is for an API that sends no `wider_regions` key. An explicit
+        // empty list declares no region, which the constructor cannot tell from an absent one.
+        if ($widerRegion !== null && $widerRegions === [] && array_key_exists('wider_regions', $data)) {
+            throw new \InvalidArgumentException(
+                "Deprecated wider_region '{$widerRegion}' contradicts an empty wider_regions"
+            );
+        }
+
         return new self(
             calendarId: self::getString($data, 'calendar_id'),
             locales: $locales,
             missals: $missals,
             settings: NationalCalendarSettings::fromArray($settings),
-            widerRegion: self::getNullableString($data, 'wider_region'),
+            widerRegion: $widerRegion,
             dioceses: $dioceses,
-            widerRegions: self::getStringList($data, 'wider_regions')
+            widerRegions: $widerRegions
         );
     }
 

@@ -91,6 +91,20 @@ final class NationalCalendarWiderRegionsTest extends TestCase
         ]));
     }
 
+    /**
+     * An explicit empty list says the calendar declares no region, so a legacy
+     * value alongside it is a contradiction, not a fallback. The fallback is for
+     * an API that sends no `wider_regions` key at all.
+     */
+    public function testRejectsALegacyRegionAlongsideAnExplicitlyEmptyList(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        NationalCalendar::fromArray(self::data([
+            'wider_regions' => [],
+            'wider_region'  => 'Europe',
+        ]));
+    }
+
     public function testToArrayMirrorsTheApiShape(): void
     {
         $several = NationalCalendar::fromArray(self::data(['wider_regions' => ['Europe', 'Nordic']]))->toArray();
