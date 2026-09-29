@@ -185,6 +185,7 @@ class CalendarIndex
      *             eternal_high_priest: bool,
      *             holydays_of_obligation: array<string,bool>
      *         },
+     *         wider_regions: list<string>,
      *         wider_region?: string,
      *         dioceses?: string[]
      *     }>,
@@ -210,7 +211,9 @@ class CalendarIndex
      *     wider_regions: array<int,array{
      *         name: string,
      *         locales: string[],
-     *         api_path: string
+     *         api_path: string,
+     *         national_calendars: list<string>,
+     *         roster: list<string>
      *     }>,
      *     wider_regions_keys: string[],
      *     locales: string[],
