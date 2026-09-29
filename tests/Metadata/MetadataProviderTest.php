@@ -54,10 +54,11 @@ class MetadataProviderTest extends TestCase
             'litcal_metadata' => [
                 'national_calendars'      => [
                     [
-                        'calendar_id' => 'VA',
-                        'locales'     => ['en', 'it', 'la'],
-                        'missals'     => ['EDITIO_TYPICA_1970'],
-                        'settings'    => [
+                        'calendar_id'   => 'VA',
+                        'locales'       => ['en', 'it', 'la'],
+                        'missals'       => ['EDITIO_TYPICA_1970'],
+                        'wider_regions' => [],
+                        'settings'      => [
                             'epiphany'               => 'JAN6',
                             'ascension'              => 'THURSDAY',
                             'corpus_christi'         => 'THURSDAY',
@@ -66,25 +67,35 @@ class MetadataProviderTest extends TestCase
                         ]
                     ],
                     [
-                        'calendar_id' => 'US',
-                        'locales'     => ['en'],
-                        'missals'     => ['USA_EDITION_2011'],
-                        'settings'    => [
+                        'calendar_id'   => 'US',
+                        'locales'       => ['en'],
+                        'missals'       => ['USA_EDITION_2011'],
+                        'wider_regions' => ['Americas'],
+                        'wider_region'  => 'Americas',
+                        'settings'      => [
                             'epiphany'               => 'SUNDAY_JAN2_JAN8',
                             'ascension'              => 'SUNDAY',
                             'corpus_christi'         => 'SUNDAY',
                             'eternal_high_priest'    => true,
                             'holydays_of_obligation' => []
                         ],
-                        'dioceses'    => ['boston_us', 'newyork_us', 'chicago_us']
+                        'dioceses'      => ['boston_us', 'newyork_us', 'chicago_us']
                     ]
                 ],
                 'national_calendars_keys' => ['VA', 'US'],
                 'diocesan_calendars'      => [],
                 'diocesan_calendars_keys' => [],
                 'diocesan_groups'         => [],
-                'wider_regions'           => [],
-                'wider_regions_keys'      => [],
+                'wider_regions'           => [
+                    [
+                        'name'               => 'Americas',
+                        'locales'            => ['en_US', 'es_MX', 'fr_CA', 'pt_BR'],
+                        'api_path'           => self::API_URL . '/data/widerregion/Americas?locale={locale}',
+                        'national_calendars' => ['US'],
+                        'roster'             => ['AR', 'BO', 'BR', 'BZ', 'CA', 'CL', 'CO', 'CR', 'CU', 'DO', 'EC', 'GT', 'HN', 'MX', 'NI', 'PA', 'PE', 'PR', 'PY', 'SV', 'US']
+                    ]
+                ],
+                'wider_regions_keys'      => ['Americas'],
                 'locales'                 => ['en', 'it', 'la']
             ]
         ], JSON_THROW_ON_ERROR);
@@ -165,6 +176,10 @@ class MetadataProviderTest extends TestCase
         $this->assertInstanceOf(CalendarIndex::class, $metadata);
         $this->assertCount(2, $metadata->nationalCalendars);
         $this->assertCount(3, $metadata->locales);
+        $this->assertSame([], $metadata->nationalCalendars[0]->widerRegions);
+        $this->assertSame(['Americas'], $metadata->nationalCalendars[1]->widerRegions);
+        $this->assertSame(['US'], $metadata->widerRegions[0]->nationalCalendars);
+        $this->assertCount(21, $metadata->widerRegions[0]->roster);
     }
 
     public function testGetMetadataCachesResult()
